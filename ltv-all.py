@@ -91,6 +91,14 @@ st.markdown("""
         box-shadow: 0 8px 30px rgba(15, 23, 42, 0.3);
     }
     
+    /* 分界线 */
+    .section-divider {
+        height: 2px;
+        background: linear-gradient(90deg, transparent 0%, rgba(30, 41, 59, 0.3) 50%, transparent 100%);
+        margin: 1rem 0;
+        border-radius: 1px;
+    }
+    
     /* 指标卡片 */
     .metric-card {
         background: linear-gradient(135deg, #1e40af 0%, #2563eb 50%, #3b82f6 100%);
@@ -269,10 +277,11 @@ st.markdown("""
         margin-bottom: 0.5rem;
     }
     
-    /* 标题样式 */
-    h1, h2, h3 {
+    /* 标题样式 - 统一小标题大小 */
+    h1, h2, h3, h4 {
         color: #1e293b;
         font-weight: 600;
+        font-size: 1.1rem !important;
     }
     
     /* 成功/警告/错误消息 */
@@ -901,8 +910,6 @@ current_page = ANALYSIS_STEPS[st.session_state.current_step]["name"]
 # ==================== 页面内容 ====================
 
 if current_page == "数据上传与汇总":
-    st.header("数据上传与汇总")
-    
     # 渠道映射配置
     with st.expander("渠道映射配置", expanded=False):
         col1, col2 = st.columns([1, 2])
@@ -949,6 +956,9 @@ if current_page == "数据上传与汇总":
                 st.dataframe(channel_df.head(), use_container_width=True)
             except Exception as e:
                 st.error(f"渠道映射文件读取失败: {str(e)}")
+    
+    # 分界线
+    st.markdown('<div class="section-divider"></div>', unsafe_allow_html=True)
     
     # 数据文件上传
     st.markdown('<div class="glass-card">', unsafe_allow_html=True)
@@ -1065,8 +1075,6 @@ if current_page == "数据上传与汇总":
     """, unsafe_allow_html=True)
 
 elif current_page == "异常数据剔除":
-    st.header("异常数据剔除")
-    
     if st.session_state.merged_data is None:
         show_dependency_warning("数据上传与汇总")
     
@@ -1288,8 +1296,6 @@ elif current_page == "异常数据剔除":
     """, unsafe_allow_html=True)
 
 elif current_page == "留存率计算":
-    st.header("留存率计算")
-    
     # 确定使用的数据源
     if st.session_state.cleaned_data is not None:
         working_data = st.session_state.cleaned_data
@@ -1438,8 +1444,6 @@ elif current_page == "留存率计算":
     """, unsafe_allow_html=True)
 
 elif current_page == "LT拟合分析":
-    st.header("LT拟合分析")
-    
     if st.session_state.retention_data is None:
         show_dependency_warning("留存率计算")
     else:
@@ -1618,8 +1622,6 @@ elif current_page == "LT拟合分析":
     """, unsafe_allow_html=True)
 
 elif current_page == "ARPU计算":
-    st.header("ARPU计算")
-    
     if st.session_state.lt_results is None:
         show_dependency_warning("LT拟合分析")
     
@@ -1820,8 +1822,6 @@ elif current_page == "ARPU计算":
     """, unsafe_allow_html=True)
 
 elif current_page == "LTV结果报告":
-    st.header("LTV结果报告")
-    
     # 检查必要数据是否存在
     if st.session_state.lt_results is None:
         show_dependency_warning("LT拟合分析")
