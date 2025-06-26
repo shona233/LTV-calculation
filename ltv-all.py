@@ -68,6 +68,12 @@ st.markdown("""
         margin-bottom: 0.3rem;
     }
     
+    .main-subtitle {
+        color: #64748b;
+        font-size: 1.1rem;
+        font-weight: 400;
+    }
+    
     /* 卡片样式 */
     .glass-card {
         background: rgba(255, 255, 255, 0.95);
@@ -77,6 +83,12 @@ st.markdown("""
         box-shadow: 0 4px 20px rgba(15, 23, 42, 0.2);
         border: 1px solid rgba(255, 255, 255, 0.18);
         margin-bottom: 1rem;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    
+    .glass-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 30px rgba(15, 23, 42, 0.3);
     }
     
     /* 指标卡片 */
@@ -101,6 +113,16 @@ st.markdown("""
         opacity: 0.9;
     }
     
+    /* 状态卡片 */
+    .status-card {
+        background: rgba(255, 255, 255, 0.9);
+        border-radius: 8px;
+        padding: 1rem;
+        border-left: 4px solid #2563eb;
+        box-shadow: 0 2px 8px rgba(37, 99, 235, 0.1);
+        margin-bottom: 0.8rem;
+    }
+    
     /* 导航步骤样式 */
     .nav-container {
         background: rgba(255, 255, 255, 0.9);
@@ -123,6 +145,7 @@ st.markdown("""
     .nav-step:hover {
         background: rgba(37, 99, 235, 0.1);
         border-color: rgba(37, 99, 235, 0.3);
+        transform: translateX(3px);
     }
     
     .nav-step.active {
@@ -172,26 +195,35 @@ st.markdown("""
     
     /* 说明文字样式 */
     .step-explanation {
-        background: rgba(245, 248, 255, 0.8);
+        background: linear-gradient(135deg, rgba(37, 99, 235, 0.05) 0%, rgba(59, 130, 246, 0.08) 100%);
         border-left: 4px solid #2563eb;
-        padding: 1rem;
-        margin-top: 1.5rem;
-        border-radius: 0 8px 8px 0;
+        padding: 1.5rem;
+        margin-top: 2rem;
+        border-radius: 0 12px 12px 0;
+        box-shadow: 0 2px 10px rgba(37, 99, 235, 0.1);
     }
     
     .step-explanation h4 {
         color: #1e40af;
-        margin-bottom: 0.5rem;
+        margin-bottom: 0.8rem;
+        font-size: 1.1rem;
+        font-weight: 700;
     }
     
     .step-explanation ul {
         margin: 0.5rem 0;
-        padding-left: 1.2rem;
+        padding-left: 1.5rem;
     }
     
     .step-explanation li {
-        margin-bottom: 0.3rem;
+        margin-bottom: 0.5rem;
         color: #374151;
+        line-height: 1.5;
+    }
+    
+    .step-explanation strong {
+        color: #1e40af;
+        font-weight: 600;
     }
     
     /* 按钮样式 */
@@ -212,10 +244,79 @@ st.markdown("""
         background: linear-gradient(135deg, #1d4ed8 0%, #2563eb 100%);
     }
     
+    /* 侧边栏样式 */
+    .css-1d391kg {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+    }
+    
+    /* 数据表格样式 */
+    .dataframe {
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.1);
+    }
+    
+    /* 文件上传区域 */
+    .uploadedfile {
+        border: 2px dashed #2563eb;
+        border-radius: 8px;
+        padding: 2rem;
+        text-align: center;
+        background: rgba(37, 99, 235, 0.05);
+    }
+    
+    /* 选择框样式 */
+    .stSelectbox label, .stMultiselect label, .stFileUploader label {
+        font-weight: 600;
+        color: #1e293b;
+        margin-bottom: 0.5rem;
+    }
+    
+    /* 标题样式 */
+    h1, h2, h3 {
+        color: #1e293b;
+        font-weight: 600;
+    }
+    
+    /* 成功/警告/错误消息 */
+    .stSuccess {
+        background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+        color: white;
+        border-radius: 8px;
+    }
+    
+    .stWarning {
+        background: linear-gradient(135deg, #d97706 0%, #f59e0b 100%);
+        color: white;
+        border-radius: 8px;
+    }
+    
+    .stError {
+        background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%);
+        color: white;
+        border-radius: 8px;
+    }
+    
     /* 隐藏默认的Streamlit元素 */
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
     header {visibility: hidden;}
+    
+    /* 响应式设计 */
+    @media (max-width: 768px) {
+        .main-title {
+            font-size: 1.5rem;
+        }
+        
+        .glass-card {
+            padding: 1rem;
+        }
+        
+        .metric-card {
+            padding: 0.8rem;
+        }
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -301,7 +402,6 @@ DEFAULT_CHANNEL_MAPPING = {
 # 计算默认目标月份（2个月前）
 def get_default_target_month():
     today = datetime.datetime.now()
-    # 计算2个月前
     if today.month <= 2:
         target_year = today.year - 1
         target_month = today.month + 10
@@ -315,6 +415,7 @@ def get_default_target_month():
 st.markdown("""
 <div class="main-header">
     <div class="main-title">智能用户生命周期价值分析系统</div>
+    <div class="main-subtitle">基于分阶段数学建模的LTV精准预测平台</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -384,25 +485,33 @@ with st.sidebar:
     st.markdown('<div class="nav-container">', unsafe_allow_html=True)
     st.markdown('<h4 style="text-align: center; margin-bottom: 1rem; color: #495057;">分析流程</h4>', unsafe_allow_html=True)
     
-    # 创建可点击的导航步骤
+    # 创建导航步骤
     for i, step in enumerate(ANALYSIS_STEPS):
         step_status = get_step_status(i)
         
-        # 使用简单的按钮进行导航
-        col1, col2 = st.columns([3, 1])
+        # 使用按钮进行导航
+        col1, col2 = st.columns([4, 1])
         with col1:
-            if st.button(f"{step['icon']} {step['name']}", key=f"nav_{i}", use_container_width=True):
+            if st.button(f"{step['icon']} {step['name']}", key=f"nav_{i}", 
+                        use_container_width=True,
+                        type="primary" if step_status == "active" else "secondary"):
                 st.session_state.current_step = i
                 st.rerun()
+        
         with col2:
             if step_status == "completed":
-                st.write("✅")
+                st.markdown("✅")
             elif step_status == "active":
-                st.write("▶️")
+                st.markdown("▶️")
             elif step_status == "warning":
-                st.write("⚠️")
+                st.markdown("⚠️")
             else:
-                st.write("⏸️")
+                st.markdown("⏸️")
+        
+        # 添加步骤描述
+        if step_status in ["active", "completed"]:
+            st.markdown(f"<small style='color: #6c757d; margin-left: 1rem;'>{step['desc']}</small>", 
+                       unsafe_allow_html=True)
     
     st.markdown('</div>', unsafe_allow_html=True)
     
@@ -430,7 +539,7 @@ with st.sidebar:
     
     st.markdown('</div>', unsafe_allow_html=True)
 
-# 定义幂函数与指数函数
+# 定义数学函数（使用第二个代码的函数）
 def power_function(x, a, b):
     """幂函数：y = a * x^b"""
     return a * np.power(x, b)
@@ -487,7 +596,7 @@ def standardize_output_columns(df):
     return result_df
 
 def integrate_excel_files_streamlit(uploaded_files, target_month=None, channel_mapping=None):
-    """Streamlit版本的Excel文件整合函数，使用第三个代码的逻辑"""
+    """Streamlit版本的Excel文件整合函数，使用第三个代码的完整逻辑"""
     if target_month is None:
         target_month = get_default_target_month()
 
@@ -498,7 +607,7 @@ def integrate_excel_files_streamlit(uploaded_files, target_month=None, channel_m
     for uploaded_file in uploaded_files:
         source_name = os.path.splitext(uploaded_file.name)[0]
         
-        # 如果有渠道映射，尝试根据文件名映射渠道
+        # 渠道映射
         if channel_mapping and source_name in channel_mapping:
             mapped_source = channel_mapping[source_name]
         else:
@@ -547,6 +656,7 @@ def integrate_excel_files_streamlit(uploaded_files, target_month=None, channel_m
                 has_retain_columns = any(col in file_data_copy.columns for col in retain_columns)
 
                 if has_stat_date and has_retain_columns:
+                    # 新格式表处理
                     standardized_data = file_data_copy.copy()
 
                     if 'new' in standardized_data.columns:
@@ -572,7 +682,7 @@ def integrate_excel_files_streamlit(uploaded_files, target_month=None, channel_m
                         processed_count += 1
 
                 else:
-                    # 处理旧格式表的逻辑
+                    # 旧格式表处理
                     retention_col = None
                     for col in file_data_copy.columns:
                         if '留存天数' in str(col):
@@ -585,6 +695,7 @@ def integrate_excel_files_streamlit(uploaded_files, target_month=None, channel_m
                             date_col = col
                             break
 
+                    # 处理回传新增数列
                     if len(file_data_copy.columns) >= 2:
                         second_col = file_data_copy.columns[1]
                         file_data_copy['回传新增数'] = file_data_copy[second_col]
@@ -605,11 +716,19 @@ def integrate_excel_files_streamlit(uploaded_files, target_month=None, channel_m
                                 all_data = pd.concat([all_data, filtered_data], ignore_index=True)
                                 processed_count += 1
                         except:
+                            # 出错时保留所有数据
                             file_data_copy.insert(0, '数据来源', mapped_source)
                             if retention_col:
                                 file_data_copy.rename(columns={retention_col: 'date'}, inplace=True)
                             all_data = pd.concat([all_data, file_data_copy], ignore_index=True)
                             processed_count += 1
+                    else:
+                        # 没有日期列，保留所有数据
+                        file_data_copy.insert(0, '数据来源', mapped_source)
+                        if retention_col:
+                            file_data_copy.rename(columns={retention_col: 'date'}, inplace=True)
+                        all_data = pd.concat([all_data, file_data_copy], ignore_index=True)
+                        processed_count += 1
 
         except Exception as e:
             st.error(f"处理文件 {uploaded_file.name} 时出错: {str(e)}")
@@ -642,9 +761,9 @@ def parse_channel_mapping(channel_df):
     
     return pid_to_channel
 
-# 留存率计算（使用第二个代码的逻辑）
+# 留存率计算（改进版，更接近第二个代码的逻辑）
 def calculate_retention_rates_advanced(df):
-    """使用第二个代码的留存率计算逻辑"""
+    """计算留存率数据，转换为第二个代码兼容的格式"""
     retention_results = []
     
     data_sources = df['数据来源'].unique()
@@ -652,30 +771,30 @@ def calculate_retention_rates_advanced(df):
     for source in data_sources:
         source_data = df[df['数据来源'] == source].copy()
         
-        # 准备数据 - 转换为第二个代码的格式
-        days = []
-        rates = []
+        # 收集所有有效的留存数据点
+        all_days = []
+        all_rates = []
         
-        # 从数据中提取留存天数和留存率
         for _, row in source_data.iterrows():
             new_users = row.get('回传新增数', 0)
             
             if pd.isna(new_users) or new_users <= 0:
                 continue
             
+            # 从1到30天的留存数据
             for day in range(1, 31):
                 day_col = str(day)
                 if day_col in row and not pd.isna(row[day_col]):
                     retain_count = row[day_col]
-                    retention_rate = retain_count / new_users if new_users > 0 else 0
-                    
-                    if retention_rate > 0:  # 只保留有效的留存率
-                        days.append(day)
-                        rates.append(retention_rate)
+                    if retain_count > 0:  # 只保留有效留存数据
+                        retention_rate = retain_count / new_users
+                        if 0 < retention_rate <= 1.5:  # 过滤异常值
+                            all_days.append(day)
+                            all_rates.append(retention_rate)
         
-        # 如果有重复的天数，取平均值
-        if days:
-            df_temp = pd.DataFrame({'day': days, 'rate': rates})
+        if all_days:
+            # 按天数分组，计算平均留存率
+            df_temp = pd.DataFrame({'day': all_days, 'rate': all_rates})
             df_avg = df_temp.groupby('day')['rate'].mean().reset_index()
             
             retention_data = {
@@ -687,10 +806,10 @@ def calculate_retention_rates_advanced(df):
     
     return retention_results
 
-# LT拟合分析（使用第二个代码的逻辑）
+# LT拟合分析（使用第二个代码的完整逻辑）
 def calculate_lt_advanced(retention_data, channel_name, lt_years=5):
-    """使用第二个代码的LT计算逻辑"""
-    # 渠道规则
+    """使用第二个代码的分阶段LT计算逻辑"""
+    # 渠道规则 - 完全按照第二个代码
     CHANNEL_RULES = {
         "华为": {"stage_2": [30, 120], "stage_3_base": [120, 220]},
         "小米": {"stage_2": [30, 190], "stage_3_base": [190, 290]},
@@ -701,15 +820,15 @@ def calculate_lt_advanced(retention_data, channel_name, lt_years=5):
     }
 
     # 判断渠道类型
-    if re.search(r'华为', channel_name):
+    if re.search(r'\d+月华为$', channel_name) or re.search(r'华为', channel_name):
         rules = CHANNEL_RULES["华为"]
-    elif re.search(r'小米', channel_name):
+    elif re.search(r'\d+月小米$', channel_name) or re.search(r'小米', channel_name):
         rules = CHANNEL_RULES["小米"]
-    elif re.search(r'oppo|OPPO', channel_name):
+    elif re.search(r'\d+月oppo$', channel_name) or re.search(r'\d+月OPPO$', channel_name) or re.search(r'oppo|OPPO', channel_name):
         rules = CHANNEL_RULES["oppo"]
-    elif re.search(r'vivo', channel_name):
+    elif re.search(r'\d+月vivo$', channel_name) or re.search(r'vivo', channel_name):
         rules = CHANNEL_RULES["vivo"]
-    elif re.search(r'iphone|iPhone', channel_name):
+    elif re.search(r'\d+月[iI][pP]hone$', channel_name) or re.search(r'iphone|iPhone', channel_name):
         rules = CHANNEL_RULES["iphone"]
     else:
         rules = CHANNEL_RULES["其他"]
@@ -724,7 +843,7 @@ def calculate_lt_advanced(retention_data, channel_name, lt_years=5):
     fit_params = {}
 
     try:
-        # 第一阶段：幂函数拟合
+        # 第一阶段：1-30天幂函数拟合
         popt_power, _ = curve_fit(power_function, days, rates)
         a, b = popt_power
         fit_params["power"] = {"a": a, "b": b}
@@ -734,16 +853,17 @@ def calculate_lt_advanced(retention_data, channel_name, lt_years=5):
         rates_full = power_function(days_full, a, b)
         lt1_to_30 = np.sum(rates_full)
 
-        # 第二阶段
+        # 第二阶段：使用幂函数延续预测
         days_stage_2 = np.arange(stage_2_start, stage_2_end + 1)
         rates_stage_2 = power_function(days_stage_2, a, b)
         lt_stage_2 = np.sum(rates_stage_2)
 
-        # 第三阶段：指数拟合
+        # 第三阶段：指数函数拟合长期衰减
         try:
             days_stage_3_base = np.arange(stage_3_base_start, stage_3_base_end + 1)
             rates_stage_3_base = power_function(days_stage_3_base, a, b)
 
+            # 指数拟合
             initial_c = rates_stage_3_base[0]
             initial_d = -0.001
             popt_exp, _ = curve_fit(
@@ -751,7 +871,7 @@ def calculate_lt_advanced(retention_data, channel_name, lt_years=5):
                 days_stage_3_base,
                 rates_stage_3_base,
                 p0=[initial_c, initial_d],
-                bounds=([0, -np.inf], [np.inf, 0])
+                bounds=([0, -np.inf], [np.inf, 0])  # 限制 d < 0
             )
             c, d = popt_exp
             fit_params["exponential"] = {"c": c, "d": d}
@@ -760,19 +880,25 @@ def calculate_lt_advanced(retention_data, channel_name, lt_years=5):
             rates_stage_3 = exponential_function(days_stage_3, c, d)
             lt_stage_3 = np.sum(rates_stage_3)
             
-        except:
+        except Exception as e:
+            # 指数拟合失败，使用幂函数
             days_stage_3 = np.arange(stage_3_base_start, max_days + 1)
             rates_stage_3 = power_function(days_stage_3, a, b)
             lt_stage_3 = np.sum(rates_stage_3)
 
-        # 总LT计算
+        # 总LT计算：1 + 第一阶段 + 第二阶段 + 第三阶段
         total_lt = 1.0 + lt1_to_30 + lt_stage_2 + lt_stage_3
+
+        # 计算拟合度
+        predicted_rates = power_function(days, a, b)
+        r2_score = 1 - np.sum((rates - predicted_rates) ** 2) / np.sum((rates - np.mean(rates)) ** 2)
 
         return {
             'lt_value': total_lt,
             'fit_params': fit_params,
-            'power_r2': 0.9,  # 简化
-            'success': True
+            'power_r2': max(0, min(1, r2_score)),
+            'success': True,
+            'model_used': 'power+exponential'
         }
 
     except Exception as e:
@@ -780,19 +906,21 @@ def calculate_lt_advanced(retention_data, channel_name, lt_years=5):
             'lt_value': 30.0,  # 默认值
             'fit_params': {},
             'power_r2': 0.0,
-            'success': False
+            'success': False,
+            'model_used': 'default'
         }
 
 # 显示依赖提示
 def show_dependency_warning(required_step):
     """显示依赖提示"""
-    st.warning(f"此步骤需要先完成「{required_step}」")
+    st.warning(f"⚠️ 此步骤需要先完成「{required_step}」")
     st.info("您可以点击左侧导航直接跳转到对应步骤，或者继续查看当前步骤的功能介绍。")
 
 # 获取当前页面
 current_page = ANALYSIS_STEPS[st.session_state.current_step]["name"]
 
-# 页面内容
+# ==================== 页面内容 ====================
+
 if current_page == "数据上传与汇总":
     st.header("数据上传与汇总")
     
@@ -844,6 +972,7 @@ if current_page == "数据上传与汇总":
                 st.error(f"渠道映射文件读取失败: {str(e)}")
     
     # 数据文件上传
+    st.markdown('<div class="glass-card">', unsafe_allow_html=True)
     st.subheader("数据文件处理")
     
     uploaded_files = st.file_uploader(
@@ -884,7 +1013,6 @@ if current_page == "数据上传与汇总":
                             st.info("这不会影响后续的留存率计算和拟合分析")
                         
                         # 显示关键指标
-                        st.markdown('<div class="glass-card">', unsafe_allow_html=True)
                         st.subheader("数据概览")
                         
                         col1, col2, col3, col4 = st.columns(4)
@@ -917,7 +1045,6 @@ if current_page == "数据上传与汇总":
                         # 数据预览
                         st.subheader("数据预览")
                         st.dataframe(merged_data.head(10), use_container_width=True)
-                        st.markdown('</div>', unsafe_allow_html=True)
                     
                     else:
                         st.error("未找到有效数据，请检查文件格式和目标月份设置")
@@ -927,23 +1054,33 @@ if current_page == "数据上传与汇总":
     else:
         st.info("请选择Excel文件开始数据处理")
     
+    st.markdown('</div>', unsafe_allow_html=True)
+    
     # 步骤说明
     st.markdown("""
     <div class="step-explanation">
-        <h4>文件要求和处理原理</h4>
+        <h4>支持的文件格式与要求</h4>
         <ul>
-            <li><strong>支持的文件格式：</strong>Excel文件(.xlsx, .xls)，支持新旧两种数据格式</li>
-            <li><strong>新格式要求：</strong>包含stat_date列和new_retain_1到new_retain_30列的留存数据</li>
-            <li><strong>旧格式要求：</strong>包含"留存天数"和"日期"列，以及1-30天的留存数据列</li>
-            <li><strong>渠道映射：</strong>可选功能，用于将文件名或渠道ID映射为标准渠道名称</li>
+            <li><strong>新格式数据表：</strong>包含stat_date列作为日期字段，new列作为新增用户数，new_retain_1到new_retain_30列作为1-30天留存数据</li>
+            <li><strong>旧格式数据表：</strong>包含"留存天数"和"日期"列，以及标识为1-30的留存数据列</li>
+            <li><strong>工作表识别：</strong>优先读取"ocpx监测留存数"工作表，如存在"监测渠道回传量"则自动合并相关列</li>
+            <li><strong>渠道映射：</strong>支持通过映射表将文件名或渠道ID转换为标准渠道名称</li>
         </ul>
         
-        <h4>处理原理</h4>
+        <h4>数据处理流程</h4>
         <ul>
-            <li><strong>数据识别：</strong>自动识别Excel文件中的"ocpx监测留存数"和"监测渠道回传量"工作表</li>
-            <li><strong>格式转换：</strong>将不同格式的数据统一转换为标准格式，包括列名标准化</li>
-            <li><strong>数据筛选：</strong>根据目标月份筛选相关数据，保留目标月份及前后时间的数据</li>
-            <li><strong>数据整合：</strong>将多个文件的数据合并为统一的数据表，便于后续分析</li>
+            <li><strong>格式识别：</strong>自动检测数据表格式，根据关键列名判断新旧格式</li>
+            <li><strong>列标准化：</strong>将不同格式的列名统一转换为标准格式，确保后续处理一致性</li>
+            <li><strong>时间筛选：</strong>根据目标月份筛选相关数据，保留目标月份及前后时间范围的记录</li>
+            <li><strong>数据整合：</strong>将多个文件的数据按照统一的列结构合并，添加数据来源标识</li>
+            <li><strong>质量检查：</strong>验证数据完整性，识别并处理缺失值和异常值</li>
+        </ul>
+        
+        <h4>输出数据结构</h4>
+        <ul>
+            <li><strong>核心字段：</strong>数据来源、日期、新增用户数、1-30天留存数据</li>
+            <li><strong>辅助字段：</strong>月份标识、目标月份标记、原始日期等</li>
+            <li><strong>格式统一：</strong>所有数据按照预定义的列顺序排列，便于后续分析</li>
         </ul>
     </div>
     """, unsafe_allow_html=True)
@@ -958,14 +1095,7 @@ elif current_page == "异常数据剔除":
     st.markdown('<div class="glass-card">', unsafe_allow_html=True)
     st.subheader("功能说明")
     st.markdown("""
-    此步骤用于识别和剔除异常数据点，提高留存率计算的准确性：
-    
-    **剔除选项包括：**
-    - 按数据来源剔除：排除整个渠道的数据
-    - 按日期剔除：排除特定日期的所有数据
-    - 新增用户数阈值：剔除新增用户过少的记录
-    - 留存率异常检测：剔除留存率异常高的记录
-    - 数据完整性检查：剔除数据不完整的记录
+    此步骤用于识别和剔除异常数据点，提高留存率计算的准确性。异常数据可能来源于系统错误、数据采集问题或特殊事件影响。
     """)
     st.markdown('</div>', unsafe_allow_html=True)
     
@@ -993,7 +1123,7 @@ elif current_page == "异常数据剔除":
         
         # 异常数据剔除界面
         st.markdown('<div class="glass-card">', unsafe_allow_html=True)
-        st.subheader("选择要剔除的数据")
+        st.subheader("异常数据剔除配置")
         
         col1, col2 = st.columns(2)
         
@@ -1025,31 +1155,31 @@ elif current_page == "异常数据剔除":
                 excluded_by_date = merged_data[merged_data['date'].isin(excluded_dates)]
                 st.info(f"将剔除 {len(excluded_by_date)} 条记录")
         
-        # 组合剔除条件
-        st.markdown("### 按具体条件剔除")
+        # 数值条件剔除
+        st.markdown("### 按数值条件剔除")
         col1, col2, col3 = st.columns(3)
         
         with col1:
             min_new_users = st.number_input(
-                "最小新增用户数",
+                "最小新增用户数阈值",
                 min_value=0,
                 value=0,
-                help="低于此值的记录将被剔除"
+                help="低于此值的记录将被剔除，避免小样本偏差"
             )
         
         with col2:
             max_day1_retention = st.number_input(
-                "Day1最大留存率",
+                "Day1最大留存率阈值",
                 min_value=0.0,
                 max_value=2.0,
                 value=1.5,
                 step=0.1,
-                help="Day1留存率超过此值的记录将被剔除（可能是数据错误）"
+                help="Day1留存率超过此值的记录将被剔除（通常表示数据错误）"
             )
         
         with col3:
             min_retention_days = st.number_input(
-                "最少留存天数",
+                "最少有效留存天数",
                 min_value=1,
                 max_value=30,
                 value=7,
@@ -1060,7 +1190,7 @@ elif current_page == "异常数据剔除":
         
         # 预览将被剔除的数据
         st.markdown('<div class="glass-card">', unsafe_allow_html=True)
-        st.subheader("剔除预览")
+        st.subheader("剔除效果预览")
         
         # 计算所有剔除条件
         exclusion_mask = pd.Series([False] * len(merged_data), index=merged_data.index)
@@ -1117,6 +1247,34 @@ elif current_page == "异常数据剔除":
                 st.session_state.cleaned_data = to_keep.copy()
                 
                 st.success(f"成功剔除 {len(to_exclude)} 条异常数据，保留 {len(to_keep)} 条有效数据")
+                
+                # 显示清理后的数据统计
+                col1, col2, col3, col4 = st.columns(4)
+                with col1:
+                    st.markdown('<div class="metric-card">', unsafe_allow_html=True)
+                    st.markdown(f'<div class="metric-value">{len(to_keep):,}</div>', unsafe_allow_html=True)
+                    st.markdown('<div class="metric-label">有效记录数</div>', unsafe_allow_html=True)
+                    st.markdown('</div>', unsafe_allow_html=True)
+                
+                with col2:
+                    st.markdown('<div class="metric-card">', unsafe_allow_html=True)
+                    st.markdown(f'<div class="metric-value">{to_keep["数据来源"].nunique()}</div>', unsafe_allow_html=True)
+                    st.markdown('<div class="metric-label">数据来源</div>', unsafe_allow_html=True)
+                    st.markdown('</div>', unsafe_allow_html=True)
+                
+                with col3:
+                    st.markdown('<div class="metric-card">', unsafe_allow_html=True)
+                    st.markdown(f'<div class="metric-value">{len(to_exclude):,}</div>', unsafe_allow_html=True)
+                    st.markdown('<div class="metric-label">剔除记录数</div>', unsafe_allow_html=True)
+                    st.markdown('</div>', unsafe_allow_html=True)
+                
+                with col4:
+                    retention_rate = len(to_keep) / len(merged_data) * 100
+                    st.markdown('<div class="metric-card">', unsafe_allow_html=True)
+                    st.markdown(f'<div class="metric-value">{retention_rate:.1f}%</div>', unsafe_allow_html=True)
+                    st.markdown('<div class="metric-label">数据保留率</div>', unsafe_allow_html=True)
+                    st.markdown('</div>', unsafe_allow_html=True)
+                
             else:
                 st.session_state.cleaned_data = merged_data.copy()
                 st.info("未发现需要剔除的异常数据，所有数据将保留")
@@ -1126,19 +1284,26 @@ elif current_page == "异常数据剔除":
     <div class="step-explanation">
         <h4>异常数据识别原理</h4>
         <ul>
-            <li><strong>数据来源异常：</strong>某些渠道可能存在系统性问题，需要整体排除</li>
-            <li><strong>日期异常：</strong>特定日期可能存在数据采集问题，影响整体分析</li>
-            <li><strong>用户规模异常：</strong>新增用户数过少的记录可能缺乏统计意义</li>
-            <li><strong>留存率异常：</strong>超过100%的留存率通常表示数据采集错误</li>
-            <li><strong>数据完整性异常：</strong>留存数据缺失过多会影响后续拟合的准确性</li>
+            <li><strong>渠道级异常：</strong>某些渠道可能存在系统性数据质量问题，需要整体排除以避免影响总体分析</li>
+            <li><strong>时间点异常：</strong>特定日期可能受到外部事件影响（如系统维护、营销活动），导致数据不具代表性</li>
+            <li><strong>样本量异常：</strong>新增用户数过少的记录缺乏统计意义，可能产生高方差的留存率估计</li>
+            <li><strong>数值逻辑异常：</strong>留存率超过100%通常表示数据采集或计算错误</li>
+            <li><strong>完整性异常：</strong>留存数据缺失过多会影响后续曲线拟合的准确性和稳定性</li>
         </ul>
         
-        <h4>剔除策略</h4>
+        <h4>剔除策略与原则</h4>
         <ul>
-            <li><strong>保守原则：</strong>优先保留数据，只在明确异常时才剔除</li>
-            <li><strong>组合判断：</strong>支持多种条件组合，灵活应对不同异常情况</li>
-            <li><strong>可逆操作：</strong>剔除的数据记录保存，必要时可以恢复</li>
-            <li><strong>影响评估：</strong>实时显示剔除操作对数据集的影响</li>
+            <li><strong>保守原则：</strong>优先保留数据，只在有明确证据表明异常时才剔除</li>
+            <li><strong>业务导向：</strong>结合业务知识判断异常，避免过度依赖统计规则</li>
+            <li><strong>可追溯性：</strong>记录所有剔除操作，保证分析过程的透明度和可重现性</li>
+            <li><strong>影响评估：</strong>实时评估剔除操作对数据集规模和结构的影响</li>
+        </ul>
+        
+        <h4>剔除后的数据质量保证</h4>
+        <ul>
+            <li><strong>样本代表性：</strong>确保剔除后的数据仍能代表目标用户群体的行为特征</li>
+            <li><strong>时间连续性：</strong>保持足够的时间跨度以支持趋势分析</li>
+            <li><strong>渠道覆盖性：</strong>保留主要渠道的数据以支持对比分析</li>
         </ul>
     </div>
     """, unsafe_allow_html=True)
@@ -1157,25 +1322,11 @@ elif current_page == "留存率计算":
         working_data = None
         data_source_info = "无可用数据"
     
-    # 功能说明
-    st.markdown('<div class="glass-card">', unsafe_allow_html=True)
-    st.subheader("功能说明")
-    st.markdown("""
-    此步骤计算各渠道的用户留存率：
-    
-    **计算方法：**
-    - 加权平均：根据新增用户数对留存率进行加权平均
-    - 日期范围：分析1-30天的用户留存情况
-    - 渠道分析：为每个数据来源独立计算留存率
-    - 数据可视化：生成留存率曲线图和关键指标
-    """)
-    st.markdown('</div>', unsafe_allow_html=True)
-    
     if working_data is None:
         show_dependency_warning("数据上传与汇总")
     else:
         st.markdown('<div class="glass-card">', unsafe_allow_html=True)
-        st.subheader("留存率分析配置")
+        st.subheader("留存率计算配置")
         st.info(data_source_info)
         
         data_sources = working_data['数据来源'].unique()
@@ -1189,17 +1340,18 @@ elif current_page == "留存率计算":
         if selected_sources:
             col1, col2, col3 = st.columns(3)
             with col1:
-                st.metric("数据来源", len(selected_sources))
+                st.metric("选中数据来源", len(selected_sources))
             with col2:
-                st.metric("总记录数", f"{len(working_data):,}")
+                filtered_count = len(working_data[working_data['数据来源'].isin(selected_sources)])
+                st.metric("相关记录数", f"{filtered_count:,}")
             with col3:
-                st.metric("分析天数", "1-30天")
+                st.metric("分析维度", "1-30天留存")
         
         st.markdown('</div>', unsafe_allow_html=True)
         
         if st.button("计算留存率", type="primary", use_container_width=True):
             if selected_sources:
-                with st.spinner("正在计算留存率..."):
+                with st.spinner("正在计算各渠道留存率..."):
                     filtered_data = working_data[working_data['数据来源'].isin(selected_sources)]
                     retention_results = calculate_retention_rates_advanced(filtered_data)
                     st.session_state.retention_data = retention_results
@@ -1208,7 +1360,7 @@ elif current_page == "留存率计算":
                     
                     # 显示结果
                     st.markdown('<div class="glass-card">', unsafe_allow_html=True)
-                    st.subheader("留存率结果")
+                    st.subheader("留存率分析结果")
                     
                     for result in retention_results:
                         with st.expander(f"{result['data_source']} - 留存率详情", expanded=True):
@@ -1220,35 +1372,53 @@ elif current_page == "留存率计算":
                             with col1:
                                 if len(rates) > 0:
                                     st.markdown("### 关键指标")
-                                    if len(rates) > 0:
-                                        st.metric("Day 1 留存率", f"{rates[0]*100:.2f}%" if days[0] == 1 else "N/A")
+                                    
+                                    # Day 1留存率
+                                    day1_idx = np.where(days == 1)[0]
+                                    if len(day1_idx) > 0:
+                                        st.metric("Day 1 留存率", f"{rates[day1_idx[0]]*100:.2f}%")
+                                    else:
+                                        st.metric("Day 1 留存率", "N/A")
+                                    
+                                    # Day 7留存率
                                     day7_idx = np.where(days == 7)[0]
                                     if len(day7_idx) > 0:
                                         st.metric("Day 7 留存率", f"{rates[day7_idx[0]]*100:.2f}%")
+                                    else:
+                                        st.metric("Day 7 留存率", "N/A")
+                                    
+                                    # Day 30留存率
                                     day30_idx = np.where(days == 30)[0]
                                     if len(day30_idx) > 0:
                                         st.metric("Day 30 留存率", f"{rates[day30_idx[0]]*100:.2f}%")
+                                    else:
+                                        st.metric("Day 30 留存率", "N/A")
+                                    
                                     st.metric("平均留存率", f"{np.mean(rates)*100:.2f}%")
                             
                             with col2:
                                 if len(days) > 0:
                                     fig, ax = plt.subplots(figsize=(12, 6))
                                     
-                                    colors = plt.cm.viridis(np.linspace(0, 1, len(days)))
+                                    # 使用蓝色系配色
+                                    colors = plt.cm.Blues(np.linspace(0.4, 1, len(days)))
                                     scatter = ax.scatter(days, rates, c=colors, s=80, alpha=0.8, 
-                                                       edgecolors='white', linewidth=2)
-                                    ax.plot(days, rates, '--', color='#667eea', linewidth=2, alpha=0.7)
+                                                       edgecolors='navy', linewidth=2)
+                                    ax.plot(days, rates, '--', color='#1e40af', linewidth=2, alpha=0.8)
                                     
-                                    ax.set_xlabel('天数', fontsize=12, fontweight='bold')
+                                    ax.set_xlabel('留存天数', fontsize=12, fontweight='bold')
                                     ax.set_ylabel('留存率', fontsize=12, fontweight='bold')
                                     ax.set_title(f'{result["data_source"]} 留存率曲线', fontsize=14, fontweight='bold')
                                     ax.grid(True, alpha=0.3, linestyle='--')
                                     ax.set_ylim(0, max(rates) * 1.1)
                                     
+                                    # 美化图表
                                     ax.spines['top'].set_visible(False)
                                     ax.spines['right'].set_visible(False)
-                                    ax.spines['left'].set_linewidth(0.5)
-                                    ax.spines['bottom'].set_linewidth(0.5)
+                                    ax.spines['left'].set_linewidth(0.8)
+                                    ax.spines['bottom'].set_linewidth(0.8)
+                                    ax.spines['left'].set_color('#1e293b')
+                                    ax.spines['bottom'].set_color('#1e293b')
                                     
                                     plt.tight_layout()
                                     st.pyplot(fig)
@@ -1264,17 +1434,26 @@ elif current_page == "留存率计算":
         <h4>留存率计算原理</h4>
         <ul>
             <li><strong>基础定义：</strong>第N天留存率 = 第N天仍活跃的用户数 / 初始新增用户数</li>
-            <li><strong>数据来源：</strong>从1-30天的留存数据列中提取每日留存用户数</li>
-            <li><strong>加权计算：</strong>当同一渠道有多日数据时，按新增用户数进行加权平均</li>
-            <li><strong>异常处理：</strong>自动过滤留存率为0或新增用户数为0的无效记录</li>
+            <li><strong>数据来源：</strong>从预处理的数据表中提取1-30天的留存数据列</li>
+            <li><strong>加权平均：</strong>当单个渠道包含多日数据时，按新增用户数进行加权平均处理</li>
+            <li><strong>异常过滤：</strong>自动识别并过滤留存率为0、新增用户数为0或留存率异常高的记录</li>
         </ul>
         
-        <h4>计算步骤</h4>
+        <h4>计算步骤详解</h4>
         <ul>
-            <li><strong>数据提取：</strong>从标准化数据表中提取各渠道的留存数据</li>
-            <li><strong>比例计算：</strong>计算每天的留存率 = 留存用户数 / 新增用户数</li>
-            <li><strong>聚合处理：</strong>对同一渠道的多日数据进行加权平均合并</li>
-            <li><strong>结果输出：</strong>生成各渠道的完整留存率曲线数据</li>
+            <li><strong>数据提取：</strong>遍历每个数据来源，提取其所有有效的留存数据记录</li>
+            <li><strong>比例计算：</strong>对每条记录的每一天，计算留存率 = 留存用户数 ÷ 新增用户数</li>
+            <li><strong>质量控制：</strong>剔除留存率超过150%或小于等于0的异常值</li>
+            <li><strong>聚合统计：</strong>按天数分组，计算每个渠道每天的平均留存率</li>
+            <li><strong>结果封装：</strong>将计算结果转换为适合后续拟合分析的数据格式</li>
+        </ul>
+        
+        <h4>输出数据结构</h4>
+        <ul>
+            <li><strong>渠道维度：</strong>每个数据来源生成独立的留存率曲线</li>
+            <li><strong>时间维度：</strong>包含1-30天的留存率数据点</li>
+            <li><strong>数据格式：</strong>days数组存储天数，rates数组存储对应的留存率</li>
+            <li><strong>后续应用：</strong>为LT拟合分析提供标准化的输入数据</li>
         </ul>
     </div>
     """, unsafe_allow_html=True)
@@ -1282,49 +1461,36 @@ elif current_page == "留存率计算":
 elif current_page == "LT拟合分析":
     st.header("LT拟合分析")
     
-    # 功能说明
-    st.markdown('<div class="glass-card">', unsafe_allow_html=True)
-    st.subheader("功能说明")
-    st.markdown("""
-    此步骤使用数学模型拟合留存率曲线，计算用户生命周期(LT)：
-    
-    **拟合方法：**
-    - 幂函数拟合：y = a × x^b，适用于衰减型留存曲线
-    - 指数函数拟合：y = c × e^(d×x)，适用于快速衰减型曲线
-    - 分阶段计算：根据渠道特性采用不同的计算策略
-    - LT计算：基于拟合曲线计算用户生命周期值
-    """)
-    st.markdown('</div>', unsafe_allow_html=True)
-    
     if st.session_state.retention_data is None:
         show_dependency_warning("留存率计算")
     else:
         retention_data = st.session_state.retention_data
         
         st.markdown('<div class="glass-card">', unsafe_allow_html=True)
-        st.subheader("曲线拟合参数设置")
-        
-        st.info("系统将自动使用幂函数和指数函数进行拟合，并根据渠道类型选择最适合的分阶段策略")
+        st.subheader("分阶段拟合参数配置")
         
         col1, col2 = st.columns(2)
         with col1:
             lt_years = st.number_input(
-                "LT计算年数",
+                "LT计算年限",
                 min_value=1,
                 max_value=10,
                 value=5,
-                help="设置计算用户生命周期的年数范围"
+                help="设置计算用户生命周期的年数，影响第三阶段的计算范围"
             )
         
         with col2:
-            st.metric("数据来源", len(retention_data))
-            st.metric("拟合策略", "分阶段智能拟合")
+            st.metric("待分析渠道数", len(retention_data))
+            st.metric("拟合策略", "三阶段建模")
+        
+        # 算法说明
+        st.info("系统将采用三阶段分层建模：第一阶段(1-30天)使用幂函数拟合实际数据；第二阶段根据渠道类型延续幂函数预测；第三阶段使用指数函数建模长期衰减")
         
         st.markdown('</div>', unsafe_allow_html=True)
         
-        if st.button("开始拟合分析", type="primary", use_container_width=True):
-            with st.spinner("正在进行曲线拟合..."):
-                # 执行拟合分析
+        if st.button("开始LT拟合分析", type="primary", use_container_width=True):
+            with st.spinner("正在进行分阶段拟合计算..."):
+                # 执行LT拟合分析
                 lt_results = []
                 
                 for retention_result in retention_data:
@@ -1336,14 +1502,15 @@ elif current_page == "LT拟合分析":
                         'lt_value': lt_result['lt_value'],
                         'fit_success': lt_result['success'],
                         'fit_params': lt_result['fit_params'],
-                        'power_r2': lt_result['power_r2']
+                        'power_r2': lt_result['power_r2'],
+                        'model_used': lt_result['model_used']
                     })
                 
                 st.session_state.lt_results = lt_results
                 
-                st.success("拟合分析完成！")
+                st.success("LT拟合分析完成！")
                 
-                # 显示拟合结果
+                # 显示拟合结果概览
                 st.markdown('<div class="glass-card">', unsafe_allow_html=True)
                 st.subheader("拟合结果概览")
                 
@@ -1354,6 +1521,7 @@ elif current_page == "LT拟合分析":
                         '数据来源': result['data_source'],
                         'LT值': f"{result['lt_value']:.2f}",
                         '拟合状态': '成功' if result['fit_success'] else '失败',
+                        '拟合模型': result['model_used'],
                         'R²得分': f"{result['power_r2']:.4f}"
                     })
                 
@@ -1361,65 +1529,111 @@ elif current_page == "LT拟合分析":
                 st.dataframe(summary_df, use_container_width=True)
                 st.markdown('</div>', unsafe_allow_html=True)
                 
-                # 显示LT值对比图
+                # LT值对比可视化
                 st.markdown('<div class="glass-card">', unsafe_allow_html=True)
-                st.subheader("LT值对比")
+                st.subheader("LT值对比分析")
                 
                 if lt_results:
-                    sources = [r['data_source'] for r in lt_results]
-                    lt_values = [r['lt_value'] for r in lt_results]
+                    # 按LT值排序
+                    sorted_results = sorted(lt_results, key=lambda x: x['lt_value'])
+                    sources = [r['data_source'] for r in sorted_results]
+                    lt_values = [r['lt_value'] for r in sorted_results]
                     
-                    fig, ax = plt.subplots(figsize=(12, 8))
+                    fig, ax = plt.subplots(figsize=(14, 8))
                     
-                    colors = plt.cm.viridis(np.linspace(0, 1, len(sources)))
+                    # 使用蓝色渐变
+                    colors = plt.cm.Blues(np.linspace(0.4, 1, len(sources)))
                     bars = ax.bar(sources, lt_values, color=colors, alpha=0.8, 
-                                 edgecolor='white', linewidth=2)
+                                 edgecolor='#1e40af', linewidth=2)
                     
                     # 添加数值标签
                     for bar, value in zip(bars, lt_values):
                         height = bar.get_height()
-                        ax.text(bar.get_x() + bar.get_width()/2., height,
-                               f'{value:.1f}', ha='center', va='bottom', fontweight='bold')
+                        ax.text(bar.get_x() + bar.get_width()/2., height + height*0.01,
+                               f'{value:.1f}', ha='center', va='bottom', 
+                               fontweight='bold', color='#1e40af')
                     
                     ax.set_xlabel('数据来源', fontsize=12, fontweight='bold')
-                    ax.set_ylabel('LT值', fontsize=12, fontweight='bold')
-                    ax.set_title('各渠道LT值对比', fontsize=14, fontweight='bold')
+                    ax.set_ylabel('LT值 (天)', fontsize=12, fontweight='bold')
+                    ax.set_title(f'各渠道{lt_years}年LT值对比 (按数值从低到高排序)', fontsize=14, fontweight='bold')
                     ax.tick_params(axis='x', rotation=45)
-                    ax.grid(True, alpha=0.3, axis='y')
+                    ax.grid(True, alpha=0.3, axis='y', linestyle='--')
                     
+                    # 美化图表
                     ax.spines['top'].set_visible(False)
                     ax.spines['right'].set_visible(False)
+                    ax.spines['left'].set_color('#1e293b')
+                    ax.spines['bottom'].set_color('#1e293b')
                     
                     plt.tight_layout()
                     st.pyplot(fig)
                     plt.close()
                 
                 st.markdown('</div>', unsafe_allow_html=True)
+                
+                # 拟合参数详情
+                st.markdown('<div class="glass-card">', unsafe_allow_html=True)
+                st.subheader("拟合参数详情")
+                
+                for result in lt_results:
+                    if result['fit_success'] and result['fit_params']:
+                        with st.expander(f"{result['data_source']} - 拟合参数", expanded=False):
+                            col1, col2 = st.columns(2)
+                            
+                            with col1:
+                                st.markdown("### 幂函数参数 (第一、二阶段)")
+                                if 'power' in result['fit_params']:
+                                    params = result['fit_params']['power']
+                                    st.write(f"**a (系数):** {params['a']:.6e}")
+                                    st.write(f"**b (指数):** {params['b']:.6f}")
+                                    st.write(f"**R² 拟合度:** {result['power_r2']:.4f}")
+                            
+                            with col2:
+                                st.markdown("### 指数函数参数 (第三阶段)")
+                                if 'exponential' in result['fit_params']:
+                                    params = result['fit_params']['exponential']
+                                    st.write(f"**c (基数):** {params['c']:.6e}")
+                                    st.write(f"**d (衰减率):** {params['d']:.6f}")
+                                else:
+                                    st.write("使用幂函数延续预测")
+                
+                st.markdown('</div>', unsafe_allow_html=True)
     
     # 步骤说明
     st.markdown("""
     <div class="step-explanation">
-        <h4>LT拟合算法原理</h4>
+        <h4>分阶段LT拟合算法原理</h4>
         <ul>
-            <li><strong>分阶段策略：</strong>将用户生命周期分为三个阶段进行不同的数学建模</li>
-            <li><strong>第一阶段(1-30天)：</strong>使用幂函数拟合实际观测的留存数据</li>
-            <li><strong>第二阶段(30-X天)：</strong>根据渠道类型延续幂函数预测中期留存</li>
-            <li><strong>第三阶段(X天-终点)：</strong>使用指数函数建模长期衰减过程</li>
+            <li><strong>第一阶段 (1-30天)：</strong>使用幂函数 y = a × x^b 拟合实际观测的留存率数据，建立基础衰减模型</li>
+            <li><strong>第二阶段 (30-X天)：</strong>根据渠道类型设定不同的时间范围，延续第一阶段的幂函数进行中期预测</li>
+            <li><strong>第三阶段 (X天-终点)：</strong>使用指数函数 y = c × e^(d×x) 建模长期衰减过程，模拟用户自然流失</li>
+            <li><strong>LT总值计算：</strong>LT = 1 + Σ(第一阶段) + Σ(第二阶段) + Σ(第三阶段)</li>
         </ul>
         
-        <h4>渠道差异化策略</h4>
+        <h4>渠道差异化建模策略</h4>
         <ul>
-            <li><strong>华为渠道：</strong>第二阶段30-120天，第三阶段120-220天基准</li>
-            <li><strong>小米渠道：</strong>第二阶段30-190天，第三阶段190-290天基准</li>
-            <li><strong>OPPO/vivo渠道：</strong>第二阶段30-150/160天，第三阶段相应调整</li>
-            <li><strong>其他渠道：</strong>第二阶段30-100天，第三阶段100-200天基准</li>
+            <li><strong>华为渠道：</strong>第二阶段30-120天，第三阶段120-220天基准，适应华为用户的长期留存特征</li>
+            <li><strong>小米渠道：</strong>第二阶段30-190天，第三阶段190-290天基准，反映小米用户群体的粘性</li>
+            <li><strong>OPPO渠道：</strong>第二阶段30-160天，第三阶段160-260天基准</li>
+            <li><strong>vivo渠道：</strong>第二阶段30-150天，第三阶段150-250天基准</li>
+            <li><strong>iPhone渠道：</strong>第二阶段30-150天，第三阶段150-250天基准，考虑iOS用户行为</li>
+            <li><strong>其他渠道：</strong>第二阶段30-100天，第三阶段100-200天基准，采用保守策略</li>
         </ul>
         
-        <h4>数学模型</h4>
+        <h4>数学模型与参数含义</h4>
         <ul>
-            <li><strong>幂函数：</strong>y = a × x^b，其中a为初始系数，b为衰减指数</li>
-            <li><strong>指数函数：</strong>y = c × e^(d×x)，其中c为基准值，d为衰减率</li>
-            <li><strong>LT计算：</strong>LT = 1 + Σ(第一阶段) + Σ(第二阶段) + Σ(第三阶段)</li>
+            <li><strong>幂函数模型：</strong>y = a × x^b，其中a为初始留存强度，b为衰减速度（通常为负值）</li>
+            <li><strong>指数函数模型：</strong>y = c × e^(d×x)，其中c为转换基准值，d为长期衰减率</li>
+            <li><strong>拟合质量评估：</strong>使用R²决定系数评估第一阶段拟合效果，指导模型可靠性判断</li>
+            <li><strong>参数约束：</strong>对指数函数的d参数施加负值约束，确保长期衰减的合理性</li>
+        </ul>
+        
+        <h4>算法优势与适用性</h4>
+        <ul>
+            <li><strong>分阶段建模：</strong>避免单一函数在全生命周期范围内的拟合偏差</li>
+            <li><strong>渠道自适应：</strong>根据不同渠道的用户行为特征调整建模策略</li>
+            <li><strong>长期预测：</strong>结合短期实际数据和长期衰减理论，提高预测准确性</li>
+            <li><strong>鲁棒性设计：</strong>当某阶段拟合失败时，自动回退到备用策略</li>
         </ul>
     </div>
     """, unsafe_allow_html=True)
@@ -1427,31 +1641,17 @@ elif current_page == "LT拟合分析":
 elif current_page == "ARPU计算":
     st.header("ARPU计算")
     
-    # 功能说明
-    st.markdown('<div class="glass-card">', unsafe_allow_html=True)
-    st.subheader("功能说明")
-    st.markdown("""
-    此步骤设置或计算每个用户的平均收入价值(ARPU)：
-    
-    **支持方式：**
-    - 文件上传：上传包含ARPU数据的Excel文件
-    - 手动输入：为每个渠道手动设置ARPU值
-    - 自动计算：基于上传的付费数据自动计算平均值
-    - 渠道匹配：自动匹配各渠道对应的ARPU值
-    """)
-    st.markdown('</div>', unsafe_allow_html=True)
-    
     if st.session_state.lt_results is None:
         show_dependency_warning("LT拟合分析")
     
     st.markdown('<div class="glass-card">', unsafe_allow_html=True)
-    st.subheader("上传ARPU数据")
+    st.subheader("ARPU数据处理")
     
     # ARPU数据上传
     arpu_file = st.file_uploader(
-        "选择ARPU数据文件",
+        "选择ARPU数据文件 (Excel格式)",
         type=['xlsx', 'xls'],
-        help="上传包含用户付费数据的Excel文件"
+        help="上传包含各渠道用户平均收入数据的Excel文件"
     )
     
     if arpu_file:
@@ -1463,32 +1663,32 @@ elif current_page == "ARPU计算":
             st.subheader("数据预览")
             st.dataframe(arpu_df.head(10), use_container_width=True)
             
-            # 数据列选择
+            # 数据列选择与映射
             col1, col2 = st.columns(2)
             
             with col1:
-                st.subheader("数据列映射")
+                st.subheader("数据列映射配置")
                 
                 source_col = st.selectbox(
                     "数据来源列",
                     options=arpu_df.columns,
-                    help="选择标识数据来源的列"
+                    help="选择标识不同渠道或数据来源的列"
                 )
                 
                 arpu_col = st.selectbox(
                     "ARPU值列",
                     options=arpu_df.columns,
-                    help="选择包含ARPU值的列"
+                    help="选择包含ARPU数值的列"
                 )
                 
                 date_col = st.selectbox(
                     "日期列 (可选)",
                     options=['无'] + list(arpu_df.columns),
-                    help="如果有日期列，请选择"
+                    help="如果需要按时间维度分析，请选择日期列"
                 )
             
             with col2:
-                st.subheader("数据统计")
+                st.subheader("数据统计信息")
                 
                 if arpu_col in arpu_df.columns:
                     arpu_values = pd.to_numeric(arpu_df[arpu_col], errors='coerce')
@@ -1497,30 +1697,53 @@ elif current_page == "ARPU计算":
                     with col_a:
                         st.metric("平均ARPU", f"{arpu_values.mean():.2f}")
                         st.metric("最小值", f"{arpu_values.min():.2f}")
-                    with col_b:
                         st.metric("最大值", f"{arpu_values.max():.2f}")
-                        st.metric("有效记录", f"{arpu_values.notna().sum():,}")
+                    with col_b:
+                        st.metric("有效记录数", f"{arpu_values.notna().sum():,}")
+                        st.metric("缺失记录数", f"{arpu_values.isna().sum():,}")
+                        st.metric("标准差", f"{arpu_values.std():.2f}")
             
             # 处理ARPU数据
-            if st.button("保存ARPU数据", type="primary", use_container_width=True):
+            if st.button("处理并保存ARPU数据", type="primary", use_container_width=True):
                 try:
                     processed_arpu = arpu_df.copy()
-                    processed_arpu['data_source'] = processed_arpu[source_col]
+                    processed_arpu['data_source'] = processed_arpu[source_col].astype(str).str.strip()
                     processed_arpu['arpu_value'] = pd.to_numeric(processed_arpu[arpu_col], errors='coerce')
                     
                     if date_col != '无':
                         processed_arpu['date'] = processed_arpu[date_col]
                     
-                    # 按数据来源汇总ARPU
-                    arpu_summary = processed_arpu.groupby('data_source')['arpu_value'].mean().reset_index()
+                    # 过滤有效数据并按数据来源汇总
+                    valid_data = processed_arpu[processed_arpu['arpu_value'].notna() & (processed_arpu['arpu_value'] > 0)]
+                    arpu_summary = valid_data.groupby('data_source')['arpu_value'].agg(['mean', 'count']).reset_index()
+                    arpu_summary.columns = ['data_source', 'arpu_value', 'record_count']
                     
                     st.session_state.arpu_data = arpu_summary
                     
                     st.success("ARPU数据处理完成！")
                     
                     # 显示汇总结果
-                    st.subheader("ARPU汇总结果")
-                    st.dataframe(arpu_summary, use_container_width=True)
+                    st.subheader("ARPU数据汇总结果")
+                    
+                    # 格式化显示
+                    display_df = arpu_summary.copy()
+                    display_df['arpu_value'] = display_df['arpu_value'].round(2)
+                    display_df = display_df.rename(columns={
+                        'data_source': '数据来源',
+                        'arpu_value': 'ARPU均值',
+                        'record_count': '记录数量'
+                    })
+                    
+                    st.dataframe(display_df, use_container_width=True)
+                    
+                    # 显示统计信息
+                    col1, col2, col3 = st.columns(3)
+                    with col1:
+                        st.metric("成功处理渠道数", len(arpu_summary))
+                    with col2:
+                        st.metric("总有效记录数", arpu_summary['record_count'].sum())
+                    with col3:
+                        st.metric("整体平均ARPU", f"{arpu_summary['arpu_value'].mean():.2f}")
                     
                 except Exception as e:
                     st.error(f"ARPU数据处理失败：{str(e)}")
@@ -1529,35 +1752,51 @@ elif current_page == "ARPU计算":
             st.error(f"文件读取失败：{str(e)}")
     
     else:
-        st.info("请上传ARPU数据文件")
+        st.info("请上传ARPU数据文件，或使用下方的手动设置功能")
         
-        # 如果没有ARPU数据，提供手动输入选项
-        st.subheader("手动设置ARPU")
+        # 手动设置ARPU选项
+        st.subheader("手动设置ARPU值")
         
         if st.session_state.lt_results:
-            st.write("为每个数据来源设置ARPU值：")
+            st.markdown("为每个数据来源设置ARPU值：")
             
             arpu_inputs = {}
-            for result in st.session_state.lt_results:
+            
+            # 为每个LT结果创建ARPU输入框
+            col1, col2 = st.columns(2)
+            for i, result in enumerate(st.session_state.lt_results):
                 source = result['data_source']
-                arpu_value = st.number_input(
-                    f"{source} ARPU",
-                    min_value=0.0,
-                    value=10.0,
-                    step=0.01,
-                    format="%.2f"
-                )
-                arpu_inputs[source] = arpu_value
+                
+                with col1 if i % 2 == 0 else col2:
+                    arpu_value = st.number_input(
+                        f"{source}",
+                        min_value=0.0,
+                        value=10.0,
+                        step=0.01,
+                        format="%.2f",
+                        key=f"arpu_{source}",
+                        help=f"设置{source}的ARPU值"
+                    )
+                    arpu_inputs[source] = arpu_value
             
             if st.button("保存手动ARPU设置", type="primary", use_container_width=True):
                 arpu_df = pd.DataFrame([
-                    {'data_source': source, 'arpu_value': value} 
+                    {'data_source': source, 'arpu_value': value, 'record_count': 1} 
                     for source, value in arpu_inputs.items()
                 ])
                 
                 st.session_state.arpu_data = arpu_df
                 st.success("ARPU设置已保存！")
-                st.dataframe(arpu_df, use_container_width=True)
+                
+                # 显示保存的设置
+                display_df = arpu_df.copy()
+                display_df = display_df.rename(columns={
+                    'data_source': '数据来源',
+                    'arpu_value': 'ARPU值',
+                    'record_count': '设置方式'
+                })
+                display_df['设置方式'] = '手动设置'
+                st.dataframe(display_df[['数据来源', 'ARPU值', '设置方式']], use_container_width=True)
         
         else:
             st.info("请先完成LT拟合分析，然后再设置ARPU")
@@ -1567,41 +1806,42 @@ elif current_page == "ARPU计算":
     # 步骤说明
     st.markdown("""
     <div class="step-explanation">
-        <h4>ARPU计算要求</h4>
+        <h4>ARPU数据要求与格式</h4>
         <ul>
-            <li><strong>数据格式：</strong>Excel文件包含数据来源、ARPU值等关键字段</li>
-            <li><strong>数据来源列：</strong>标识不同渠道或用户群体的字段</li>
-            <li><strong>ARPU值列：</strong>包含具体收入数值的字段，支持自动类型转换</li>
-            <li><strong>日期列(可选)：</strong>如需按时间维度分析，可指定日期字段</li>
+            <li><strong>文件格式：</strong>支持Excel文件(.xlsx, .xls)，包含数据来源和ARPU值等关键字段</li>
+            <li><strong>数据来源列：</strong>用于标识不同渠道、用户群体或业务线的字段，应与LT分析中的数据来源保持一致</li>
+            <li><strong>ARPU值列：</strong>包含具体收入数值的字段，系统支持自动数据类型转换和异常值处理</li>
+            <li><strong>日期列(可选)：</strong>如需要进行时间序列分析或周期性ARPU计算，可指定日期字段</li>
         </ul>
         
-        <h4>计算原理</h4>
+        <h4>数据处理与计算逻辑</h4>
         <ul>
-            <li><strong>数据清洗：</strong>自动处理非数值型数据，转换为有效的数值格式</li>
-            <li><strong>分组聚合：</strong>按数据来源分组，计算每个渠道的平均ARPU值</li>
-            <li><strong>异常处理：</strong>过滤空值和异常值，确保计算结果的准确性</li>
-            <li><strong>手动补充：</strong>对于缺失ARPU数据的渠道，支持手动设置默认值</li>
+            <li><strong>数据清洗：</strong>自动识别并转换数值格式，过滤空值、负值和异常值</li>
+            <li><strong>分组聚合：</strong>按数据来源分组，计算每个渠道的平均ARPU值，处理多记录情况</li>
+            <li><strong>质量控制：</strong>统计有效记录数量，评估数据完整性和可靠性</li>
+            <li><strong>一致性检查：</strong>确保ARPU数据的渠道标识与LT分析结果匹配</li>
+        </ul>
+        
+        <h4>手动设置与文件上传的选择</h4>
+        <ul>
+            <li><strong>文件上传适用场景：</strong>有完整的历史ARPU数据，需要批量处理多个渠道</li>
+            <li><strong>手动设置适用场景：</strong>渠道数量较少，或需要基于业务经验设定ARPU基准值</li>
+            <li><strong>混合模式：</strong>可先上传部分数据，再手动补充缺失渠道的ARPU值</li>
+            <li><strong>数据优先级：</strong>文件上传的数据优先于手动设置，避免重复计算</li>
+        </ul>
+        
+        <h4>ARPU数据的业务含义</h4>
+        <ul>
+            <li><strong>定义：</strong>Average Revenue Per User，衡量每个用户平均贡献的收入价值</li>
+            <li><strong>时间周期：</strong>通常以月为单位计算，也可根据业务需要调整为季度或年度</li>
+            <li><strong>计算范围：</strong>可包含广告收入、付费收入、增值服务收入等多种收入来源</li>
+            <li><strong>渠道差异：</strong>不同获客渠道的用户质量和付费意愿存在显著差异，需要差异化分析</li>
         </ul>
     </div>
     """, unsafe_allow_html=True)
 
 elif current_page == "LTV结果报告":
     st.header("LTV结果报告")
-    
-    # 功能说明
-    st.markdown('<div class="glass-card">', unsafe_allow_html=True)
-    st.subheader("功能说明")
-    st.markdown("""
-    此步骤生成最终的LTV分析报告：
-    
-    **报告内容：**
-    - LTV计算：LTV = LT × ARPU
-    - 对比分析：各渠道LTV值对比
-    - 可视化图表：LTV条形图、LT vs ARPU散点图
-    - 详细报告：包含所有计算参数的完整报告
-    - 结果导出：支持CSV和TXT格式导出
-    """)
-    st.markdown('</div>', unsafe_allow_html=True)
     
     # 检查必要数据是否存在
     if st.session_state.lt_results is None:
@@ -1626,6 +1866,7 @@ elif current_page == "LTV结果报告":
                 arpu_value = arpu_row.iloc[0]['arpu_value']
             else:
                 arpu_value = 0
+                st.warning(f"渠道 '{source}' 未找到对应的ARPU数据，将使用0作为默认值")
             
             # 计算LTV
             ltv_value = lt_value * arpu_value
@@ -1635,64 +1876,67 @@ elif current_page == "LTV结果报告":
                 'lt_value': lt_value,
                 'arpu_value': arpu_value,
                 'ltv_value': ltv_value,
-                'fit_success': lt_result['fit_success']
+                'fit_success': lt_result['fit_success'],
+                'model_used': lt_result.get('model_used', 'unknown')
             })
         
         st.session_state.ltv_results = ltv_results
         
-        # 显示LTV结果
+        # 显示LTV计算结果
         st.markdown('<div class="glass-card">', unsafe_allow_html=True)
-        st.subheader("LTV计算结果")
+        st.subheader("LTV综合计算结果")
         
         # 创建结果表格
         ltv_df = pd.DataFrame(ltv_results)
-        ltv_df = ltv_df.rename(columns={
+        display_df = ltv_df.copy()
+        display_df = display_df.rename(columns={
             'data_source': '数据来源',
             'lt_value': 'LT值',
             'arpu_value': 'ARPU',
             'ltv_value': 'LTV',
-            'fit_success': '拟合状态'
+            'fit_success': '拟合状态',
+            'model_used': '使用模型'
         })
         
         # 格式化显示
-        ltv_df['LT值'] = ltv_df['LT值'].round(2)
-        ltv_df['ARPU'] = ltv_df['ARPU'].round(2)
-        ltv_df['LTV'] = ltv_df['LTV'].round(2)
-        ltv_df['拟合状态'] = ltv_df['拟合状态'].map({True: '成功', False: '失败'})
+        display_df['LT值'] = display_df['LT值'].round(2)
+        display_df['ARPU'] = display_df['ARPU'].round(2)
+        display_df['LTV'] = display_df['LTV'].round(2)
+        display_df['拟合状态'] = display_df['拟合状态'].map({True: '成功', False: '失败'})
         
-        st.dataframe(ltv_df, use_container_width=True)
+        st.dataframe(display_df, use_container_width=True)
         st.markdown('</div>', unsafe_allow_html=True)
         
         # 关键指标展示
         st.markdown('<div class="glass-card">', unsafe_allow_html=True)
-        st.subheader("关键指标")
+        st.subheader("核心业务指标")
         
         col1, col2, col3, col4 = st.columns(4)
         
         with col1:
-            avg_ltv = ltv_df['LTV'].mean()
+            avg_ltv = display_df['LTV'].mean()
             st.markdown('<div class="metric-card">', unsafe_allow_html=True)
             st.markdown(f'<div class="metric-value">{avg_ltv:.2f}</div>', unsafe_allow_html=True)
             st.markdown('<div class="metric-label">平均LTV</div>', unsafe_allow_html=True)
             st.markdown('</div>', unsafe_allow_html=True)
         
         with col2:
-            max_ltv = ltv_df['LTV'].max()
-            best_source = ltv_df.loc[ltv_df['LTV'].idxmax(), '数据来源']
+            max_ltv = display_df['LTV'].max()
+            best_source = display_df.loc[display_df['LTV'].idxmax(), '数据来源']
             st.markdown('<div class="metric-card">', unsafe_allow_html=True)
             st.markdown(f'<div class="metric-value">{max_ltv:.2f}</div>', unsafe_allow_html=True)
             st.markdown(f'<div class="metric-label">最高LTV<br>({best_source})</div>', unsafe_allow_html=True)
             st.markdown('</div>', unsafe_allow_html=True)
         
         with col3:
-            avg_lt = ltv_df['LT值'].mean()
+            avg_lt = display_df['LT值'].mean()
             st.markdown('<div class="metric-card">', unsafe_allow_html=True)
             st.markdown(f'<div class="metric-value">{avg_lt:.2f}</div>', unsafe_allow_html=True)
-            st.markdown('<div class="metric-label">平均LT</div>', unsafe_allow_html=True)
+            st.markdown('<div class="metric-label">平均LT值</div>', unsafe_allow_html=True)
             st.markdown('</div>', unsafe_allow_html=True)
         
         with col4:
-            avg_arpu = ltv_df['ARPU'].mean()
+            avg_arpu = display_df['ARPU'].mean()
             st.markdown('<div class="metric-card">', unsafe_allow_html=True)
             st.markdown(f'<div class="metric-value">{avg_arpu:.2f}</div>', unsafe_allow_html=True)
             st.markdown('<div class="metric-label">平均ARPU</div>', unsafe_allow_html=True)
@@ -1700,63 +1944,76 @@ elif current_page == "LTV结果报告":
         
         st.markdown('</div>', unsafe_allow_html=True)
         
-        # LTV对比图表
+        # LTV对比分析可视化
         st.markdown('<div class="glass-card">', unsafe_allow_html=True)
         st.subheader("LTV对比分析")
         
         col1, col2 = st.columns(2)
         
         with col1:
+            st.markdown("### 各渠道LTV排名")
             # LTV条形图
-            if not ltv_df.empty:
+            if not display_df.empty:
+                # 按LTV值排序
+                sorted_df = display_df.sort_values('LTV', ascending=True)
+                
                 fig, ax = plt.subplots(figsize=(12, 8))
                 
-                colors = plt.cm.viridis(np.linspace(0, 1, len(ltv_df)))
-                bars = ax.bar(ltv_df['数据来源'], ltv_df['LTV'], color=colors, alpha=0.8, 
-                             edgecolor='white', linewidth=2)
+                # 使用蓝色渐变
+                colors = plt.cm.Blues(np.linspace(0.4, 1, len(sorted_df)))
+                bars = ax.barh(sorted_df['数据来源'], sorted_df['LTV'], color=colors, alpha=0.8, 
+                              edgecolor='#1e40af', linewidth=1.5)
                 
-                ax.set_xlabel('数据来源', fontsize=12, fontweight='bold')
-                ax.set_ylabel('LTV值', fontsize=12, fontweight='bold')
-                ax.set_title('各渠道LTV对比', fontsize=14, fontweight='bold')
-                ax.tick_params(axis='x', rotation=45)
+                # 添加数值标签
+                for bar, value in zip(bars, sorted_df['LTV']):
+                    width = bar.get_width()
+                    ax.text(width + width*0.01, bar.get_y() + bar.get_height()/2,
+                           f'{value:.1f}', ha='left', va='center', 
+                           fontweight='bold', color='#1e40af')
                 
-                # 在条形图上显示数值
-                for bar, value in zip(bars, ltv_df['LTV']):
-                    height = bar.get_height()
-                    ax.text(bar.get_x() + bar.get_width()/2., height + height*0.01,
-                           f'{value:.1f}', ha='center', va='bottom', fontweight='bold')
+                ax.set_xlabel('LTV值', fontsize=12, fontweight='bold')
+                ax.set_ylabel('数据来源', fontsize=12, fontweight='bold')
+                ax.set_title('各渠道LTV值对比', fontsize=14, fontweight='bold')
+                ax.grid(True, alpha=0.3, axis='x', linestyle='--')
                 
+                # 美化图表
                 ax.spines['top'].set_visible(False)
                 ax.spines['right'].set_visible(False)
-                ax.grid(True, alpha=0.3, linestyle='--', axis='y')
+                ax.spines['left'].set_color('#1e293b')
+                ax.spines['bottom'].set_color('#1e293b')
                 
                 plt.tight_layout()
                 st.pyplot(fig)
                 plt.close()
         
         with col2:
+            st.markdown("### LT与ARPU关系分析")
             # LT vs ARPU散点图
-            if not ltv_df.empty:
+            if not display_df.empty:
                 fig, ax = plt.subplots(figsize=(12, 8))
-                scatter = ax.scatter(ltv_df['LT值'], ltv_df['ARPU'], 
-                                   c=ltv_df['LTV'], s=200, alpha=0.8, cmap='viridis',
-                                   edgecolors='white', linewidth=2)
+                scatter = ax.scatter(display_df['LT值'], display_df['ARPU'], 
+                                   c=display_df['LTV'], s=200, alpha=0.8, cmap='Blues',
+                                   edgecolors='#1e40af', linewidth=2)
                 
                 # 添加数据源标签
-                for i, source in enumerate(ltv_df['数据来源']):
-                    ax.annotate(source, (ltv_df['LT值'].iloc[i], ltv_df['ARPU'].iloc[i]),
-                               xytext=(5, 5), textcoords='offset points', fontsize=10, fontweight='bold')
+                for i, source in enumerate(display_df['数据来源']):
+                    ax.annotate(source, (display_df['LT值'].iloc[i], display_df['ARPU'].iloc[i]),
+                               xytext=(5, 5), textcoords='offset points', 
+                               fontsize=9, fontweight='bold', color='#1e40af')
                 
-                ax.set_xlabel('LT值', fontsize=12, fontweight='bold')
+                ax.set_xlabel('LT值 (天)', fontsize=12, fontweight='bold')
                 ax.set_ylabel('ARPU', fontsize=12, fontweight='bold')
-                ax.set_title('LT vs ARPU 关系图', fontsize=14, fontweight='bold')
+                ax.set_title('LT值与ARPU关系图', fontsize=14, fontweight='bold')
                 
                 # 添加颜色条
                 cbar = plt.colorbar(scatter)
                 cbar.set_label('LTV值', fontsize=12, fontweight='bold')
                 
+                # 美化图表
                 ax.spines['top'].set_visible(False)
                 ax.spines['right'].set_visible(False)
+                ax.spines['left'].set_color('#1e293b')
+                ax.spines['bottom'].set_color('#1e293b')
                 ax.grid(True, alpha=0.3, linestyle='--')
                 
                 plt.tight_layout()
@@ -1765,56 +2022,76 @@ elif current_page == "LTV结果报告":
         
         st.markdown('</div>', unsafe_allow_html=True)
         
-        # 导出功能
+        # 数据导出功能
         st.markdown('<div class="glass-card">', unsafe_allow_html=True)
-        st.subheader("结果导出")
+        st.subheader("分析结果导出")
         
         col1, col2 = st.columns(2)
         
         with col1:
-            export_df = ltv_df.copy()
+            # CSV导出
+            export_df = display_df.copy()
             csv_data = export_df.to_csv(index=False, encoding='utf-8-sig')
             
             st.download_button(
-                label="下载LTV结果 (CSV)",
+                label="下载LTV分析结果 (CSV)",
                 data=csv_data,
-                file_name=f"LTV_Results_{datetime.datetime.now().strftime('%Y%m%d_%H%M')}.csv",
+                file_name=f"LTV_Analysis_Results_{datetime.datetime.now().strftime('%Y%m%d_%H%M')}.csv",
                 mime="text/csv",
                 use_container_width=True
             )
         
         with col2:
-            # 创建详细报告
+            # 详细报告导出
             report_text = f"""
-LTV分析报告
-=================================
+LTV用户生命周期价值分析报告
+===========================================
 生成时间: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
 
-总体指标
----------------------------------
-参与分析的数据源数量: {len(ltv_df)}
-平均LTV: {ltv_df['LTV'].mean():.2f}
-最高LTV: {ltv_df['LTV'].max():.2f} ({ltv_df.loc[ltv_df['LTV'].idxmax(), '数据来源']})
-平均LT: {ltv_df['LT值'].mean():.2f}
-平均ARPU: {ltv_df['ARPU'].mean():.2f}
+执行摘要
+-----------
+本报告基于分阶段数学建模方法，对 {len(display_df)} 个数据来源进行了用户生命周期价值分析。
 
-详细结果
----------------------------------
-"""
+核心指标汇总
+-----------
+• 参与分析的渠道数量: {len(display_df)}
+• 平均LTV: {display_df['LTV'].mean():.2f}
+• 最高LTV: {display_df['LTV'].max():.2f} ({display_df.loc[display_df['LTV'].idxmax(), '数据来源']})
+• 最低LTV: {display_df['LTV'].min():.2f} ({display_df.loc[display_df['LTV'].idxmin(), '数据来源']})
+• 平均LT值: {display_df['LT值'].mean():.2f} 天
+• 平均ARPU: {display_df['ARPU'].mean():.2f}
+
+各渠道详细结果
+-----------"""
             
-            for _, row in ltv_df.iterrows():
+            for _, row in display_df.iterrows():
                 report_text += f"""
 {row['数据来源']}:
-  LT值: {row['LT值']:.2f}
-  ARPU: {row['ARPU']:.2f}
-  LTV: {row['LTV']:.2f}
-  拟合状态: {row['拟合状态']}
+  • LT值: {row['LT值']:.2f} 天
+  • ARPU: {row['ARPU']:.2f}
+  • LTV: {row['LTV']:.2f}
+  • 拟合状态: {row['拟合状态']}
+  • 使用模型: {row['使用模型']}
+"""
+            
+            report_text += f"""
+
+分析方法说明
+-----------
+本分析采用三阶段分层建模方法：
+1. 第一阶段(1-30天): 幂函数拟合实际留存数据
+2. 第二阶段: 根据渠道类型延续幂函数预测
+3. 第三阶段: 指数函数建模长期衰减
+
+计算公式: LTV = LT × ARPU
+
+报告生成: LTV智能分析平台 v2.0
 """
             
             st.download_button(
-                label="下载详细报告 (TXT)",
+                label="下载详细分析报告 (TXT)",
                 data=report_text,
-                file_name=f"LTV_Report_{datetime.datetime.now().strftime('%Y%m%d_%H%M')}.txt",
+                file_name=f"LTV_Detailed_Report_{datetime.datetime.now().strftime('%Y%m%d_%H%M')}.txt",
                 mime="text/plain",
                 use_container_width=True
             )
@@ -1824,20 +2101,36 @@ LTV分析报告
     # 步骤说明
     st.markdown("""
     <div class="step-explanation">
-        <h4>LTV计算公式</h4>
+        <h4>LTV计算公式与业务含义</h4>
         <ul>
-            <li><strong>基础公式：</strong>LTV = LT × ARPU</li>
-            <li><strong>LT来源：</strong>通过数学拟合计算得到的用户生命周期天数</li>
-            <li><strong>ARPU来源：</strong>用户上传或手动设置的平均每用户收入</li>
-            <li><strong>结果意义：</strong>表示每个新增用户在整个生命周期内的预期收入价值</li>
+            <li><strong>基础公式：</strong>LTV = LT × ARPU，即用户生命周期价值等于生命周期天数乘以平均每用户收入</li>
+            <li><strong>LT来源：</strong>通过三阶段数学拟合得到的用户生命周期预测值，单位为天</li>
+            <li><strong>ARPU来源：</strong>基于历史数据计算或业务设定的平均每用户收入，反映用户价值</li>
+            <li><strong>业务意义：</strong>LTV表示获取一个新用户在整个生命周期内预期能够产生的总收入价值</li>
         </ul>
         
-        <h4>分析维度</h4>
+        <h4>LTV分析的关键应用场景</h4>
         <ul>
-            <li><strong>渠道对比：</strong>识别最具价值的用户获取渠道</li>
-            <li><strong>LT vs ARPU：</strong>分析用户留存和付费能力的关系</li>
-            <li><strong>投入产出：</strong>为渠道投放预算分配提供数据支持</li>
-            <li><strong>趋势监控：</strong>跟踪不同时期的LTV变化趋势</li>
+            <li><strong>渠道价值评估：</strong>识别最具价值的用户获取渠道，优化营销预算分配</li>
+            <li><strong>获客成本优化：</strong>将LTV与CAC(客户获取成本)对比，确保投入产出的合理性</li>
+            <li><strong>用户分群策略：</strong>基于LTV差异制定差异化的用户运营和产品策略</li>
+            <li><strong>商业模式验证：</strong>评估现有商业模式的可持续性和增长潜力</li>
+        </ul>
+        
+        <h4>LT与ARPU的关系解读</h4>
+        <ul>
+            <li><strong>高LT高ARPU：</strong>理想渠道，用户既留存时间长又付费能力强</li>
+            <li><strong>高LT低ARPU：</strong>潜力渠道，可通过提升变现能力进一步优化</li>
+            <li><strong>低LT高ARPU：</strong>短期价值渠道，需要关注用户留存优化</li>
+            <li><strong>低LT低ARPU：</strong>需要重点优化或考虑减少投入的渠道</li>
+        </ul>
+        
+        <h4>结果应用建议</h4>
+        <ul>
+            <li><strong>定期更新：</strong>建议每季度更新一次LTV分析，跟踪趋势变化</li>
+            <li><strong>细分分析：</strong>可按用户属性、地域、时间等维度进一步细分分析</li>
+            <li><strong>预测校准：</strong>定期将预测结果与实际表现对比，校准模型参数</li>
+            <li><strong>决策支持：</strong>将LTV分析结果纳入营销决策、产品规划和投资评估流程</li>
         </ul>
     </div>
     """, unsafe_allow_html=True)
@@ -1847,12 +2140,13 @@ with st.sidebar:
     st.markdown("---")
     st.markdown("""
     <div class="nav-container">
-        <h4 style="text-align: center; color: #495057;">使用提示</h4>
+        <h4 style="text-align: center; color: #495057;">使用指南</h4>
         <p style="font-size: 0.9rem; color: #6c757d; text-align: center;">
-        您可以点击任意步骤直接跳转查看功能，系统会自动提示依赖关系。
+        点击左侧步骤可直接跳转，系统会自动检查依赖关系并提供相应提示。
         </p>
         <p style="font-size: 0.8rem; color: #adb5bd; text-align: center;">
-        Enhanced Analytics Platform v2.0
+        LTV智能分析平台 v2.0<br>
+        基于分阶段数学建模
         </p>
     </div>
     """, unsafe_allow_html=True)
