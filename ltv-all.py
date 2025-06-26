@@ -25,7 +25,6 @@ plt.rcParams['axes.unicode_minus'] = False
 # 设置页面配置
 st.set_page_config(
     page_title="LTV Analytics Platform",
-    page_icon="📊",
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -34,9 +33,9 @@ st.set_page_config(
 st.markdown("""
 <style>
     .main-header {
-        padding: 0.5rem 0rem 1rem 0rem;
+        padding: 0rem 0rem 0.5rem 0rem;
         border-bottom: 2px solid #f0f2f6;
-        margin-bottom: 1rem;
+        margin-bottom: 0.5rem;
     }
     .metric-container {
         background-color: #f8f9fa;
@@ -82,6 +81,15 @@ st.markdown("""
     }
     .compact-section {
         margin-top: 0.5rem;
+        margin-bottom: 0.5rem;
+    }
+    /* 减少页面顶部间距 */
+    .block-container {
+        padding-top: 1rem;
+    }
+    /* 减少标题间距 */
+    .element-container h1 {
+        margin-top: 0rem;
         margin-bottom: 0.5rem;
     }
 </style>
@@ -182,7 +190,7 @@ def get_default_target_month():
 # 主标题
 st.markdown('<div class="main-header">', unsafe_allow_html=True)
 st.title("LTV Analytics Platform")
-st.markdown("**用户生命周期价值分析系统**")
+st.markdown("用户生命周期价值分析系统")
 st.markdown('</div>', unsafe_allow_html=True)
 
 # 侧边栏导航
@@ -687,29 +695,49 @@ def calculate_lt_values(fitting_results, max_days=365):
 if page == "数据上传与汇总":
     st.header("数据上传与汇总")
     
-    # 显示默认渠道映射状态
-    with st.expander("渠道映射配置", expanded=False):
+    # 渠道映射配置 - 始终显示当前状态
+    with st.expander("渠道映射配置 (当前使用: 默认映射表)", expanded=False):
         st.markdown("**当前渠道映射状态:**")
         
         col1, col2 = st.columns([1, 2])
         with col1:
             if st.session_state.channel_mapping:
                 st.success(f"已配置 {len(st.session_state.channel_mapping)} 个渠道映射")
-                st.text("使用默认渠道映射表")
+                st.info("正在使用: 默认渠道映射表")
             else:
                 st.warning("未配置渠道映射")
         
         with col2:
             # 显示部分映射示例
             if st.session_state.channel_mapping:
-                sample_items = list(st.session_state.channel_mapping.items())[:5]
-                for pid, channel in sample_items:
-                    st.text(f"{pid} → {channel}")
-                if len(st.session_state.channel_mapping) > 5:
-                    st.text(f"... 还有 {len(st.session_state.channel_mapping) - 5} 个映射")
+                st.markdown("**部分渠道映射示例:**")
+                sample_items = list(st.session_state.channel_mapping.items())[:8]
+                for i in range(0, len(sample_items), 2):
+                    col_a, col_b = st.columns(2)
+                    col_a.text(f"{sample_items[i][0]} → {sample_items[i][1]}")
+                    if i + 1 < len(sample_items):
+                        col_b.text(f"{sample_items[i+1][0]} → {sample_items[i+1][1]}")
+                
+                if len(st.session_state.channel_mapping) > 8:
+                    st.text(f"... 还有 {len(st.session_state.channel_mapping) - 8} 个映射")
+        
+        # 显示完整的默认映射表
+        if st.button("查看完整默认映射表"):
+            st.markdown("**完整的默认渠道映射表:**")
+            
+            # 按渠道名分组显示
+            mapping_by_channel = {}
+            for pid, channel in st.session_state.channel_mapping.items():
+                if channel not in mapping_by_channel:
+                    mapping_by_channel[channel] = []
+                mapping_by_channel[channel].append(pid)
+            
+            for channel, pids in mapping_by_channel.items():
+                st.markdown(f"**{channel}**: {', '.join(pids)}")
         
         # 自定义渠道映射文件上传
         st.markdown("**上传自定义渠道映射表 (可选):**")
+        st.markdown("*如不上传文件，将继续使用上述默认映射表*")
         channel_file = st.file_uploader(
             "选择渠道映射文件",
             type=['xlsx', 'xls'],
