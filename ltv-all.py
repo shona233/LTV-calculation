@@ -13,6 +13,7 @@ import matplotlib as mpl
 import re
 from matplotlib.font_manager import FontProperties
 import seaborn as sns
+from scipy.optimize import curve_fit
 
 # 忽略警告
 warnings.filterwarnings('ignore', category=UserWarning, module='openpyxl.styles.stylesheet')
@@ -620,106 +621,19 @@ def parse_channel_mapping(channel_df):
     
     return pid_to_channel
 
-# 拟合计算功能（用numpy替代scipy）
-def numpy_curve_fit_power(x, y, max_iter=1000, tolerance=1e-8):
-    """
-    使用numpy实现幂函数拟合：y = a * x^b
-    通过对数线性回归：log(y) = log(a) + b*log(x)
-    """
-    try:
-        # 过滤掉非正数据
-        valid_mask = (x > 0) & (y > 0) & np.isfinite(x) & np.isfinite(y)
-        if np.sum(valid_mask) < 2:
-            return [1.0, -0.5], True  # 默认参数
-        
-        x_valid = x[valid_mask]
-        y_valid = y[valid_mask]
-        
-        # 对数变换
-        log_x = np.log(x_valid)
-        log_y = np.log(y_valid)
-        
-        # 线性回归: log_y = log_a + b * log_x
-        # 构建设计矩阵
-        X = np.column_stack([np.ones(len(log_x)), log_x])
-        
-        # 最小二乘解
-        coeffs = np.linalg.lstsq(X, log_y, rcond=None)[0]
-        log_a, b = coeffs
-        a = np.exp(log_a)
-        
-        return [a, b], True
-        
-    except Exception as e:
-        print(f"幂函数拟合失败: {e}")
-        return [1.0, -0.5], False
+# ======= 使用第二段代码的拟合和可视化逻辑 =======
 
-def numpy_curve_fit_exponential(x, y, initial_c=None, initial_d=-0.001, max_iter=1000):
-    """
-    使用numpy实现指数函数拟合：y = c * exp(d * x)
-    通过对数线性回归：log(y) = log(c) + d*x
-    """
-    try:
-        # 过滤掉非正数据
-        valid_mask = (y > 0) & np.isfinite(x) & np.isfinite(y)
-        if np.sum(valid_mask) < 2:
-            return [initial_c or 1.0, initial_d], True
-        
-        x_valid = x[valid_mask]
-        y_valid = y[valid_mask]
-        
-        # 对数变换
-        log_y = np.log(y_valid)
-        
-        # 线性回归: log_y = log_c + d * x
-        # 构建设计矩阵
-        X = np.column_stack([np.ones(len(x_valid)), x_valid])
-        
-        # 最小二乘解
-        coeffs = np.linalg.lstsq(X, log_y, rcond=None)[0]
-        log_c, d = coeffs
-        c = np.exp(log_c)
-        
-        # 检查d是否为负数（指数衰减）
-        if d > 0:
-            d = -abs(d)  # 强制为负数，确保衰减
-        
-        return [c, d], True
-        
-    except Exception as e:
-        print(f"指数函数拟合失败: {e}")
-        return [initial_c or 1.0, initial_d], False
+# 定义幂函数与指数函数
+def power_function(x, a, b):
+    """幂函数：y = a * x^b"""
+    return a * np.power(x, b)
 
-def calculate_r_squared(y_true, y_pred):
-    """计算R²值"""
-    try:
-        # 过滤掉无效值
-        valid_mask = np.isfinite(y_true) & np.isfinite(y_pred)
-        if np.sum(valid_mask) < 2:
-            return 0.0
-        
-        y_true_valid = y_true[valid_mask]
-        y_pred_valid = y_pred[valid_mask]
-        
-        # 计算总平方和
-        ss_tot = np.sum((y_true_valid - np.mean(y_true_valid)) ** 2)
-        
-        # 计算残差平方和
-        ss_res = np.sum((y_true_valid - y_pred_valid) ** 2)
-        
-        # 计算R²
-        if ss_tot == 0:
-            return 1.0 if ss_res == 0 else 0.0
-        
-        r_squared = 1 - (ss_res / ss_tot)
-        return max(0.0, min(1.0, r_squared))  # 确保在[0,1]范围内
-        
-    except Exception as e:
-        print(f"计算R²失败: {e}")
-        return 0.0
+def exponential_function(x, c, d):
+    """指数函数：y = c * exp(d * x)"""
+    return c * np.exp(d * x)
 
 def calculate_retention_rates(df):
-    """计算留存率数据"""
+    """计算留存率数据 - 改进版"""
     retention_results = []
     
     # 获取数据来源列表
@@ -780,8 +694,8 @@ def calculate_retention_rates(df):
     
     return retention_results
 
-def fit_retention_curves(retention_results):
-    """对留存率进行曲线拟合"""
+def fit_retention_curves_advanced(retention_results):
+    """使用第二段代码的高级拟合逻辑"""
     fitting_results = []
     
     for result in retention_results:
@@ -807,7 +721,8 @@ def fit_retention_curves(retention_results):
                 'exp_r2': 0.0,
                 'best_model': 'power',
                 'days': days,
-                'rates': rates
+                'rates': rates,
+                'fit_success': False
             })
             continue
         
@@ -815,90 +730,265 @@ def fit_retention_curves(retention_results):
         rates_array = np.array(rates)
         
         # 幂函数拟合
-        power_params, power_success = numpy_curve_fit_power(days_array, rates_array)
-        if power_success:
-            power_pred = power_params[0] * (days_array ** power_params[1])
-            power_r2 = calculate_r_squared(rates_array, power_pred)
-        else:
+        try:
+            popt_power, _ = curve_fit(power_function, days_array, rates_array)
+            power_pred = power_function(days_array, *popt_power)
+            power_r2 = 1 - np.sum((rates_array - power_pred) ** 2) / np.sum((rates_array - np.mean(rates_array)) ** 2)
+            power_success = True
+        except Exception as e:
+            st.warning(f"幂函数拟合失败 {source}: {str(e)}")
+            popt_power = [1.0, -0.5]
             power_r2 = 0.0
+            power_success = False
         
         # 指数函数拟合
-        exp_params, exp_success = numpy_curve_fit_exponential(days_array, rates_array)
-        if exp_success:
-            exp_pred = exp_params[0] * np.exp(exp_params[1] * days_array)
-            exp_r2 = calculate_r_squared(rates_array, exp_pred)
-        else:
+        try:
+            initial_c = rates_array[0]
+            initial_d = -0.001
+            popt_exp, _ = curve_fit(
+                exponential_function,
+                days_array,
+                rates_array,
+                p0=[initial_c, initial_d],
+                bounds=([0, -np.inf], [np.inf, 0])  # 限制 d < 0
+            )
+            exp_pred = exponential_function(days_array, *popt_exp)
+            exp_r2 = 1 - np.sum((rates_array - exp_pred) ** 2) / np.sum((rates_array - np.mean(rates_array)) ** 2)
+            exp_success = True
+        except Exception as e:
+            st.warning(f"指数函数拟合失败 {source}: {str(e)}")
+            popt_exp = [1.0, -0.1]
             exp_r2 = 0.0
+            exp_success = False
         
         # 选择最佳模型
         best_model = 'power' if power_r2 >= exp_r2 else 'exponential'
         
         fitting_results.append({
             'data_source': source,
-            'power_params': power_params,
-            'power_r2': power_r2,
-            'exp_params': exp_params,
-            'exp_r2': exp_r2,
+            'power_params': popt_power,
+            'power_r2': max(0, min(1, power_r2)),
+            'exp_params': popt_exp,
+            'exp_r2': max(0, min(1, exp_r2)),
             'best_model': best_model,
             'days': days,
-            'rates': rates
+            'rates': rates,
+            'fit_success': power_success or exp_success
         })
     
     return fitting_results
 
-def calculate_lt_values(fitting_results, max_days=365):
-    """计算LT值"""
+def calculate_lt_values_advanced(fitting_results, max_days=365):
+    """使用改进的LT计算方法"""
     lt_results = []
     
     for result in fitting_results:
         source = result['data_source']
         best_model = result['best_model']
         
-        if best_model == 'power':
-            params = result['power_params']
-            a, b = params
-            
-            # 幂函数积分：∫(a * x^b)dx from 1 to max_days
-            if b != -1:
-                lt_value = (a / (b + 1)) * (max_days**(b + 1) - 1)
-            else:
-                # 当b=-1时，积分是对数函数
-                lt_value = a * np.log(max_days)
+        if not result['fit_success']:
+            # 拟合失败，使用默认值
+            lt_value = 30.0  # 默认LT值
         else:
-            params = result['exp_params']
-            c, d = params
-            
-            # 指数函数积分：∫(c * e^(d*x))dx from 1 to max_days
-            if d != 0:
-                lt_value = (c / d) * (np.exp(d * max_days) - np.exp(d))
-            else:
-                lt_value = c * (max_days - 1)
+            if best_model == 'power':
+                params = result['power_params']
+                a, b = params
+                
+                # 分阶段计算LT
+                # 第一阶段：1-30天（使用拟合参数）
+                days_stage1 = np.arange(1, 31)
+                rates_stage1 = power_function(days_stage1, a, b)
+                lt_stage1 = np.sum(rates_stage1)
+                
+                # 第二阶段：31-120天
+                days_stage2 = np.arange(31, 121)
+                rates_stage2 = power_function(days_stage2, a, b)
+                lt_stage2 = np.sum(rates_stage2)
+                
+                # 第三阶段：121天到max_days（指数衰减）
+                if max_days > 120:
+                    days_stage3 = np.arange(121, max_days + 1)
+                    # 使用指数函数进行长期预测
+                    try:
+                        # 基于120天的留存率开始指数衰减
+                        base_rate = power_function(120, a, b)
+                        decay_rate = -0.01  # 衰减率
+                        rates_stage3 = base_rate * np.exp(decay_rate * (days_stage3 - 120))
+                        lt_stage3 = np.sum(rates_stage3)
+                    except:
+                        lt_stage3 = 0
+                else:
+                    lt_stage3 = 0
+                
+                lt_value = 1.0 + lt_stage1 + lt_stage2 + lt_stage3
+                
+            else:  # exponential
+                params = result['exp_params']
+                c, d = params
+                
+                # 指数函数积分
+                if d != 0:
+                    lt_value = 1.0 + (c / d) * (np.exp(d * max_days) - np.exp(d))
+                else:
+                    lt_value = 1.0 + c * (max_days - 1)
         
         # 确保LT值为正数且合理
-        lt_value = max(0, min(lt_value, max_days))
+        lt_value = max(1.0, min(lt_value, max_days))
         
         lt_results.append({
             'data_source': source,
             'lt_value': lt_value,
             'model_used': best_model,
             'model_params': result[f'{best_model}_params'],
-            'r2_score': result[f'{best_model}_r2']
+            'r2_score': result[f'{best_model}_r2'],
+            'fit_success': result['fit_success']
         })
     
     return lt_results
 
-# 设置matplotlib的现代化样式
-plt.style.use('seaborn-v0_8')
-sns.set_palette("husl")
+def create_advanced_visualization(fitting_results, lt_results):
+    """创建高级可视化图表"""
+    
+    # 1. 拟合效果比较图
+    def create_fitting_comparison():
+        n_sources = len(fitting_results)
+        if n_sources == 0:
+            return None
+            
+        n_cols = min(3, n_sources)
+        n_rows = (n_sources + n_cols - 1) // n_cols
+        
+        fig, axes = plt.subplots(n_rows, n_cols, figsize=(15, 5*n_rows), squeeze=False)
+        
+        for i, result in enumerate(fitting_results):
+            row = i // n_cols
+            col = i % n_cols
+            ax = axes[row, col]
+            
+            source = result['data_source']
+            days = np.array(result['days'])
+            rates = np.array(result['rates'])
+            
+            # 原始数据点
+            ax.scatter(days, rates, color='red', s=50, alpha=0.7, label='实际数据')
+            
+            # 拟合曲线
+            if result['fit_success']:
+                x_fit = np.linspace(1, 30, 100)
+                
+                # 绘制最佳拟合曲线
+                if result['best_model'] == 'power':
+                    y_fit = power_function(x_fit, *result['power_params'])
+                    model_name = f"幂函数 (R²={result['power_r2']:.3f})"
+                else:
+                    y_fit = exponential_function(x_fit, *result['exp_params'])
+                    model_name = f"指数函数 (R²={result['exp_r2']:.3f})"
+                
+                ax.plot(x_fit, y_fit, color='blue', linewidth=2, label=model_name)
+            
+            ax.set_title(f'{source}')
+            ax.set_xlabel('天数')
+            ax.set_ylabel('留存率')
+            ax.grid(True, alpha=0.3)
+            ax.legend()
+            ax.set_ylim(0, max(rates) * 1.1 if len(rates) > 0 else 1)
+        
+        # 隐藏未使用的子图
+        for i in range(n_sources, n_rows * n_cols):
+            row = i // n_cols
+            col = i % n_cols
+            fig.delaxes(axes[row, col])
+        
+        plt.tight_layout()
+        return fig
+    
+    # 2. LT值对比图
+    def create_lt_comparison():
+        if not lt_results:
+            return None
+            
+        # 按LT值排序
+        sorted_results = sorted(lt_results, key=lambda x: x['lt_value'])
+        
+        sources = [r['data_source'] for r in sorted_results]
+        lt_values = [r['lt_value'] for r in sorted_results]
+        
+        fig, ax = plt.subplots(figsize=(12, 8))
+        
+        colors = plt.cm.viridis(np.linspace(0, 1, len(sources)))
+        bars = ax.bar(sources, lt_values, color=colors, alpha=0.8)
+        
+        # 添加数值标签
+        for bar, value in zip(bars, lt_values):
+            height = bar.get_height()
+            ax.text(bar.get_x() + bar.get_width()/2., height,
+                   f'{value:.1f}', ha='center', va='bottom', fontweight='bold')
+        
+        ax.set_xlabel('数据来源')
+        ax.set_ylabel('LT值')
+        ax.set_title('各渠道LT值对比')
+        ax.tick_params(axis='x', rotation=45)
+        ax.grid(True, alpha=0.3, axis='y')
+        
+        plt.tight_layout()
+        return fig
+    
+    # 3. 综合留存曲线图
+    def create_retention_curves():
+        if not fitting_results:
+            return None
+            
+        fig, ax = plt.subplots(figsize=(14, 8))
+        
+        colors = plt.cm.tab10.colors
+        
+        for i, result in enumerate(fitting_results):
+            if not result['fit_success']:
+                continue
+                
+            source = result['data_source']
+            color = colors[i % len(colors)]
+            
+            # 生成完整的留存曲线（1-100天）
+            x_curve = np.arange(1, 101)
+            
+            if result['best_model'] == 'power':
+                y_curve = power_function(x_curve, *result['power_params'])
+            else:
+                y_curve = exponential_function(x_curve, *result['exp_params'])
+            
+            # 找到对应的LT值
+            lt_value = next((r['lt_value'] for r in lt_results if r['data_source'] == source), 0)
+            
+            ax.plot(x_curve, y_curve, color=color, linewidth=2, 
+                   label=f'{source} (LT={lt_value:.1f})')
+        
+        ax.set_xlabel('天数')
+        ax.set_ylabel('留存率')
+        ax.set_title('各渠道留存曲线对比')
+        ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
+        ax.grid(True, alpha=0.3)
+        ax.set_xlim(1, 100)
+        
+        plt.tight_layout()
+        return fig
+    
+    return {
+        'fitting_comparison': create_fitting_comparison(),
+        'lt_comparison': create_lt_comparison(),
+        'retention_curves': create_retention_curves()
+    }
+
+# ======= 页面内容 =======
 
 # 页面内容
-if page == "(a) 数据上传与汇总":
+if page == "数据上传与汇总":
     st.markdown('<div class="glass-card">', unsafe_allow_html=True)
     st.header("数据上传与汇总")
     st.markdown('</div>', unsafe_allow_html=True)
     
     # 渠道映射配置
-    with st.expander("(b) 渠道映射配置", expanded=False):
+    with st.expander("渠道映射配置", expanded=False):
         col1, col2 = st.columns([1, 2])
         
         with col1:
@@ -913,7 +1003,7 @@ if page == "(a) 数据上传与汇总":
         
         with col2:
             if st.session_state.channel_mapping:
-                st.markdown("###渠道映射示例")
+                st.markdown("### 渠道映射示例")
                 # 按渠道名分组显示
                 mapping_by_channel = {}
                 for pid, channel in st.session_state.channel_mapping.items():
@@ -1076,7 +1166,7 @@ elif page == "留存率计算":
         
         with col2:
             st.markdown('<div class="status-card">', unsafe_allow_html=True)
-            st.markdown("###分析范围")
+            st.markdown("### 分析范围")
             st.markdown(f"**数据来源:** {len(selected_sources)}")
             st.markdown(f"**总记录数:** {len(merged_data):,}")
             st.markdown(f"**分析天数:** 1-30天")
@@ -1173,12 +1263,7 @@ elif page == "LT拟合分析":
         
         with col1:
             st.markdown("### 拟合方法选择")
-            fit_methods = st.multiselect(
-                "选择拟合方法",
-                options=["幂函数 (Power)", "指数函数 (Exponential)"],
-                default=["幂函数 (Power)", "指数函数 (Exponential)"],
-                help="系统会自动选择拟合度最好的方法"
-            )
+            st.info("系统将自动使用幂函数和指数函数进行拟合，并选择拟合度最好的方法")
             
             max_days = st.number_input(
                 "LT计算天数范围",
@@ -1192,7 +1277,7 @@ elif page == "LT拟合分析":
             st.markdown('<div class="status-card">', unsafe_allow_html=True)
             st.markdown("### 拟合设置")
             st.markdown(f"**数据来源:** {len(retention_data)}")
-            st.markdown(f"**拟合方法:** {len(fit_methods)}")
+            st.markdown(f"**拟合方法:** 幂函数 + 指数函数")
             st.markdown(f"**LT天数:** {max_days}")
             st.markdown('</div>', unsafe_allow_html=True)
         
@@ -1201,106 +1286,58 @@ elif page == "LT拟合分析":
         if st.button("开始拟合分析", type="primary", use_container_width=True):
             with st.spinner("正在进行曲线拟合..."):
                 # 执行拟合分析
-                fitting_results = fit_retention_curves(retention_data)
+                fitting_results = fit_retention_curves_advanced(retention_data)
                 
                 # 计算LT值
-                lt_results = calculate_lt_values(fitting_results, max_days)
+                lt_results = calculate_lt_values_advanced(fitting_results, max_days)
                 st.session_state.lt_results = lt_results
                 
                 st.success("拟合分析完成！")
                 
+                # 创建可视化图表
+                visualizations = create_advanced_visualization(fitting_results, lt_results)
+                
                 # 显示拟合结果
                 st.markdown('<div class="glass-card">', unsafe_allow_html=True)
-                st.subheader("拟合结果")
+                st.subheader("拟合结果概览")
                 
+                # 创建结果汇总表
+                summary_data = []
                 for i, result in enumerate(fitting_results):
-                    source = result['data_source']
-                    
-                    with st.expander(f" {source} - 拟合分析详情", expanded=True):
-                        col1, col2 = st.columns([1, 2])
-                        
-                        with col1:
-                            # 显示拟合参数
-                            st.markdown("### 拟合参数")
-                            
-                            # 幂函数结果
-                            power_params = result['power_params']
-                            power_r2 = result['power_r2']
-                            st.markdown(f"**🔹 幂函数:** y = {power_params[0]:.4f} × x^{power_params[1]:.4f}")
-                            st.markdown(f"**R² = {power_r2:.4f}**")
-                            
-                            # 指数函数结果
-                            exp_params = result['exp_params']
-                            exp_r2 = result['exp_r2']
-                            st.markdown(f"**🔹 指数函数:** y = {exp_params[0]:.4f} × e^({exp_params[1]:.4f}x)")
-                            st.markdown(f"**R² = {exp_r2:.4f}**")
-                            
-                            # 最佳模型
-                            best_model = result['best_model']
-                            if best_model == 'power':
-                                st.success(f"**最佳模型:** 幂函数")
-                            else:
-                                st.success(f"**最佳模型:** 指数函数")
-                            
-                            # LT值
-                            lt_value = lt_results[i]['lt_value']
-                            st.markdown('<div class="metric-card">', unsafe_allow_html=True)
-                            st.markdown(f'<div class="metric-value">{lt_value:.2f}</div>', unsafe_allow_html=True)
-                            st.markdown(f'<div class="metric-label">LT值 (基于{max_days}天)</div>', unsafe_allow_html=True)
-                            st.markdown('</div>', unsafe_allow_html=True)
-                        
-                        with col2:
-                            # 绘制拟合曲线
-                            days = np.array(result['days'])
-                            rates = np.array(result['rates'])
-                            
-                            if len(days) > 0:
-                                fig, ax = plt.subplots(figsize=(12, 8))
-                                
-                                # 原始数据点
-                                ax.scatter(days, rates, color='#ff6b6b', s=100, alpha=0.8, 
-                                         label='实际数据', zorder=5, edgecolors='white', linewidth=2)
-                                
-                                # 拟合曲线
-                                x_fit = np.linspace(1, 30, 100)
-                                
-                                # 幂函数拟合曲线
-                                y_power = power_params[0] * (x_fit ** power_params[1])
-                                ax.plot(x_fit, y_power, '--', color='#667eea', linewidth=3, 
-                                       label=f'幂函数 (R²={power_r2:.3f})', alpha=0.8)
-                                
-                                # 指数函数拟合曲线
-                                y_exp = exp_params[0] * np.exp(exp_params[1] * x_fit)
-                                ax.plot(x_fit, y_exp, '--', color='#764ba2', linewidth=3, 
-                                       label=f'指数函数 (R²={exp_r2:.3f})', alpha=0.8)
-                                
-                                # 突出显示最佳拟合
-                                if best_model == 'power':
-                                    ax.plot(x_fit, y_power, '-', color='#667eea', linewidth=4, 
-                                           label='最佳拟合', alpha=1.0, zorder=4)
-                                else:
-                                    ax.plot(x_fit, y_exp, '-', color='#764ba2', linewidth=4, 
-                                           label='最佳拟合', alpha=1.0, zorder=4)
-                                
-                                ax.set_xlabel('天数', fontsize=12, fontweight='bold')
-                                ax.set_ylabel('留存率', fontsize=12, fontweight='bold')
-                                ax.set_title(f'{source} - 留存率拟合曲线', fontsize=14, fontweight='bold')
-                                ax.legend(fontsize=10)
-                                ax.grid(True, alpha=0.3, linestyle='--')
-                                ax.set_xlim(0, 31)
-                                ax.set_ylim(0, max(rates) * 1.1)
-                                
-                                # 美化图表
-                                ax.spines['top'].set_visible(False)
-                                ax.spines['right'].set_visible(False)
-                                ax.spines['left'].set_linewidth(0.5)
-                                ax.spines['bottom'].set_linewidth(0.5)
-                                
-                                plt.tight_layout()
-                                st.pyplot(fig)
-                                plt.close()
+                    lt_info = lt_results[i]
+                    summary_data.append({
+                        '数据来源': result['data_source'],
+                        '最佳模型': result['best_model'].replace('power', '幂函数').replace('exponential', '指数函数'),
+                        'R²得分': f"{result[result['best_model'] + '_r2']:.4f}",
+                        'LT值': f"{lt_info['lt_value']:.2f}",
+                        '拟合状态': '成功' if result['fit_success'] else '失败'
+                    })
                 
+                summary_df = pd.DataFrame(summary_data)
+                st.dataframe(summary_df, use_container_width=True)
                 st.markdown('</div>', unsafe_allow_html=True)
+                
+                # 显示可视化图表
+                if visualizations['fitting_comparison']:
+                    st.markdown('<div class="glass-card">', unsafe_allow_html=True)
+                    st.subheader("📊 拟合效果对比")
+                    st.pyplot(visualizations['fitting_comparison'])
+                    plt.close()
+                    st.markdown('</div>', unsafe_allow_html=True)
+                
+                if visualizations['retention_curves']:
+                    st.markdown('<div class="glass-card">', unsafe_allow_html=True)
+                    st.subheader("📈 留存曲线对比")
+                    st.pyplot(visualizations['retention_curves'])
+                    plt.close()
+                    st.markdown('</div>', unsafe_allow_html=True)
+                
+                if visualizations['lt_comparison']:
+                    st.markdown('<div class="glass-card">', unsafe_allow_html=True)
+                    st.subheader("🏆 LT值对比")
+                    st.pyplot(visualizations['lt_comparison'])
+                    plt.close()
+                    st.markdown('</div>', unsafe_allow_html=True)
 
 elif page == "ARPU计算":
     st.markdown('<div class="glass-card">', unsafe_allow_html=True)
@@ -1549,109 +1586,62 @@ elif page == "LTV结果报告":
         
         with col1:
             # LTV条形图
-            fig, ax = plt.subplots(figsize=(12, 8))
-            
-            # 使用渐变色
-            colors = plt.cm.viridis(np.linspace(0, 1, len(ltv_df)))
-            bars = ax.bar(ltv_df['数据来源'], ltv_df['LTV'], color=colors, alpha=0.8, edgecolor='white', linewidth=2)
-            
-            ax.set_xlabel('数据来源', fontsize=12, fontweight='bold')
-            ax.set_ylabel('LTV值', fontsize=12, fontweight='bold')
-            ax.set_title('各渠道LTV对比', fontsize=14, fontweight='bold')
-            ax.tick_params(axis='x', rotation=45)
-            
-            # 在条形图上显示数值
-            for bar, value in zip(bars, ltv_df['LTV']):
-                height = bar.get_height()
-                ax.text(bar.get_x() + bar.get_width()/2., height + height*0.01,
-                       f'{value:.1f}', ha='center', va='bottom', fontweight='bold')
-            
-            # 美化图表
-            ax.spines['top'].set_visible(False)
-            ax.spines['right'].set_visible(False)
-            ax.grid(True, alpha=0.3, linestyle='--', axis='y')
-            
-            plt.tight_layout()
-            st.pyplot(fig)
-            plt.close()
+            if not ltv_df.empty:
+                fig, ax = plt.subplots(figsize=(12, 8))
+                
+                # 使用渐变色
+                colors = plt.cm.viridis(np.linspace(0, 1, len(ltv_df)))
+                bars = ax.bar(ltv_df['数据来源'], ltv_df['LTV'], color=colors, alpha=0.8, edgecolor='white', linewidth=2)
+                
+                ax.set_xlabel('数据来源', fontsize=12, fontweight='bold')
+                ax.set_ylabel('LTV值', fontsize=12, fontweight='bold')
+                ax.set_title('各渠道LTV对比', fontsize=14, fontweight='bold')
+                ax.tick_params(axis='x', rotation=45)
+                
+                # 在条形图上显示数值
+                for bar, value in zip(bars, ltv_df['LTV']):
+                    height = bar.get_height()
+                    ax.text(bar.get_x() + bar.get_width()/2., height + height*0.01,
+                           f'{value:.1f}', ha='center', va='bottom', fontweight='bold')
+                
+                # 美化图表
+                ax.spines['top'].set_visible(False)
+                ax.spines['right'].set_visible(False)
+                ax.grid(True, alpha=0.3, linestyle='--', axis='y')
+                
+                plt.tight_layout()
+                st.pyplot(fig)
+                plt.close()
         
         with col2:
             # LT vs ARPU散点图
-            fig, ax = plt.subplots(figsize=(12, 8))
-            scatter = ax.scatter(ltv_df['LT值'], ltv_df['ARPU'], 
-                               c=ltv_df['LTV'], s=200, alpha=0.8, cmap='viridis',
-                               edgecolors='white', linewidth=2)
-            
-            # 添加数据源标签
-            for i, source in enumerate(ltv_df['数据来源']):
-                ax.annotate(source, (ltv_df['LT值'].iloc[i], ltv_df['ARPU'].iloc[i]),
-                           xytext=(5, 5), textcoords='offset points', fontsize=10, fontweight='bold')
-            
-            ax.set_xlabel('LT值', fontsize=12, fontweight='bold')
-            ax.set_ylabel('ARPU', fontsize=12, fontweight='bold')
-            ax.set_title('LT vs ARPU 关系图', fontsize=14, fontweight='bold')
-            
-            # 添加颜色条
-            cbar = plt.colorbar(scatter)
-            cbar.set_label('LTV值', fontsize=12, fontweight='bold')
-            
-            # 美化图表
-            ax.spines['top'].set_visible(False)
-            ax.spines['right'].set_visible(False)
-            ax.grid(True, alpha=0.3, linestyle='--')
-            
-            plt.tight_layout()
-            st.pyplot(fig)
-            plt.close()
-        
-        st.markdown('</div>', unsafe_allow_html=True)
-        
-        # 模型质量分析
-        st.markdown('<div class="glass-card">', unsafe_allow_html=True)
-        st.subheader("🎯 模型质量分析")
-        
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            # R²得分分布
-            fig, ax = plt.subplots(figsize=(10, 6))
-            colors = ['#ff6b6b' if r < 0.6 else '#ffa726' if r < 0.8 else '#66bb6a' for r in ltv_df['R²得分']]
-            bars = ax.bar(ltv_df['数据来源'], ltv_df['R²得分'], color=colors, alpha=0.8, edgecolor='white', linewidth=2)
-            
-            ax.set_xlabel('数据来源', fontsize=12, fontweight='bold')
-            ax.set_ylabel('R²得分', fontsize=12, fontweight='bold')
-            ax.set_title('模型拟合质量 (R²得分)', fontsize=14, fontweight='bold')
-            ax.tick_params(axis='x', rotation=45)
-            ax.set_ylim(0, 1)
-            
-            # 添加质量评价线
-            ax.axhline(y=0.8, color='#66bb6a', linestyle='--', alpha=0.7, linewidth=2, label='优秀 (0.8+)')
-            ax.axhline(y=0.6, color='#ffa726', linestyle='--', alpha=0.7, linewidth=2, label='良好 (0.6+)')
-            ax.axhline(y=0.4, color='#ff6b6b', linestyle='--', alpha=0.7, linewidth=2, label='一般 (0.4+)')
-            ax.legend(fontsize=10)
-            
-            # 美化图表
-            ax.spines['top'].set_visible(False)
-            ax.spines['right'].set_visible(False)
-            ax.grid(True, alpha=0.3, linestyle='--', axis='y')
-            
-            plt.tight_layout()
-            st.pyplot(fig)
-            plt.close()
-        
-        with col2:
-            # 模型使用统计
-            model_counts = ltv_df['拟合模型'].value_counts()
-            
-            fig, ax = plt.subplots(figsize=(10, 6))
-            colors = ['#667eea', '#764ba2']
-            wedges, texts, autotexts = ax.pie(model_counts.values, labels=model_counts.index, 
-                                             autopct='%1.1f%%', colors=colors, startangle=90,
-                                             textprops={'fontsize': 12, 'fontweight': 'bold'})
-            ax.set_title('拟合模型使用分布', fontsize=14, fontweight='bold')
-            
-            st.pyplot(fig)
-            plt.close()
+            if not ltv_df.empty:
+                fig, ax = plt.subplots(figsize=(12, 8))
+                scatter = ax.scatter(ltv_df['LT值'], ltv_df['ARPU'], 
+                                   c=ltv_df['LTV'], s=200, alpha=0.8, cmap='viridis',
+                                   edgecolors='white', linewidth=2)
+                
+                # 添加数据源标签
+                for i, source in enumerate(ltv_df['数据来源']):
+                    ax.annotate(source, (ltv_df['LT值'].iloc[i], ltv_df['ARPU'].iloc[i]),
+                               xytext=(5, 5), textcoords='offset points', fontsize=10, fontweight='bold')
+                
+                ax.set_xlabel('LT值', fontsize=12, fontweight='bold')
+                ax.set_ylabel('ARPU', fontsize=12, fontweight='bold')
+                ax.set_title('LT vs ARPU 关系图', fontsize=14, fontweight='bold')
+                
+                # 添加颜色条
+                cbar = plt.colorbar(scatter)
+                cbar.set_label('LTV值', fontsize=12, fontweight='bold')
+                
+                # 美化图表
+                ax.spines['top'].set_visible(False)
+                ax.spines['right'].set_visible(False)
+                ax.grid(True, alpha=0.3, linestyle='--')
+                
+                plt.tight_layout()
+                st.pyplot(fig)
+                plt.close()
         
         st.markdown('</div>', unsafe_allow_html=True)
         
@@ -1686,10 +1676,10 @@ elif page == "LTV结果报告":
 🎯 总体指标
 ---------------------------------
 参与分析的数据源数量: {len(ltv_df)}
-平均LTV: {avg_ltv:.2f}
-最高LTV: {max_ltv:.2f} ({ltv_df.loc[ltv_df['LTV'].idxmax(), '数据来源']})
-平均LT: {avg_lt:.2f}
-平均ARPU: {avg_arpu:.2f}
+平均LTV: {ltv_df['LTV'].mean():.2f}
+最高LTV: {ltv_df['LTV'].max():.2f} ({ltv_df.loc[ltv_df['LTV'].idxmax(), '数据来源']})
+平均LT: {ltv_df['LT值'].mean():.2f}
+平均ARPU: {ltv_df['ARPU'].mean():.2f}
 
 📈 详细结果
 ---------------------------------
@@ -1725,7 +1715,7 @@ with st.sidebar:
         请按照流程顺序完成各个步骤，每一步的结果都会保存在当前会话中。
         </p>
         <p style="font-size: 0.8rem; color: #adb5bd; text-align: center;">
-        Powered by Streamlit & Advanced Analytics
+        Enhanced with Advanced Analytics
         </p>
     </div>
     """, unsafe_allow_html=True)
