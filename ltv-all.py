@@ -931,7 +931,7 @@ if page == "(a) 数据上传与汇总":
                     st.text(f"... 还有 {len(mapping_by_channel) - 5} 个渠道")
         
         # 自定义渠道映射文件上传
-        st.markdown("### 📤 上传自定义渠道映射表")
+        st.markdown("### 上传自定义渠道映射表")
         channel_file = st.file_uploader(
             "选择渠道映射文件 (可选)",
             type=['xlsx', 'xls'],
@@ -943,14 +943,14 @@ if page == "(a) 数据上传与汇总":
                 channel_df = pd.read_excel(channel_file)
                 custom_mapping = parse_channel_mapping(channel_df)
                 st.session_state.channel_mapping = custom_mapping
-                st.success(f"✅ 自定义渠道映射已加载，共 {len(custom_mapping)} 个映射")
+                st.success(f"自定义渠道映射已加载，共 {len(custom_mapping)} 个映射")
                 st.dataframe(channel_df.head(), use_container_width=True)
             except Exception as e:
-                st.error(f"❌ 渠道映射文件读取失败: {str(e)}")
+                st.error(f"渠道映射文件读取失败: {str(e)}")
     
     # 数据文件上传
     st.markdown('<div class="glass-card">', unsafe_allow_html=True)
-    st.subheader("📊 数据文件处理")
+    st.subheader("数据文件处理")
     
     col1, col2 = st.columns([3, 1])
     
@@ -965,33 +965,33 @@ if page == "(a) 数据上传与汇总":
         # 目标月份选择
         default_month = get_default_target_month()
         target_month = st.text_input(
-            "🗓️ 目标月份 (YYYY-MM)",
+            "🗓目标月份 (YYYY-MM)",
             value=default_month,
             help=f"当前默认为2个月前: {default_month}"
         )
     
     with col2:
         st.markdown('<div class="status-card">', unsafe_allow_html=True)
-        st.markdown("### 📋 处理状态")
+        st.markdown("### 处理状态")
         
         if uploaded_files:
-            st.markdown(f"**✅ 已选择 {len(uploaded_files)} 个文件**")
+            st.markdown(f"**已选择 {len(uploaded_files)} 个文件**")
             for file in uploaded_files:
                 st.markdown(f"• {file.name}")
         else:
-            st.info("📁 未选择数据文件")
+            st.info("未选择数据文件")
         
-        st.markdown(f"**📅 目标月份:** {target_month}")
-        st.markdown(f"**🔗 渠道映射:** {len(st.session_state.channel_mapping)} 个")
+        st.markdown(f"**目标月份:** {target_month}")
+        st.markdown(f"**渠道映射:** {len(st.session_state.channel_mapping)} 个")
         
         st.markdown('</div>', unsafe_allow_html=True)
     
     st.markdown('</div>', unsafe_allow_html=True)
     
     # 处理按钮
-    if st.button("🚀 开始处理数据", type="primary", use_container_width=True):
+    if st.button("开始处理数据", type="primary", use_container_width=True):
         if uploaded_files:
-            with st.spinner("⏳ 正在处理数据文件..."):
+            with st.spinner("正在处理数据文件..."):
                 try:
                     # 处理数据文件
                     merged_data, processed_count = integrate_excel_files_streamlit(
@@ -1001,11 +1001,11 @@ if page == "(a) 数据上传与汇总":
                     if merged_data is not None and not merged_data.empty:
                         st.session_state.merged_data = merged_data
                         
-                        st.success(f"🎉 数据处理完成！成功处理 {processed_count} 个文件")
+                        st.success(f"数据处理完成！成功处理 {processed_count} 个文件")
                         
                         # 显示关键指标
                         st.markdown('<div class="glass-card">', unsafe_allow_html=True)
-                        st.subheader("📊 数据概览")
+                        st.subheader("数据概览")
                         
                         col1, col2, col3, col4 = st.columns(4)
                         with col1:
@@ -1040,21 +1040,21 @@ if page == "(a) 数据上传与汇总":
                         st.markdown('</div>', unsafe_allow_html=True)
                     
                     else:
-                        st.error("❌ 未找到有效数据，请检查文件格式和目标月份设置")
+                        st.error("未找到有效数据，请检查文件格式和目标月份设置")
                 
                 except Exception as e:
-                    st.error(f"❌ 处理过程中出现错误：{str(e)}")
+                    st.error(f"处理过程中出现错误：{str(e)}")
         else:
             st.error("⚠️ 请先选择要处理的文件")
 
 elif page == "留存率计算":
     st.markdown('<div class="glass-card">', unsafe_allow_html=True)
-    st.header("📈 留存率计算")
+    st.header("留存率计算")
     st.markdown('</div>', unsafe_allow_html=True)
     
     if st.session_state.merged_data is None:
         st.warning("⚠️ 请先在「数据上传与汇总」页面处理数据")
-        if st.button("🔙 返回数据上传页面"):
+        if st.button("返回数据上传页面"):
             st.rerun()
     else:
         merged_data = st.session_state.merged_data
@@ -1063,7 +1063,7 @@ elif page == "留存率计算":
         col1, col2 = st.columns([3, 1])
         
         with col1:
-            st.subheader("⚙️ 留存率分析配置")
+            st.subheader("留存率分析配置")
             
             # 数据来源选择
             data_sources = merged_data['数据来源'].unique()
@@ -1076,7 +1076,7 @@ elif page == "留存率计算":
         
         with col2:
             st.markdown('<div class="status-card">', unsafe_allow_html=True)
-            st.markdown("### 📊 分析范围")
+            st.markdown("###分析范围")
             st.markdown(f"**数据来源:** {len(selected_sources)}")
             st.markdown(f"**总记录数:** {len(merged_data):,}")
             st.markdown(f"**分析天数:** 1-30天")
@@ -1084,9 +1084,9 @@ elif page == "留存率计算":
         
         st.markdown('</div>', unsafe_allow_html=True)
         
-        if st.button("🔄 计算留存率", type="primary", use_container_width=True):
+        if st.button("计算留存率", type="primary", use_container_width=True):
             if selected_sources:
-                with st.spinner("⏳ 正在计算留存率..."):
+                with st.spinner("正在计算留存率..."):
                     # 过滤选中的数据来源
                     filtered_data = merged_data[merged_data['数据来源'].isin(selected_sources)]
                     
@@ -1094,11 +1094,11 @@ elif page == "留存率计算":
                     retention_results = calculate_retention_rates(filtered_data)
                     st.session_state.retention_data = retention_results
                     
-                    st.success("🎉 留存率计算完成！")
+                    st.success("留存率计算完成！")
                     
                     # 显示结果
                     st.markdown('<div class="glass-card">', unsafe_allow_html=True)
-                    st.subheader("📊 留存率结果")
+                    st.subheader("留存率结果")
                     
                     for result in retention_results:
                         with st.expander(f"📈 {result['data_source']} - 留存率详情", expanded=True):
@@ -1161,18 +1161,18 @@ elif page == "LT拟合分析":
     
     if st.session_state.retention_data is None:
         st.warning("⚠️ 请先在「留存率计算」页面计算留存率")
-        if st.button("🔙 返回留存率计算页面"):
+        if st.button("返回留存率计算页面"):
             st.rerun()
     else:
         retention_data = st.session_state.retention_data
         
         st.markdown('<div class="glass-card">', unsafe_allow_html=True)
-        st.subheader("⚙️ 曲线拟合参数设置")
+        st.subheader("曲线拟合参数设置")
         
         col1, col2 = st.columns([2, 1])
         
         with col1:
-            st.markdown("### 🎯 拟合方法选择")
+            st.markdown("### 拟合方法选择")
             fit_methods = st.multiselect(
                 "选择拟合方法",
                 options=["幂函数 (Power)", "指数函数 (Exponential)"],
@@ -1181,7 +1181,7 @@ elif page == "LT拟合分析":
             )
             
             max_days = st.number_input(
-                "📅 LT计算天数范围",
+                "LT计算天数范围",
                 min_value=30,
                 max_value=1000,
                 value=365,
@@ -1190,7 +1190,7 @@ elif page == "LT拟合分析":
         
         with col2:
             st.markdown('<div class="status-card">', unsafe_allow_html=True)
-            st.markdown("### 📊 拟合设置")
+            st.markdown("### 拟合设置")
             st.markdown(f"**数据来源:** {len(retention_data)}")
             st.markdown(f"**拟合方法:** {len(fit_methods)}")
             st.markdown(f"**LT天数:** {max_days}")
@@ -1198,8 +1198,8 @@ elif page == "LT拟合分析":
         
         st.markdown('</div>', unsafe_allow_html=True)
         
-        if st.button("🚀 开始拟合分析", type="primary", use_container_width=True):
-            with st.spinner("⏳ 正在进行曲线拟合..."):
+        if st.button("开始拟合分析", type="primary", use_container_width=True):
+            with st.spinner("正在进行曲线拟合..."):
                 # 执行拟合分析
                 fitting_results = fit_retention_curves(retention_data)
                 
@@ -1207,21 +1207,21 @@ elif page == "LT拟合分析":
                 lt_results = calculate_lt_values(fitting_results, max_days)
                 st.session_state.lt_results = lt_results
                 
-                st.success("🎉 拟合分析完成！")
+                st.success("拟合分析完成！")
                 
                 # 显示拟合结果
                 st.markdown('<div class="glass-card">', unsafe_allow_html=True)
-                st.subheader("📊 拟合结果")
+                st.subheader("拟合结果")
                 
                 for i, result in enumerate(fitting_results):
                     source = result['data_source']
                     
-                    with st.expander(f"🔄 {source} - 拟合分析详情", expanded=True):
+                    with st.expander(f" {source} - 拟合分析详情", expanded=True):
                         col1, col2 = st.columns([1, 2])
                         
                         with col1:
                             # 显示拟合参数
-                            st.markdown("### 📊 拟合参数")
+                            st.markdown("### 拟合参数")
                             
                             # 幂函数结果
                             power_params = result['power_params']
@@ -1238,9 +1238,9 @@ elif page == "LT拟合分析":
                             # 最佳模型
                             best_model = result['best_model']
                             if best_model == 'power':
-                                st.success(f"✅ **最佳模型:** 幂函数")
+                                st.success(f"**最佳模型:** 幂函数")
                             else:
-                                st.success(f"✅ **最佳模型:** 指数函数")
+                                st.success(f"**最佳模型:** 指数函数")
                             
                             # LT值
                             lt_value = lt_results[i]['lt_value']
