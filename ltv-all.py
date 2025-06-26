@@ -12,6 +12,7 @@ import matplotlib.pyplot as plt
 import matplotlib as mpl
 import re
 from matplotlib.font_manager import FontProperties
+import seaborn as sns
 
 # 忽略警告
 warnings.filterwarnings('ignore', category=UserWarning, module='openpyxl.styles.stylesheet')
@@ -26,71 +27,229 @@ plt.rcParams['axes.unicode_minus'] = False
 st.set_page_config(
     page_title="LTV Analytics Platform",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="expanded",
+    page_icon="📊"
 )
 
-# 自定义CSS样式
+# 帆软风格的CSS样式
 st.markdown("""
 <style>
+    /* 全局样式 */
+    .main {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+    }
+    
+    .block-container {
+        padding: 1rem 1rem 3rem 1rem;
+        max-width: 100%;
+        background: transparent;
+    }
+    
+    /* 主标题区域 */
     .main-header {
-        padding: 0rem 0rem 0.5rem 0rem;
-        border-bottom: 2px solid #f0f2f6;
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        padding: 2rem;
+        border-radius: 16px;
+        box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        margin-bottom: 2rem;
+        text-align: center;
+    }
+    
+    .main-title {
+        font-size: 2.5rem;
+        font-weight: 700;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
         margin-bottom: 0.5rem;
     }
-    .metric-container {
-        background-color: #f8f9fa;
-        padding: 1rem;
-        border-radius: 0.5rem;
-        border-left: 4px solid #1f77b4;
-        margin: 0.5rem 0;
+    
+    .main-subtitle {
+        color: #6c757d;
+        font-size: 1.1rem;
+        font-weight: 400;
     }
-    .status-card {
-        background-color: white;
-        padding: 1rem;
-        border-radius: 0.5rem;
-        border: 1px solid #e1e5e9;
-        margin: 0.5rem 0;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    
+    /* 卡片样式 */
+    .glass-card {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        border-radius: 16px;
+        padding: 1.5rem;
+        box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        margin-bottom: 1.5rem;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
     }
-    .progress-item {
-        padding: 0.5rem 0;
-        border-bottom: 1px solid #f0f2f6;
+    
+    .glass-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 12px 40px rgba(31, 38, 135, 0.5);
     }
-    .stButton > button {
-        width: 100%;
-        border-radius: 0.25rem;
-        border: 1px solid #1f77b4;
-        background-color: #1f77b4;
+    
+    /* 指标卡片 */
+    .metric-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         color: white;
-        font-weight: 500;
+        padding: 1.5rem;
+        border-radius: 12px;
+        text-align: center;
+        box-shadow: 0 4px 20px rgba(102, 126, 234, 0.4);
+        margin-bottom: 1rem;
     }
+    
+    .metric-value {
+        font-size: 2rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+    }
+    
+    .metric-label {
+        font-size: 0.9rem;
+        opacity: 0.9;
+    }
+    
+    /* 状态卡片 */
+    .status-card {
+        background: rgba(255, 255, 255, 0.9);
+        border-radius: 12px;
+        padding: 1.5rem;
+        border-left: 4px solid #667eea;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        margin-bottom: 1rem;
+    }
+    
+    /* 进度指示器 */
+    .progress-container {
+        background: rgba(255, 255, 255, 0.9);
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .progress-step {
+        display: flex;
+        align-items: center;
+        margin-bottom: 1rem;
+        padding: 0.5rem;
+        border-radius: 8px;
+        transition: background-color 0.3s ease;
+    }
+    
+    .progress-step.active {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+    
+    .progress-step.completed {
+        background: linear-gradient(135deg, #00b09b 0%, #96c93d 100%);
+        color: white;
+    }
+    
+    .step-number {
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.2);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 1rem;
+        font-weight: 600;
+    }
+    
+    /* 按钮样式 */
+    .stButton > button {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        padding: 0.5rem 2rem;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+    }
+    
     .stButton > button:hover {
-        background-color: #0d5aa7;
-        border-color: #0d5aa7;
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
     }
-    .sidebar .sidebar-content {
-        background-color: #f8f9fa;
+    
+    /* 侧边栏样式 */
+    .css-1d391kg {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
     }
+    
+    /* 数据表格样式 */
+    .dataframe {
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+    
+    /* 文件上传区域 */
+    .uploadedfile {
+        border: 2px dashed #667eea;
+        border-radius: 8px;
+        padding: 2rem;
+        text-align: center;
+        background: rgba(255, 255, 255, 0.5);
+    }
+    
+    /* 选择框样式 */
+    .stSelectbox label, .stMultiselect label, .stFileUploader label {
+        font-weight: 600;
+        color: #495057;
+        margin-bottom: 0.5rem;
+    }
+    
+    /* 标题样式 */
     h1, h2, h3 {
         color: #2c3e50;
         font-weight: 600;
     }
-    .stSelectbox label, .stMultiselect label, .stFileUploader label {
-        font-weight: 500;
-        color: #34495e;
+    
+    /* 成功/警告/错误消息 */
+    .stSuccess {
+        background: linear-gradient(135deg, #00b09b 0%, #96c93d 100%);
+        color: white;
+        border-radius: 8px;
     }
-    .compact-section {
-        margin-top: 0.5rem;
-        margin-bottom: 0.5rem;
+    
+    .stWarning {
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        color: white;
+        border-radius: 8px;
     }
-    /* 减少页面顶部间距 */
-    .block-container {
-        padding-top: 1rem;
+    
+    .stError {
+        background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+        color: white;
+        border-radius: 8px;
     }
-    /* 减少标题间距 */
-    .element-container h1 {
-        margin-top: 0rem;
-        margin-bottom: 0.5rem;
+    
+    /* 隐藏默认的Streamlit元素 */
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+    header {visibility: hidden;}
+    
+    /* 响应式设计 */
+    @media (max-width: 768px) {
+        .main-title {
+            font-size: 2rem;
+        }
+        
+        .glass-card {
+            padding: 1rem;
+        }
+        
+        .metric-card {
+            padding: 1rem;
+        }
     }
 </style>
 """, unsafe_allow_html=True)
@@ -188,39 +347,76 @@ def get_default_target_month():
     return f"{target_year}-{target_month:02d}"
 
 # 主标题
-st.markdown('<div class="main-header">', unsafe_allow_html=True)
-st.title("LTV Analytics Platform")
-st.markdown("用户生命周期价值分析系统")
-st.markdown('</div>', unsafe_allow_html=True)
-
-# 侧边栏导航
-st.sidebar.markdown("### 分析流程")
-page = st.sidebar.selectbox(
-    "选择分析模块",
-    [
-        "数据上传与汇总", 
-        "留存率计算", 
-        "LT拟合分析", 
-        "ARPU计算", 
-        "LTV结果报告"
-    ],
-    label_visibility="collapsed"
-)
+st.markdown("""
+<div class="main-header">
+    <div class="main-title">📊 LTV Analytics Platform</div>
+    <div class="main-subtitle">智能用户生命周期价值分析系统 | Powered by Advanced Analytics</div>
+</div>
+""", unsafe_allow_html=True)
 
 # 初始化session state
 session_keys = [
     'channel_mapping', 'merged_data', 'retention_data', 
-    'lt_results', 'arpu_data', 'ltv_results'
+    'lt_results', 'arpu_data', 'ltv_results', 'current_step'
 ]
 for key in session_keys:
     if key not in st.session_state:
         st.session_state[key] = None
 
-# 设置默认渠道映射
+# 设置默认值
 if st.session_state.channel_mapping is None:
     st.session_state.channel_mapping = DEFAULT_CHANNEL_MAPPING
+if st.session_state.current_step is None:
+    st.session_state.current_step = 0
 
-# ===== 数据整合功能（保留原有逻辑）=====
+# 分析步骤定义
+ANALYSIS_STEPS = [
+    {"name": "数据上传与汇总", "icon": "📁", "desc": "上传原始数据文件"},
+    {"name": "留存率计算", "icon": "📈", "desc": "计算用户留存率"},
+    {"name": "LT拟合分析", "icon": "🔄", "desc": "拟合生命周期曲线"},
+    {"name": "ARPU计算", "icon": "💰", "desc": "设置/计算用户价值"},
+    {"name": "LTV结果报告", "icon": "📊", "desc": "生成最终报告"}
+]
+
+# 侧边栏导航
+with st.sidebar:
+    st.markdown("""
+    <div class="progress-container">
+        <h3 style="text-align: center; margin-bottom: 1.5rem; color: #495057;">分析流程</h3>
+    """, unsafe_allow_html=True)
+    
+    # 进度指示器
+    for i, step in enumerate(ANALYSIS_STEPS):
+        step_class = ""
+        if i < st.session_state.current_step:
+            step_class = "completed"
+        elif i == st.session_state.current_step:
+            step_class = "active"
+        
+        st.markdown(f"""
+        <div class="progress-step {step_class}">
+            <div class="step-number">{step['icon']}</div>
+            <div>
+                <strong>{step['name']}</strong><br>
+                <small>{step['desc']}</small>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    st.markdown("</div>", unsafe_allow_html=True)
+    
+    # 页面选择
+    page = st.selectbox(
+        "选择分析模块",
+        [step["name"] for step in ANALYSIS_STEPS],
+        index=st.session_state.current_step,
+        label_visibility="collapsed"
+    )
+    
+    # 更新当前步骤
+    st.session_state.current_step = [step["name"] for step in ANALYSIS_STEPS].index(page)
+
+# 数据整合功能（保留原有逻辑）
 def standardize_output_columns(df):
     """标准化输出列结构，确保包含指定的列顺序"""
     target_columns = [
@@ -424,7 +620,7 @@ def parse_channel_mapping(channel_df):
     
     return pid_to_channel
 
-# ===== 拟合计算功能（用numpy替代scipy）=====
+# 拟合计算功能（用numpy替代scipy）
 def numpy_curve_fit_power(x, y, max_iter=1000, tolerance=1e-8):
     """
     使用numpy实现幂函数拟合：y = a * x^b
@@ -691,55 +887,53 @@ def calculate_lt_values(fitting_results, max_days=365):
     
     return lt_results
 
-# ===== 页面内容 =====
+# 设置matplotlib的现代化样式
+plt.style.use('seaborn-v0_8')
+sns.set_palette("husl")
+
+# 页面内容
 if page == "数据上传与汇总":
-    st.header("数据上传与汇总")
+    st.markdown('<div class="glass-card">', unsafe_allow_html=True)
+    st.header("📁 数据上传与汇总")
+    st.markdown('</div>', unsafe_allow_html=True)
     
-    # 渠道映射配置 - 始终显示当前状态
-    with st.expander("渠道映射配置 (当前使用: 默认映射表)", expanded=False):
-        st.markdown("**当前渠道映射状态:**")
-        
+    # 渠道映射配置
+    with st.expander("🔧 渠道映射配置", expanded=False):
         col1, col2 = st.columns([1, 2])
+        
         with col1:
+            st.markdown('<div class="status-card">', unsafe_allow_html=True)
+            st.markdown("### 当前配置状态")
             if st.session_state.channel_mapping:
-                st.success(f"已配置 {len(st.session_state.channel_mapping)} 个渠道映射")
-                st.info("正在使用: 默认渠道映射表")
+                st.success(f"✅ 已配置 {len(st.session_state.channel_mapping)} 个渠道映射")
+                st.info("📋 正在使用默认渠道映射表")
             else:
-                st.warning("未配置渠道映射")
+                st.warning("⚠️ 未配置渠道映射")
+            st.markdown('</div>', unsafe_allow_html=True)
         
         with col2:
-            # 显示部分映射示例
             if st.session_state.channel_mapping:
-                st.markdown("**部分渠道映射示例:**")
-                sample_items = list(st.session_state.channel_mapping.items())[:8]
-                for i in range(0, len(sample_items), 2):
-                    col_a, col_b = st.columns(2)
-                    col_a.text(f"{sample_items[i][0]} → {sample_items[i][1]}")
-                    if i + 1 < len(sample_items):
-                        col_b.text(f"{sample_items[i+1][0]} → {sample_items[i+1][1]}")
+                st.markdown("### 📋 渠道映射示例")
+                # 按渠道名分组显示
+                mapping_by_channel = {}
+                for pid, channel in st.session_state.channel_mapping.items():
+                    if channel not in mapping_by_channel:
+                        mapping_by_channel[channel] = []
+                    mapping_by_channel[channel].append(pid)
                 
-                if len(st.session_state.channel_mapping) > 8:
-                    st.text(f"... 还有 {len(st.session_state.channel_mapping) - 8} 个映射")
-        
-        # 显示完整的默认映射表
-        if st.button("查看完整默认映射表"):
-            st.markdown("**完整的默认渠道映射表:**")
-            
-            # 按渠道名分组显示
-            mapping_by_channel = {}
-            for pid, channel in st.session_state.channel_mapping.items():
-                if channel not in mapping_by_channel:
-                    mapping_by_channel[channel] = []
-                mapping_by_channel[channel].append(pid)
-            
-            for channel, pids in mapping_by_channel.items():
-                st.markdown(f"**{channel}**: {', '.join(pids)}")
+                # 显示前5个渠道映射
+                count = 0
+                for channel, pids in list(mapping_by_channel.items())[:5]:
+                    st.code(f"{channel}: {', '.join(pids[:3])}{'...' if len(pids) > 3 else ''}")
+                    count += 1
+                
+                if len(mapping_by_channel) > 5:
+                    st.text(f"... 还有 {len(mapping_by_channel) - 5} 个渠道")
         
         # 自定义渠道映射文件上传
-        st.markdown("**上传自定义渠道映射表 (可选):**")
-        st.markdown("*如不上传文件，将继续使用上述默认映射表*")
+        st.markdown("### 📤 上传自定义渠道映射表")
         channel_file = st.file_uploader(
-            "选择渠道映射文件",
+            "选择渠道映射文件 (可选)",
             type=['xlsx', 'xls'],
             help="第一列为渠道名，后续列为对应的渠道号。如不上传将使用默认映射表"
         )
@@ -749,13 +943,14 @@ if page == "数据上传与汇总":
                 channel_df = pd.read_excel(channel_file)
                 custom_mapping = parse_channel_mapping(channel_df)
                 st.session_state.channel_mapping = custom_mapping
-                st.success(f"自定义渠道映射已加载，共 {len(custom_mapping)} 个映射")
+                st.success(f"✅ 自定义渠道映射已加载，共 {len(custom_mapping)} 个映射")
                 st.dataframe(channel_df.head(), use_container_width=True)
             except Exception as e:
-                st.error(f"渠道映射文件读取失败: {str(e)}")
+                st.error(f"❌ 渠道映射文件读取失败: {str(e)}")
     
     # 数据文件上传
-    st.subheader("数据文件处理")
+    st.markdown('<div class="glass-card">', unsafe_allow_html=True)
+    st.subheader("📊 数据文件处理")
     
     col1, col2 = st.columns([3, 1])
     
@@ -764,37 +959,39 @@ if page == "数据上传与汇总":
             "选择Excel数据文件",
             type=['xlsx', 'xls'],
             accept_multiple_files=True,
-            help="支持上传多个Excel文件，系统会自动解析留存数据"
+            help="🔹 支持上传多个Excel文件\n🔹 系统会自动解析留存数据\n🔹 支持新旧两种数据格式"
         )
         
         # 目标月份选择
         default_month = get_default_target_month()
         target_month = st.text_input(
-            "目标月份 (YYYY-MM)",
+            "🗓️ 目标月份 (YYYY-MM)",
             value=default_month,
             help=f"当前默认为2个月前: {default_month}"
         )
     
     with col2:
         st.markdown('<div class="status-card">', unsafe_allow_html=True)
-        st.markdown("### 处理状态")
+        st.markdown("### 📋 处理状态")
         
         if uploaded_files:
-            st.success(f"已选择 {len(uploaded_files)} 个文件")
+            st.markdown(f"**✅ 已选择 {len(uploaded_files)} 个文件**")
             for file in uploaded_files:
-                st.text(f"• {file.name}")
+                st.markdown(f"• {file.name}")
         else:
-            st.info("未选择数据文件")
+            st.info("📁 未选择数据文件")
         
-        st.text(f"目标月份: {target_month}")
-        st.text(f"渠道映射: {len(st.session_state.channel_mapping)} 个")
+        st.markdown(f"**📅 目标月份:** {target_month}")
+        st.markdown(f"**🔗 渠道映射:** {len(st.session_state.channel_mapping)} 个")
         
         st.markdown('</div>', unsafe_allow_html=True)
     
+    st.markdown('</div>', unsafe_allow_html=True)
+    
     # 处理按钮
-    if st.button("开始处理数据", type="primary", use_container_width=True):
+    if st.button("🚀 开始处理数据", type="primary", use_container_width=True):
         if uploaded_files:
-            with st.spinner("正在处理数据文件..."):
+            with st.spinner("⏳ 正在处理数据文件..."):
                 try:
                     # 处理数据文件
                     merged_data, processed_count = integrate_excel_files_streamlit(
@@ -804,46 +1001,69 @@ if page == "数据上传与汇总":
                     if merged_data is not None and not merged_data.empty:
                         st.session_state.merged_data = merged_data
                         
-                        st.success(f"数据处理完成！成功处理 {processed_count} 个文件")
+                        st.success(f"🎉 数据处理完成！成功处理 {processed_count} 个文件")
                         
-                        # 显示数据预览
-                        st.subheader("数据预览")
-                        st.dataframe(merged_data.head(10), use_container_width=True)
+                        # 显示关键指标
+                        st.markdown('<div class="glass-card">', unsafe_allow_html=True)
+                        st.subheader("📊 数据概览")
                         
-                        # 显示统计信息
                         col1, col2, col3, col4 = st.columns(4)
                         with col1:
-                            st.metric("总记录数", len(merged_data))
+                            st.markdown('<div class="metric-card">', unsafe_allow_html=True)
+                            st.markdown(f'<div class="metric-value">{len(merged_data):,}</div>', unsafe_allow_html=True)
+                            st.markdown('<div class="metric-label">总记录数</div>', unsafe_allow_html=True)
+                            st.markdown('</div>', unsafe_allow_html=True)
+                        
                         with col2:
-                            st.metric("数据来源", merged_data['数据来源'].nunique())
+                            st.markdown('<div class="metric-card">', unsafe_allow_html=True)
+                            st.markdown(f'<div class="metric-value">{merged_data["数据来源"].nunique()}</div>', unsafe_allow_html=True)
+                            st.markdown('<div class="metric-label">数据来源</div>', unsafe_allow_html=True)
+                            st.markdown('</div>', unsafe_allow_html=True)
+                        
                         with col3:
-                            st.metric("日期范围", f"{merged_data['date'].min()} 至 {merged_data['date'].max()}")
-                        with col4:
                             total_new_users = merged_data['回传新增数'].sum()
-                            st.metric("总新增用户", f"{total_new_users:,.0f}")
+                            st.markdown('<div class="metric-card">', unsafe_allow_html=True)
+                            st.markdown(f'<div class="metric-value">{total_new_users:,.0f}</div>', unsafe_allow_html=True)
+                            st.markdown('<div class="metric-label">总新增用户</div>', unsafe_allow_html=True)
+                            st.markdown('</div>', unsafe_allow_html=True)
+                        
+                        with col4:
+                            date_range = f"{merged_data['date'].min()} 至 {merged_data['date'].max()}"
+                            st.markdown('<div class="metric-card">', unsafe_allow_html=True)
+                            st.markdown('<div class="metric-value">📅</div>', unsafe_allow_html=True)
+                            st.markdown(f'<div class="metric-label">{date_range}</div>', unsafe_allow_html=True)
+                            st.markdown('</div>', unsafe_allow_html=True)
+                        
+                        # 数据预览
+                        st.subheader("🔍 数据预览")
+                        st.dataframe(merged_data.head(10), use_container_width=True)
+                        st.markdown('</div>', unsafe_allow_html=True)
                     
                     else:
-                        st.error("未找到有效数据，请检查文件格式和目标月份设置")
+                        st.error("❌ 未找到有效数据，请检查文件格式和目标月份设置")
                 
                 except Exception as e:
-                    st.error(f"处理过程中出现错误：{str(e)}")
+                    st.error(f"❌ 处理过程中出现错误：{str(e)}")
         else:
-            st.error("请先选择要处理的文件")
+            st.error("⚠️ 请先选择要处理的文件")
 
 elif page == "留存率计算":
-    st.header("留存率计算")
+    st.markdown('<div class="glass-card">', unsafe_allow_html=True)
+    st.header("📈 留存率计算")
+    st.markdown('</div>', unsafe_allow_html=True)
     
     if st.session_state.merged_data is None:
-        st.warning("请先在「数据上传与汇总」页面处理数据")
-        if st.button("返回数据上传页面"):
-            st.experimental_rerun()
+        st.warning("⚠️ 请先在「数据上传与汇总」页面处理数据")
+        if st.button("🔙 返回数据上传页面"):
+            st.rerun()
     else:
         merged_data = st.session_state.merged_data
         
+        st.markdown('<div class="glass-card">', unsafe_allow_html=True)
         col1, col2 = st.columns([3, 1])
         
         with col1:
-            st.subheader("留存率分析配置")
+            st.subheader("⚙️ 留存率分析配置")
             
             # 数据来源选择
             data_sources = merged_data['数据来源'].unique()
@@ -856,15 +1076,17 @@ elif page == "留存率计算":
         
         with col2:
             st.markdown('<div class="status-card">', unsafe_allow_html=True)
-            st.markdown("### 分析范围")
-            st.text(f"数据来源: {len(selected_sources)}")
-            st.text(f"总记录数: {len(merged_data)}")
-            st.text(f"分析天数: 1-30天")
+            st.markdown("### 📊 分析范围")
+            st.markdown(f"**数据来源:** {len(selected_sources)}")
+            st.markdown(f"**总记录数:** {len(merged_data):,}")
+            st.markdown(f"**分析天数:** 1-30天")
             st.markdown('</div>', unsafe_allow_html=True)
         
-        if st.button("计算留存率", type="primary", use_container_width=True):
+        st.markdown('</div>', unsafe_allow_html=True)
+        
+        if st.button("🔄 计算留存率", type="primary", use_container_width=True):
             if selected_sources:
-                with st.spinner("正在计算留存率..."):
+                with st.spinner("⏳ 正在计算留存率..."):
                     # 过滤选中的数据来源
                     filtered_data = merged_data[merged_data['数据来源'].isin(selected_sources)]
                     
@@ -872,64 +1094,85 @@ elif page == "留存率计算":
                     retention_results = calculate_retention_rates(filtered_data)
                     st.session_state.retention_data = retention_results
                     
-                    st.success("留存率计算完成！")
+                    st.success("🎉 留存率计算完成！")
                     
                     # 显示结果
-                    st.subheader("留存率结果")
+                    st.markdown('<div class="glass-card">', unsafe_allow_html=True)
+                    st.subheader("📊 留存率结果")
                     
                     for result in retention_results:
-                        with st.expander(f"{result['data_source']} - 留存率详情"):
+                        with st.expander(f"📈 {result['data_source']} - 留存率详情", expanded=True):
                             retention_rates = result['retention_rates']
                             
                             # 创建留存率表格
                             days = list(range(1, 31))
                             rates = [retention_rates.get(day, 0) for day in days]
                             
-                            df_display = pd.DataFrame({
-                                '天数': days,
-                                '留存率': [f"{rate:.4f}" for rate in rates],
-                                '百分比': [f"{rate*100:.2f}%" for rate in rates]
-                            })
+                            col1, col2 = st.columns([1, 2])
                             
-                            col1, col2 = st.columns([2, 1])
                             with col1:
-                                st.dataframe(df_display, use_container_width=True)
+                                # 显示关键指标
+                                valid_rates = [r for r in rates if r > 0]
+                                if valid_rates:
+                                    st.markdown("### 📊 关键指标")
+                                    st.metric("Day 1 留存率", f"{rates[0]*100:.2f}%")
+                                    st.metric("Day 7 留存率", f"{rates[6]*100:.2f}%" if len(rates) > 6 else "N/A")
+                                    st.metric("Day 30 留存率", f"{rates[29]*100:.2f}%" if len(rates) > 29 else "N/A")
+                                    st.metric("平均留存率", f"{np.mean(valid_rates)*100:.2f}%")
                             
                             with col2:
                                 # 绘制留存率曲线
-                                fig, ax = plt.subplots(figsize=(8, 6))
                                 valid_days = [d for d, r in zip(days, rates) if r > 0]
                                 valid_rates = [r for r in rates if r > 0]
                                 
                                 if valid_days:
-                                    ax.plot(valid_days, valid_rates, 'o-', linewidth=2, markersize=6)
-                                    ax.set_xlabel('天数')
-                                    ax.set_ylabel('留存率')
-                                    ax.set_title(f'{result["data_source"]} 留存率曲线')
-                                    ax.grid(True, alpha=0.3)
+                                    fig, ax = plt.subplots(figsize=(12, 6))
+                                    
+                                    # 使用渐变色
+                                    colors = plt.cm.viridis(np.linspace(0, 1, len(valid_days)))
+                                    scatter = ax.scatter(valid_days, valid_rates, 
+                                                       c=colors, s=80, alpha=0.8, edgecolors='white', linewidth=2)
+                                    ax.plot(valid_days, valid_rates, '--', color='#667eea', linewidth=2, alpha=0.7)
+                                    
+                                    ax.set_xlabel('天数', fontsize=12, fontweight='bold')
+                                    ax.set_ylabel('留存率', fontsize=12, fontweight='bold')
+                                    ax.set_title(f'{result["data_source"]} 留存率曲线', fontsize=14, fontweight='bold')
+                                    ax.grid(True, alpha=0.3, linestyle='--')
                                     ax.set_ylim(0, max(valid_rates) * 1.1)
-                                
-                                st.pyplot(fig)
-                                plt.close()
+                                    
+                                    # 美化图表
+                                    ax.spines['top'].set_visible(False)
+                                    ax.spines['right'].set_visible(False)
+                                    ax.spines['left'].set_linewidth(0.5)
+                                    ax.spines['bottom'].set_linewidth(0.5)
+                                    
+                                    plt.tight_layout()
+                                    st.pyplot(fig)
+                                    plt.close()
+                    
+                    st.markdown('</div>', unsafe_allow_html=True)
             else:
-                st.error("请选择至少一个数据来源")
+                st.error("⚠️ 请选择至少一个数据来源")
 
 elif page == "LT拟合分析":
-    st.header("LT拟合分析")
+    st.markdown('<div class="glass-card">', unsafe_allow_html=True)
+    st.header("🔄 LT拟合分析")
+    st.markdown('</div>', unsafe_allow_html=True)
     
     if st.session_state.retention_data is None:
-        st.warning("请先在「留存率计算」页面计算留存率")
-        if st.button("返回留存率计算页面"):
-            st.experimental_rerun()
+        st.warning("⚠️ 请先在「留存率计算」页面计算留存率")
+        if st.button("🔙 返回留存率计算页面"):
+            st.rerun()
     else:
         retention_data = st.session_state.retention_data
         
-        st.subheader("曲线拟合参数设置")
+        st.markdown('<div class="glass-card">', unsafe_allow_html=True)
+        st.subheader("⚙️ 曲线拟合参数设置")
         
         col1, col2 = st.columns([2, 1])
         
         with col1:
-            st.markdown("**拟合方法选择：**")
+            st.markdown("### 🎯 拟合方法选择")
             fit_methods = st.multiselect(
                 "选择拟合方法",
                 options=["幂函数 (Power)", "指数函数 (Exponential)"],
@@ -938,7 +1181,7 @@ elif page == "LT拟合分析":
             )
             
             max_days = st.number_input(
-                "LT计算天数范围",
+                "📅 LT计算天数范围",
                 min_value=30,
                 max_value=1000,
                 value=365,
@@ -947,14 +1190,16 @@ elif page == "LT拟合分析":
         
         with col2:
             st.markdown('<div class="status-card">', unsafe_allow_html=True)
-            st.markdown("### 拟合设置")
-            st.text(f"数据来源: {len(retention_data)}")
-            st.text(f"拟合方法: {len(fit_methods)}")
-            st.text(f"LT天数: {max_days}")
+            st.markdown("### 📊 拟合设置")
+            st.markdown(f"**数据来源:** {len(retention_data)}")
+            st.markdown(f"**拟合方法:** {len(fit_methods)}")
+            st.markdown(f"**LT天数:** {max_days}")
             st.markdown('</div>', unsafe_allow_html=True)
         
-        if st.button("开始拟合分析", type="primary", use_container_width=True):
-            with st.spinner("正在进行曲线拟合..."):
+        st.markdown('</div>', unsafe_allow_html=True)
+        
+        if st.button("🚀 开始拟合分析", type="primary", use_container_width=True):
+            with st.spinner("⏳ 正在进行曲线拟合..."):
                 # 执行拟合分析
                 fitting_results = fit_retention_curves(retention_data)
                 
@@ -962,40 +1207,47 @@ elif page == "LT拟合分析":
                 lt_results = calculate_lt_values(fitting_results, max_days)
                 st.session_state.lt_results = lt_results
                 
-                st.success("拟合分析完成！")
+                st.success("🎉 拟合分析完成！")
                 
                 # 显示拟合结果
-                st.subheader("拟合结果")
+                st.markdown('<div class="glass-card">', unsafe_allow_html=True)
+                st.subheader("📊 拟合结果")
                 
                 for i, result in enumerate(fitting_results):
                     source = result['data_source']
                     
-                    with st.expander(f"{source} - 拟合分析详情", expanded=True):
-                        col1, col2 = st.columns([1, 1])
+                    with st.expander(f"🔄 {source} - 拟合分析详情", expanded=True):
+                        col1, col2 = st.columns([1, 2])
                         
                         with col1:
                             # 显示拟合参数
-                            st.markdown("**拟合参数：**")
+                            st.markdown("### 📊 拟合参数")
                             
                             # 幂函数结果
                             power_params = result['power_params']
                             power_r2 = result['power_r2']
-                            st.write(f"**幂函数:** y = {power_params[0]:.4f} × x^{power_params[1]:.4f}")
-                            st.write(f"R² = {power_r2:.4f}")
+                            st.markdown(f"**🔹 幂函数:** y = {power_params[0]:.4f} × x^{power_params[1]:.4f}")
+                            st.markdown(f"**R² = {power_r2:.4f}**")
                             
                             # 指数函数结果
                             exp_params = result['exp_params']
                             exp_r2 = result['exp_r2']
-                            st.write(f"**指数函数:** y = {exp_params[0]:.4f} × e^({exp_params[1]:.4f}x)")
-                            st.write(f"R² = {exp_r2:.4f}")
+                            st.markdown(f"**🔹 指数函数:** y = {exp_params[0]:.4f} × e^({exp_params[1]:.4f}x)")
+                            st.markdown(f"**R² = {exp_r2:.4f}**")
                             
                             # 最佳模型
                             best_model = result['best_model']
-                            st.success(f"**最佳模型:** {best_model}")
+                            if best_model == 'power':
+                                st.success(f"✅ **最佳模型:** 幂函数")
+                            else:
+                                st.success(f"✅ **最佳模型:** 指数函数")
                             
                             # LT值
                             lt_value = lt_results[i]['lt_value']
-                            st.metric("**LT值**", f"{lt_value:.2f}", help=f"基于{max_days}天计算")
+                            st.markdown('<div class="metric-card">', unsafe_allow_html=True)
+                            st.markdown(f'<div class="metric-value">{lt_value:.2f}</div>', unsafe_allow_html=True)
+                            st.markdown(f'<div class="metric-label">LT值 (基于{max_days}天)</div>', unsafe_allow_html=True)
+                            st.markdown('</div>', unsafe_allow_html=True)
                         
                         with col2:
                             # 绘制拟合曲线
@@ -1003,70 +1255,83 @@ elif page == "LT拟合分析":
                             rates = np.array(result['rates'])
                             
                             if len(days) > 0:
-                                fig, ax = plt.subplots(figsize=(10, 6))
+                                fig, ax = plt.subplots(figsize=(12, 8))
                                 
                                 # 原始数据点
-                                ax.scatter(days, rates, color='red', s=50, alpha=0.7, label='实际数据', zorder=5)
+                                ax.scatter(days, rates, color='#ff6b6b', s=100, alpha=0.8, 
+                                         label='实际数据', zorder=5, edgecolors='white', linewidth=2)
                                 
                                 # 拟合曲线
                                 x_fit = np.linspace(1, 30, 100)
                                 
                                 # 幂函数拟合曲线
                                 y_power = power_params[0] * (x_fit ** power_params[1])
-                                ax.plot(x_fit, y_power, '--', color='blue', linewidth=2, 
+                                ax.plot(x_fit, y_power, '--', color='#667eea', linewidth=3, 
                                        label=f'幂函数 (R²={power_r2:.3f})', alpha=0.8)
                                 
                                 # 指数函数拟合曲线
                                 y_exp = exp_params[0] * np.exp(exp_params[1] * x_fit)
-                                ax.plot(x_fit, y_exp, '--', color='green', linewidth=2, 
+                                ax.plot(x_fit, y_exp, '--', color='#764ba2', linewidth=3, 
                                        label=f'指数函数 (R²={exp_r2:.3f})', alpha=0.8)
                                 
                                 # 突出显示最佳拟合
                                 if best_model == 'power':
-                                    ax.plot(x_fit, y_power, '-', color='blue', linewidth=3, 
+                                    ax.plot(x_fit, y_power, '-', color='#667eea', linewidth=4, 
                                            label='最佳拟合', alpha=1.0, zorder=4)
                                 else:
-                                    ax.plot(x_fit, y_exp, '-', color='green', linewidth=3, 
+                                    ax.plot(x_fit, y_exp, '-', color='#764ba2', linewidth=4, 
                                            label='最佳拟合', alpha=1.0, zorder=4)
                                 
-                                ax.set_xlabel('天数')
-                                ax.set_ylabel('留存率')
-                                ax.set_title(f'{source} - 留存率拟合曲线')
-                                ax.legend()
-                                ax.grid(True, alpha=0.3)
+                                ax.set_xlabel('天数', fontsize=12, fontweight='bold')
+                                ax.set_ylabel('留存率', fontsize=12, fontweight='bold')
+                                ax.set_title(f'{source} - 留存率拟合曲线', fontsize=14, fontweight='bold')
+                                ax.legend(fontsize=10)
+                                ax.grid(True, alpha=0.3, linestyle='--')
                                 ax.set_xlim(0, 31)
                                 ax.set_ylim(0, max(rates) * 1.1)
                                 
+                                # 美化图表
+                                ax.spines['top'].set_visible(False)
+                                ax.spines['right'].set_visible(False)
+                                ax.spines['left'].set_linewidth(0.5)
+                                ax.spines['bottom'].set_linewidth(0.5)
+                                
+                                plt.tight_layout()
                                 st.pyplot(fig)
                                 plt.close()
+                
+                st.markdown('</div>', unsafe_allow_html=True)
 
 elif page == "ARPU计算":
-    st.header("ARPU计算")
+    st.markdown('<div class="glass-card">', unsafe_allow_html=True)
+    st.header("💰 ARPU计算")
+    st.markdown('</div>', unsafe_allow_html=True)
     
-    st.subheader("上传ARPU数据")
+    st.markdown('<div class="glass-card">', unsafe_allow_html=True)
+    st.subheader("📤 上传ARPU数据")
     
     # ARPU数据上传
     arpu_file = st.file_uploader(
         "选择ARPU数据文件",
         type=['xlsx', 'xls'],
-        help="上传包含用户付费数据的Excel文件"
+        help="📊 上传包含用户付费数据的Excel文件"
     )
     
     if arpu_file:
         try:
             # 读取ARPU文件
             arpu_df = pd.read_excel(arpu_file)
-            st.success("ARPU文件上传成功！")
+            st.success("✅ ARPU文件上传成功！")
             
             # 显示文件预览
-            st.subheader("数据预览")
+            st.subheader("🔍 数据预览")
             st.dataframe(arpu_df.head(10), use_container_width=True)
             
             # 数据列选择
             col1, col2 = st.columns(2)
             
             with col1:
-                st.subheader("数据列映射")
+                st.subheader("🔗 数据列映射")
                 
                 # 让用户选择关键列
                 source_col = st.selectbox(
@@ -1088,7 +1353,7 @@ elif page == "ARPU计算":
                 )
             
             with col2:
-                st.subheader("数据统计")
+                st.subheader("📊 数据统计")
                 
                 # 显示基本统计
                 if arpu_col in arpu_df.columns:
@@ -1096,14 +1361,14 @@ elif page == "ARPU计算":
                     
                     col_a, col_b = st.columns(2)
                     with col_a:
-                        st.metric("平均ARPU", f"{arpu_values.mean():.2f}")
-                        st.metric("最小值", f"{arpu_values.min():.2f}")
+                        st.metric("💵 平均ARPU", f"{arpu_values.mean():.2f}")
+                        st.metric("📉 最小值", f"{arpu_values.min():.2f}")
                     with col_b:
-                        st.metric("最大值", f"{arpu_values.max():.2f}")
-                        st.metric("有效记录", f"{arpu_values.notna().sum()}")
+                        st.metric("📈 最大值", f"{arpu_values.max():.2f}")
+                        st.metric("✅ 有效记录", f"{arpu_values.notna().sum():,}")
             
             # 处理ARPU数据
-            if st.button("保存ARPU数据", type="primary", use_container_width=True):
+            if st.button("💾 保存ARPU数据", type="primary", use_container_width=True):
                 try:
                     # 标准化ARPU数据
                     processed_arpu = arpu_df.copy()
@@ -1118,23 +1383,23 @@ elif page == "ARPU计算":
                     
                     st.session_state.arpu_data = arpu_summary
                     
-                    st.success("ARPU数据处理完成！")
+                    st.success("🎉 ARPU数据处理完成！")
                     
                     # 显示汇总结果
-                    st.subheader("ARPU汇总结果")
+                    st.subheader("📊 ARPU汇总结果")
                     st.dataframe(arpu_summary, use_container_width=True)
                     
                 except Exception as e:
-                    st.error(f"ARPU数据处理失败：{str(e)}")
+                    st.error(f"❌ ARPU数据处理失败：{str(e)}")
         
         except Exception as e:
-            st.error(f"文件读取失败：{str(e)}")
+            st.error(f"❌ 文件读取失败：{str(e)}")
     
     else:
-        st.info("请上传ARPU数据文件")
+        st.info("📁 请上传ARPU数据文件")
         
         # 如果没有ARPU数据，提供手动输入选项
-        st.subheader("手动设置ARPU")
+        st.subheader("✏️ 手动设置ARPU")
         
         if st.session_state.lt_results:
             # 基于已有的LT结果创建ARPU输入
@@ -1144,7 +1409,7 @@ elif page == "ARPU计算":
             for result in st.session_state.lt_results:
                 source = result['data_source']
                 arpu_value = st.number_input(
-                    f"{source} ARPU",
+                    f"💰 {source} ARPU",
                     min_value=0.0,
                     value=10.0,
                     step=0.01,
@@ -1152,7 +1417,7 @@ elif page == "ARPU计算":
                 )
                 arpu_inputs[source] = arpu_value
             
-            if st.button("保存手动ARPU设置", type="primary", use_container_width=True):
+            if st.button("💾 保存手动ARPU设置", type="primary", use_container_width=True):
                 # 创建ARPU数据框
                 arpu_df = pd.DataFrame([
                     {'data_source': source, 'arpu_value': value} 
@@ -1160,24 +1425,28 @@ elif page == "ARPU计算":
                 ])
                 
                 st.session_state.arpu_data = arpu_df
-                st.success("ARPU设置已保存！")
+                st.success("🎉 ARPU设置已保存！")
                 st.dataframe(arpu_df, use_container_width=True)
         
         else:
-            st.warning("请先完成LT拟合分析，然后再设置ARPU")
+            st.warning("⚠️ 请先完成LT拟合分析，然后再设置ARPU")
+    
+    st.markdown('</div>', unsafe_allow_html=True)
 
 elif page == "LTV结果报告":
-    st.header("LTV结果报告")
+    st.markdown('<div class="glass-card">', unsafe_allow_html=True)
+    st.header("📊 LTV结果报告")
+    st.markdown('</div>', unsafe_allow_html=True)
     
     # 检查必要数据是否存在
     if st.session_state.lt_results is None:
-        st.warning("请先完成LT拟合分析")
-        if st.button("跳转到LT拟合分析"):
-            st.experimental_rerun()
+        st.warning("⚠️ 请先完成LT拟合分析")
+        if st.button("🔄 跳转到LT拟合分析"):
+            st.rerun()
     elif st.session_state.arpu_data is None:
-        st.warning("请先完成ARPU计算")
-        if st.button("跳转到ARPU计算"):
-            st.experimental_rerun()
+        st.warning("⚠️ 请先完成ARPU计算")
+        if st.button("💰 跳转到ARPU计算"):
+            st.rerun()
     else:
         # 计算LTV
         lt_results = st.session_state.lt_results
@@ -1212,7 +1481,8 @@ elif page == "LTV结果报告":
         st.session_state.ltv_results = ltv_results
         
         # 显示LTV结果
-        st.subheader("LTV计算结果")
+        st.markdown('<div class="glass-card">', unsafe_allow_html=True)
+        st.subheader("🎯 LTV计算结果")
         
         # 创建结果表格
         ltv_df = pd.DataFrame(ltv_results)
@@ -1232,48 +1502,74 @@ elif page == "LTV结果报告":
         ltv_df['R²得分'] = ltv_df['R²得分'].round(4)
         
         st.dataframe(ltv_df, use_container_width=True)
+        st.markdown('</div>', unsafe_allow_html=True)
         
         # 关键指标展示
-        st.subheader("关键指标")
+        st.markdown('<div class="glass-card">', unsafe_allow_html=True)
+        st.subheader("📊 关键指标")
         
         col1, col2, col3, col4 = st.columns(4)
         
         with col1:
             avg_ltv = ltv_df['LTV'].mean()
-            st.metric("平均LTV", f"{avg_ltv:.2f}")
+            st.markdown('<div class="metric-card">', unsafe_allow_html=True)
+            st.markdown(f'<div class="metric-value">{avg_ltv:.2f}</div>', unsafe_allow_html=True)
+            st.markdown('<div class="metric-label">平均LTV</div>', unsafe_allow_html=True)
+            st.markdown('</div>', unsafe_allow_html=True)
         
         with col2:
             max_ltv = ltv_df['LTV'].max()
             best_source = ltv_df.loc[ltv_df['LTV'].idxmax(), '数据来源']
-            st.metric("最高LTV", f"{max_ltv:.2f}", delta=best_source)
+            st.markdown('<div class="metric-card">', unsafe_allow_html=True)
+            st.markdown(f'<div class="metric-value">{max_ltv:.2f}</div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="metric-label">最高LTV<br>({best_source})</div>', unsafe_allow_html=True)
+            st.markdown('</div>', unsafe_allow_html=True)
         
         with col3:
             avg_lt = ltv_df['LT值'].mean()
-            st.metric("平均LT", f"{avg_lt:.2f}")
+            st.markdown('<div class="metric-card">', unsafe_allow_html=True)
+            st.markdown(f'<div class="metric-value">{avg_lt:.2f}</div>', unsafe_allow_html=True)
+            st.markdown('<div class="metric-label">平均LT</div>', unsafe_allow_html=True)
+            st.markdown('</div>', unsafe_allow_html=True)
         
         with col4:
             avg_arpu = ltv_df['ARPU'].mean()
-            st.metric("平均ARPU", f"{avg_arpu:.2f}")
+            st.markdown('<div class="metric-card">', unsafe_allow_html=True)
+            st.markdown(f'<div class="metric-value">{avg_arpu:.2f}</div>', unsafe_allow_html=True)
+            st.markdown('<div class="metric-label">平均ARPU</div>', unsafe_allow_html=True)
+            st.markdown('</div>', unsafe_allow_html=True)
+        
+        st.markdown('</div>', unsafe_allow_html=True)
         
         # LTV对比图表
-        st.subheader("LTV对比分析")
+        st.markdown('<div class="glass-card">', unsafe_allow_html=True)
+        st.subheader("📈 LTV对比分析")
         
         col1, col2 = st.columns(2)
         
         with col1:
             # LTV条形图
-            fig, ax = plt.subplots(figsize=(10, 6))
-            bars = ax.bar(ltv_df['数据来源'], ltv_df['LTV'], color='steelblue', alpha=0.7)
-            ax.set_xlabel('数据来源')
-            ax.set_ylabel('LTV值')
-            ax.set_title('各渠道LTV对比')
+            fig, ax = plt.subplots(figsize=(12, 8))
+            
+            # 使用渐变色
+            colors = plt.cm.viridis(np.linspace(0, 1, len(ltv_df)))
+            bars = ax.bar(ltv_df['数据来源'], ltv_df['LTV'], color=colors, alpha=0.8, edgecolor='white', linewidth=2)
+            
+            ax.set_xlabel('数据来源', fontsize=12, fontweight='bold')
+            ax.set_ylabel('LTV值', fontsize=12, fontweight='bold')
+            ax.set_title('各渠道LTV对比', fontsize=14, fontweight='bold')
             ax.tick_params(axis='x', rotation=45)
             
             # 在条形图上显示数值
             for bar, value in zip(bars, ltv_df['LTV']):
                 height = bar.get_height()
                 ax.text(bar.get_x() + bar.get_width()/2., height + height*0.01,
-                       f'{value:.1f}', ha='center', va='bottom')
+                       f'{value:.1f}', ha='center', va='bottom', fontweight='bold')
+            
+            # 美化图表
+            ax.spines['top'].set_visible(False)
+            ax.spines['right'].set_visible(False)
+            ax.grid(True, alpha=0.3, linestyle='--', axis='y')
             
             plt.tight_layout()
             st.pyplot(fig)
@@ -1281,47 +1577,63 @@ elif page == "LTV结果报告":
         
         with col2:
             # LT vs ARPU散点图
-            fig, ax = plt.subplots(figsize=(10, 6))
+            fig, ax = plt.subplots(figsize=(12, 8))
             scatter = ax.scatter(ltv_df['LT值'], ltv_df['ARPU'], 
-                               c=ltv_df['LTV'], s=100, alpha=0.7, cmap='viridis')
+                               c=ltv_df['LTV'], s=200, alpha=0.8, cmap='viridis',
+                               edgecolors='white', linewidth=2)
             
             # 添加数据源标签
             for i, source in enumerate(ltv_df['数据来源']):
                 ax.annotate(source, (ltv_df['LT值'].iloc[i], ltv_df['ARPU'].iloc[i]),
-                           xytext=(5, 5), textcoords='offset points', fontsize=8)
+                           xytext=(5, 5), textcoords='offset points', fontsize=10, fontweight='bold')
             
-            ax.set_xlabel('LT值')
-            ax.set_ylabel('ARPU')
-            ax.set_title('LT vs ARPU 关系图')
+            ax.set_xlabel('LT值', fontsize=12, fontweight='bold')
+            ax.set_ylabel('ARPU', fontsize=12, fontweight='bold')
+            ax.set_title('LT vs ARPU 关系图', fontsize=14, fontweight='bold')
             
             # 添加颜色条
             cbar = plt.colorbar(scatter)
-            cbar.set_label('LTV值')
+            cbar.set_label('LTV值', fontsize=12, fontweight='bold')
+            
+            # 美化图表
+            ax.spines['top'].set_visible(False)
+            ax.spines['right'].set_visible(False)
+            ax.grid(True, alpha=0.3, linestyle='--')
             
             plt.tight_layout()
             st.pyplot(fig)
             plt.close()
         
+        st.markdown('</div>', unsafe_allow_html=True)
+        
         # 模型质量分析
-        st.subheader("模型质量分析")
+        st.markdown('<div class="glass-card">', unsafe_allow_html=True)
+        st.subheader("🎯 模型质量分析")
         
         col1, col2 = st.columns(2)
         
         with col1:
             # R²得分分布
-            fig, ax = plt.subplots(figsize=(8, 6))
-            ax.bar(ltv_df['数据来源'], ltv_df['R²得分'], color='lightcoral', alpha=0.7)
-            ax.set_xlabel('数据来源')
-            ax.set_ylabel('R²得分')
-            ax.set_title('模型拟合质量 (R²得分)')
+            fig, ax = plt.subplots(figsize=(10, 6))
+            colors = ['#ff6b6b' if r < 0.6 else '#ffa726' if r < 0.8 else '#66bb6a' for r in ltv_df['R²得分']]
+            bars = ax.bar(ltv_df['数据来源'], ltv_df['R²得分'], color=colors, alpha=0.8, edgecolor='white', linewidth=2)
+            
+            ax.set_xlabel('数据来源', fontsize=12, fontweight='bold')
+            ax.set_ylabel('R²得分', fontsize=12, fontweight='bold')
+            ax.set_title('模型拟合质量 (R²得分)', fontsize=14, fontweight='bold')
             ax.tick_params(axis='x', rotation=45)
             ax.set_ylim(0, 1)
             
             # 添加质量评价线
-            ax.axhline(y=0.8, color='green', linestyle='--', alpha=0.7, label='优秀 (0.8+)')
-            ax.axhline(y=0.6, color='orange', linestyle='--', alpha=0.7, label='良好 (0.6+)')
-            ax.axhline(y=0.4, color='red', linestyle='--', alpha=0.7, label='一般 (0.4+)')
-            ax.legend()
+            ax.axhline(y=0.8, color='#66bb6a', linestyle='--', alpha=0.7, linewidth=2, label='优秀 (0.8+)')
+            ax.axhline(y=0.6, color='#ffa726', linestyle='--', alpha=0.7, linewidth=2, label='良好 (0.6+)')
+            ax.axhline(y=0.4, color='#ff6b6b', linestyle='--', alpha=0.7, linewidth=2, label='一般 (0.4+)')
+            ax.legend(fontsize=10)
+            
+            # 美化图表
+            ax.spines['top'].set_visible(False)
+            ax.spines['right'].set_visible(False)
+            ax.grid(True, alpha=0.3, linestyle='--', axis='y')
             
             plt.tight_layout()
             st.pyplot(fig)
@@ -1331,17 +1643,21 @@ elif page == "LTV结果报告":
             # 模型使用统计
             model_counts = ltv_df['拟合模型'].value_counts()
             
-            fig, ax = plt.subplots(figsize=(8, 6))
-            colors = ['lightblue', 'lightgreen']
+            fig, ax = plt.subplots(figsize=(10, 6))
+            colors = ['#667eea', '#764ba2']
             wedges, texts, autotexts = ax.pie(model_counts.values, labels=model_counts.index, 
-                                             autopct='%1.1f%%', colors=colors, startangle=90)
-            ax.set_title('拟合模型使用分布')
+                                             autopct='%1.1f%%', colors=colors, startangle=90,
+                                             textprops={'fontsize': 12, 'fontweight': 'bold'})
+            ax.set_title('拟合模型使用分布', fontsize=14, fontweight='bold')
             
             st.pyplot(fig)
             plt.close()
         
+        st.markdown('</div>', unsafe_allow_html=True)
+        
         # 导出功能
-        st.subheader("结果导出")
+        st.markdown('<div class="glass-card">', unsafe_allow_html=True)
+        st.subheader("📤 结果导出")
         
         col1, col2 = st.columns(2)
         
@@ -1353,7 +1669,7 @@ elif page == "LTV结果报告":
             csv_data = export_df.to_csv(index=False, encoding='utf-8-sig')
             
             st.download_button(
-                label="下载LTV结果 (CSV)",
+                label="📊 下载LTV结果 (CSV)",
                 data=csv_data,
                 file_name=f"LTV_Results_{datetime.datetime.now().strftime('%Y%m%d_%H%M')}.csv",
                 mime="text/csv",
@@ -1363,17 +1679,20 @@ elif page == "LTV结果报告":
         with col2:
             # 创建详细报告
             report_text = f"""
-LTV分析报告
+📊 LTV分析报告
+=================================
 生成时间: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
 
-=== 总体指标 ===
+🎯 总体指标
+---------------------------------
 参与分析的数据源数量: {len(ltv_df)}
 平均LTV: {avg_ltv:.2f}
-最高LTV: {max_ltv:.2f} ({best_source})
+最高LTV: {max_ltv:.2f} ({ltv_df.loc[ltv_df['LTV'].idxmax(), '数据来源']})
 平均LT: {avg_lt:.2f}
 平均ARPU: {avg_arpu:.2f}
 
-=== 详细结果 ===
+📈 详细结果
+---------------------------------
 """
             
             for _, row in ltv_df.iterrows():
@@ -1387,23 +1706,26 @@ LTV分析报告
 """
             
             st.download_button(
-                label="下载详细报告 (TXT)",
+                label="📄 下载详细报告 (TXT)",
                 data=report_text,
                 file_name=f"LTV_Report_{datetime.datetime.now().strftime('%Y%m%d_%H%M')}.txt",
                 mime="text/plain",
                 use_container_width=True
             )
+        
+        st.markdown('</div>', unsafe_allow_html=True)
 
 # 底部信息
-st.sidebar.markdown("---")
-st.sidebar.markdown("### 分析步骤")
-st.sidebar.markdown("""
-1. **数据上传与汇总** - 上传原始数据文件
-2. **留存率计算** - 计算用户留存率
-3. **LT拟合分析** - 拟合生命周期曲线
-4. **ARPU计算** - 设置/计算用户价值
-5. **LTV结果报告** - 生成最终报告
-""")
-
-st.sidebar.markdown("---")
-st.sidebar.info("**提示**: 请按照流程顺序完成各个步骤，每一步的结果都会保存在当前会话中。")
+with st.sidebar:
+    st.markdown("---")
+    st.markdown("""
+    <div class="progress-container">
+        <h3 style="text-align: center; color: #495057;">💡 使用提示</h3>
+        <p style="font-size: 0.9rem; color: #6c757d; text-align: center;">
+        请按照流程顺序完成各个步骤，每一步的结果都会保存在当前会话中。
+        </p>
+        <p style="font-size: 0.8rem; color: #adb5bd; text-align: center;">
+        Powered by Streamlit & Advanced Analytics
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
