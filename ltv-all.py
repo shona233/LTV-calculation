@@ -387,7 +387,7 @@ ANALYSIS_STEPS = [
 with st.sidebar:
     st.markdown("""
     <div class="progress-container">
-        <h3 style="text-align: center; margin-bottom: 1.5rem; color: #495057;">分析流程</h3>
+        <h4 style="text-align: center; margin-bottom: 1rem; color: #495057;">分析流程</h4>
     """, unsafe_allow_html=True)
     
     # 页面选择（改为直接选择框）
@@ -986,23 +986,19 @@ def create_advanced_visualization(fitting_results, lt_results):
 
 # 页面内容
 if page == "数据上传与汇总":
-    st.markdown('<div class="glass-card">', unsafe_allow_html=True)
     st.header("数据上传与汇总")
-    st.markdown('</div>', unsafe_allow_html=True)
     
     # 渠道映射配置
     with st.expander("渠道映射配置", expanded=False):
         col1, col2 = st.columns([1, 2])
         
         with col1:
-            st.markdown('<div class="status-card">', unsafe_allow_html=True)
             st.markdown("### 当前配置状态")
             if st.session_state.channel_mapping:
                 st.success(f"已配置 {len(st.session_state.channel_mapping)} 个渠道映射")
                 st.info("正在使用默认渠道映射表")
             else:
                 st.warning("未配置渠道映射")
-            st.markdown('</div>', unsafe_allow_html=True)
         
         with col2:
             if st.session_state.channel_mapping:
@@ -1042,48 +1038,30 @@ if page == "数据上传与汇总":
                 st.error(f"渠道映射文件读取失败: {str(e)}")
     
     # 数据文件上传
-    st.markdown('<div class="glass-card">', unsafe_allow_html=True)
     st.subheader("数据文件处理")
     
-    col1, col2 = st.columns([3, 1])
+    uploaded_files = st.file_uploader(
+        "选择Excel数据文件",
+        type=['xlsx', 'xls'],
+        accept_multiple_files=True,
+        help="支持上传多个Excel文件，系统会自动解析留存数据，支持新旧两种数据格式"
+    )
     
-    with col1:
-        uploaded_files = st.file_uploader(
-            "选择Excel数据文件",
-            type=['xlsx', 'xls'],
-            accept_multiple_files=True,
-            help="支持上传多个Excel文件，系统会自动解析留存数据，支持新旧两种数据格式"
-        )
-        
-        # 目标月份选择
-        default_month = get_default_target_month()
-        target_month = st.text_input(
-            "目标月份 (YYYY-MM)",
-            value=default_month,
-            help=f"当前默认为2个月前: {default_month}"
-        )
+    # 目标月份选择
+    default_month = get_default_target_month()
+    target_month = st.text_input(
+        "目标月份 (YYYY-MM)",
+        value=default_month,
+        help=f"当前默认为2个月前: {default_month}"
+    )
     
-    with col2:
-        st.markdown('<div class="status-card">', unsafe_allow_html=True)
-        st.markdown("### 处理状态")
+    # 仅在有文件时显示状态信息和处理按钮
+    if uploaded_files:
+        # 显示文件状态
+        st.info(f"已选择 {len(uploaded_files)} 个文件：{', '.join([f.name for f in uploaded_files])}")
         
-        if uploaded_files:
-            st.markdown(f"**已选择 {len(uploaded_files)} 个文件**")
-            for file in uploaded_files:
-                st.markdown(f"• {file.name}")
-        else:
-            st.info("未选择数据文件")
-        
-        st.markdown(f"**目标月份:** {target_month}")
-        st.markdown(f"**渠道映射:** {len(st.session_state.channel_mapping)} 个")
-        
-        st.markdown('</div>', unsafe_allow_html=True)
-    
-    st.markdown('</div>', unsafe_allow_html=True)
-    
-    # 处理按钮
-    if st.button("开始处理数据", type="primary", use_container_width=True):
-        if uploaded_files:
+        # 处理按钮
+        if st.button("开始处理数据", type="primary", use_container_width=True):
             with st.spinner("正在处理数据文件..."):
                 try:
                     # 处理数据文件
@@ -1144,13 +1122,11 @@ if page == "数据上传与汇总":
                 
                 except Exception as e:
                     st.error(f"处理过程中出现错误：{str(e)}")
-        else:
-            st.error("请先选择要处理的文件")
+    else:
+        st.info("请选择Excel文件开始数据处理")
 
 elif page == "异常数据剔除":
-    st.markdown('<div class="glass-card">', unsafe_allow_html=True)
     st.header("异常数据剔除")
-    st.markdown('</div>', unsafe_allow_html=True)
     
     if st.session_state.merged_data is None:
         st.warning("请先在「数据上传与汇总」页面处理数据")
@@ -1164,31 +1140,20 @@ elif page == "异常数据剔除":
         st.subheader("异常数据识别与剔除")
         
         # 显示数据概览
-        col1, col2 = st.columns([2, 1])
-        
+        st.markdown("### 数据概览")
+        col1, col2, col3 = st.columns(3)
         with col1:
-            st.markdown("### 数据概览")
-            st.markdown(f"总记录数: {len(merged_data):,}")
-            st.markdown(f"数据来源数: {merged_data['数据来源'].nunique()}")
-            st.markdown(f"日期范围: {merged_data['date'].min()} 至 {merged_data['date'].max()}")
-            
-            # 数据预览
-            st.markdown("### 数据预览")
-            display_cols = ['数据来源', 'date', '回传新增数', '1', '7', '15', '30']
-            available_cols = [col for col in display_cols if col in merged_data.columns]
-            st.dataframe(merged_data[available_cols].head(10), use_container_width=True)
-        
+            st.metric("总记录数", f"{len(merged_data):,}")
         with col2:
-            st.markdown('<div class="status-card">', unsafe_allow_html=True)
-            st.markdown("### 剔除状态")
-            st.markdown(f"**已剔除记录:** {len(st.session_state.excluded_data)}")
-            if st.session_state.excluded_data:
-                st.markdown("**剔除的数据:**")
-                for excluded in st.session_state.excluded_data[-5:]:  # 显示最近5条
-                    st.markdown(f"• {excluded}")
-                if len(st.session_state.excluded_data) > 5:
-                    st.markdown(f"... 还有 {len(st.session_state.excluded_data) - 5} 条")
-            st.markdown('</div>', unsafe_allow_html=True)
+            st.metric("数据来源数", merged_data['数据来源'].nunique())
+        with col3:
+            st.metric("已剔除记录", len(st.session_state.excluded_data))
+        
+        # 数据预览
+        st.markdown("### 数据预览")
+        display_cols = ['数据来源', 'date', '回传新增数', '1', '7', '15', '30']
+        available_cols = [col for col in display_cols if col in merged_data.columns]
+        st.dataframe(merged_data[available_cols].head(8), use_container_width=True)
         
         st.markdown('</div>', unsafe_allow_html=True)
         
@@ -1370,9 +1335,7 @@ elif page == "异常数据剔除":
                 st.info("未发现需要剔除的异常数据，所有数据将保留")
 
 elif page == "留存率计算":
-    st.markdown('<div class="glass-card">', unsafe_allow_html=True)
     st.header("留存率计算")
-    st.markdown('</div>', unsafe_allow_html=True)
     
     # 确定使用的数据源
     if st.session_state.cleaned_data is not None:
@@ -1392,28 +1355,27 @@ elif page == "留存率计算":
             st.rerun()
     else:
         st.markdown('<div class="glass-card">', unsafe_allow_html=True)
-        col1, col2 = st.columns([3, 1])
+        st.subheader("留存率分析配置")
+        st.info(data_source_info)
         
-        with col1:
-            st.subheader("留存率分析配置")
-            st.info(data_source_info)
-            
-            # 数据来源选择
-            data_sources = working_data['数据来源'].unique()
-            selected_sources = st.multiselect(
-                "选择要分析的数据来源",
-                options=data_sources,
-                default=data_sources,
-                help="可以选择一个或多个数据来源进行分析"
-            )
+        # 数据来源选择
+        data_sources = working_data['数据来源'].unique()
+        selected_sources = st.multiselect(
+            "选择要分析的数据来源",
+            options=data_sources,
+            default=data_sources,
+            help="可以选择一个或多个数据来源进行分析"
+        )
         
-        with col2:
-            st.markdown('<div class="status-card">', unsafe_allow_html=True)
-            st.markdown("### 分析范围")
-            st.markdown(f"**数据来源:** {len(selected_sources)}")
-            st.markdown(f"**总记录数:** {len(working_data):,}")
-            st.markdown(f"**分析天数:** 1-30天")
-            st.markdown('</div>', unsafe_allow_html=True)
+        # 简化状态信息显示
+        if selected_sources:
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                st.metric("数据来源", len(selected_sources))
+            with col2:
+                st.metric("总记录数", f"{len(working_data):,}")
+            with col3:
+                st.metric("分析天数", "1-30天")
         
         st.markdown('</div>', unsafe_allow_html=True)
         
@@ -1488,9 +1450,7 @@ elif page == "留存率计算":
                 st.error("请选择至少一个数据来源")
 
 elif page == "LT拟合分析":
-    st.markdown('<div class="glass-card">', unsafe_allow_html=True)
     st.header("LT拟合分析")
-    st.markdown('</div>', unsafe_allow_html=True)
     
     if st.session_state.retention_data is None:
         st.warning("请先在「留存率计算」页面计算留存率")
@@ -1503,12 +1463,10 @@ elif page == "LT拟合分析":
         st.markdown('<div class="glass-card">', unsafe_allow_html=True)
         st.subheader("曲线拟合参数设置")
         
-        col1, col2 = st.columns([2, 1])
+        st.info("系统将自动使用幂函数和指数函数进行拟合，并选择拟合度最好的方法")
         
+        col1, col2 = st.columns(2)
         with col1:
-            st.markdown("### 拟合方法选择")
-            st.info("系统将自动使用幂函数和指数函数进行拟合，并选择拟合度最好的方法")
-            
             max_days = st.number_input(
                 "LT计算天数范围",
                 min_value=30,
@@ -1518,12 +1476,8 @@ elif page == "LT拟合分析":
             )
         
         with col2:
-            st.markdown('<div class="status-card">', unsafe_allow_html=True)
-            st.markdown("### 拟合设置")
-            st.markdown(f"**数据来源:** {len(retention_data)}")
-            st.markdown(f"**拟合方法:** 幂函数 + 指数函数")
-            st.markdown(f"**LT天数:** {max_days}")
-            st.markdown('</div>', unsafe_allow_html=True)
+            st.metric("数据来源", len(retention_data))
+            st.metric("LT天数", max_days)
         
         st.markdown('</div>', unsafe_allow_html=True)
         
@@ -1584,9 +1538,7 @@ elif page == "LT拟合分析":
                     st.markdown('</div>', unsafe_allow_html=True)
 
 elif page == "ARPU计算":
-    st.markdown('<div class="glass-card">', unsafe_allow_html=True)
     st.header("ARPU计算")
-    st.markdown('</div>', unsafe_allow_html=True)
     
     st.markdown('<div class="glass-card">', unsafe_allow_html=True)
     st.subheader("上传ARPU数据")
@@ -1715,9 +1667,7 @@ elif page == "ARPU计算":
     st.markdown('</div>', unsafe_allow_html=True)
 
 elif page == "LTV结果报告":
-    st.markdown('<div class="glass-card">', unsafe_allow_html=True)
     st.header("LTV结果报告")
-    st.markdown('</div>', unsafe_allow_html=True)
     
     # 检查必要数据是否存在
     if st.session_state.lt_results is None:
@@ -1956,7 +1906,7 @@ with st.sidebar:
     st.markdown("---")
     st.markdown("""
     <div class="progress-container">
-        <h3 style="text-align: center; color: #495057;">使用提示</h3>
+        <h4 style="text-align: center; color: #495057;">使用提示</h4>
         <p style="font-size: 0.9rem; color: #6c757d; text-align: center;">
         请按照流程顺序完成各个步骤，每一步的结果都会保存在当前会话中。
         </p>
