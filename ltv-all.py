@@ -34,9 +34,9 @@ st.set_page_config(
 st.markdown("""
 <style>
     .main-header {
-        padding: 1.5rem 0rem 1rem 0rem;
+        padding: 0.5rem 0rem 1rem 0rem;
         border-bottom: 2px solid #f0f2f6;
-        margin-bottom: 2rem;
+        margin-bottom: 1rem;
     }
     .metric-container {
         background-color: #f8f9fa;
@@ -80,8 +80,104 @@ st.markdown("""
         font-weight: 500;
         color: #34495e;
     }
+    .compact-section {
+        margin-top: 0.5rem;
+        margin-bottom: 0.5rem;
+    }
 </style>
 """, unsafe_allow_html=True)
+
+# 默认渠道映射数据
+DEFAULT_CHANNEL_MAPPING = {
+    # 总体
+    '9000': '总体',
+    
+    # 新媒体
+    '500345': '新媒体', '500346': '新媒体', '500447': '新媒体', '500449': '新媒体', 
+    '500450': '新媒体', '500531': '新媒体', '500542': '新媒体',
+    
+    # 应用宝
+    '5007XS': '应用宝', '500349': '应用宝', '500350': '应用宝',
+    
+    # 鼎乐系列
+    '500285': '鼎乐-盛世6',
+    '500286': '鼎乐-盛世7',
+    
+    # 酷派
+    '5108': '酷派', '5528': '酷派',
+    
+    # 新美系列
+    '500275': '新美-北京2',
+    '500274': '新美-北京1',
+    
+    # A_深圳蛋丁2
+    '500316': 'A_深圳蛋丁2',
+    
+    # 主流厂商
+    '500297': '荣耀',
+    '5057': '华为',
+    '5237': 'vivo',
+    '5599': '小米',
+    '5115': 'OPPO',
+    
+    # 网易
+    '500471': '网易', '500480': '网易', '500481': '网易', '500482': '网易',
+    
+    # 华为非商店-品众
+    '500337': '华为非商店-品众', '500338': '华为非商店-品众', '500343': '华为非商店-品众',
+    '500445': '华为非商店-品众', '500383': '华为非商店-品众', '500444': '华为非商店-品众',
+    '500441': '华为非商店-品众',
+    
+    # 魅族
+    '5072': '魅族',
+    
+    # OPPO非商店
+    '500287': 'OPPO非商店', '500288': 'OPPO非商店',
+    
+    # vivo非商店
+    '5187': 'vivo非商店',
+    
+    # 百度sem系列
+    '500398': '百度sem--百度时代安卓', '500400': '百度sem--百度时代安卓', '500404': '百度sem--百度时代安卓',
+    '500402': '百度sem--百度时代ios', '500403': '百度sem--百度时代ios', '500405': '百度sem--百度时代ios',
+    
+    # 百青藤
+    '500377': '百青藤-安卓', '500379': '百青藤-安卓', '500435': '百青藤-安卓', '500436': '百青藤-安卓',
+    '500490': '百青藤-安卓', '500491': '百青藤-安卓', '500434': '百青藤-安卓', '500492': '百青藤-安卓',
+    '500437': '百青藤-ios',
+    
+    # 小米非商店
+    '500170': '小米非商店',
+    
+    # 华为非商店-星火
+    '500532': '华为非商店-星火', '500533': '华为非商店-星火', '500534': '华为非商店-星火',
+    '500537': '华为非商店-星火', '500538': '华为非商店-星火', '500539': '华为非商店-星火',
+    '500540': '华为非商店-星火', '500541': '华为非商店-星火',
+    
+    # 微博系列
+    '500504': '微博-蜜橘', '500505': '微博-蜜橘',
+    '500367': '微博-央广', '500368': '微博-央广', '500369': '微博-央广',
+    
+    # 广点通
+    '500498': '广点通(5.22起)', '500497': '广点通(5.22起)', '500500': '广点通(5.22起)',
+    '500501': '广点通(5.22起)', '500496': '广点通(5.22起)', '500499': '广点通(5.22起)',
+    
+    # 网易易效
+    '500514': '网易易效', '500515': '网易易效', '500516': '网易易效'
+}
+
+# 计算默认目标月份（2个月前）
+def get_default_target_month():
+    today = datetime.datetime.now()
+    # 计算2个月前
+    if today.month <= 2:
+        target_year = today.year - 1
+        target_month = today.month + 10
+    else:
+        target_year = today.year
+        target_month = today.month - 2
+    
+    return f"{target_year}-{target_month:02d}"
 
 # 主标题
 st.markdown('<div class="main-header">', unsafe_allow_html=True)
@@ -111,6 +207,10 @@ session_keys = [
 for key in session_keys:
     if key not in st.session_state:
         st.session_state[key] = None
+
+# 设置默认渠道映射
+if st.session_state.channel_mapping is None:
+    st.session_state.channel_mapping = DEFAULT_CHANNEL_MAPPING
 
 # ===== 数据整合功能（保留原有逻辑）=====
 def standardize_output_columns(df):
@@ -159,20 +259,22 @@ def standardize_output_columns(df):
 
     return result_df
 
-def integrate_excel_files_streamlit(uploaded_files, target_month=None):
+def integrate_excel_files_streamlit(uploaded_files, target_month=None, channel_mapping=None):
     """Streamlit版本的Excel文件整合函数"""
     if target_month is None:
-        today = datetime.datetime.now()
-        first_day_of_current_month = today.replace(day=1)
-        first_day_of_last_month = (first_day_of_current_month - datetime.timedelta(days=1)).replace(day=1)
-        last_day_of_two_months_ago = first_day_of_last_month - datetime.timedelta(days=1)
-        target_month = last_day_of_two_months_ago.strftime("%Y-%m")
+        target_month = get_default_target_month()
 
     all_data = pd.DataFrame()
     processed_count = 0
 
     for uploaded_file in uploaded_files:
         source_name = os.path.splitext(uploaded_file.name)[0]
+        
+        # 如果有渠道映射，尝试根据文件名映射渠道
+        if channel_mapping and source_name in channel_mapping:
+            mapped_source = channel_mapping[source_name]
+        else:
+            mapped_source = source_name
         
         try:
             xls = pd.ExcelFile(uploaded_file)
@@ -234,7 +336,7 @@ def integrate_excel_files_streamlit(uploaded_files, target_month=None):
                     filtered_data = standardized_data[standardized_data['month'] == target_month].copy()
 
                     if not filtered_data.empty:
-                        filtered_data.insert(0, '数据来源', source_name)
+                        filtered_data.insert(0, '数据来源', mapped_source)
                         filtered_data['date'] = filtered_data['stat_date']
                         all_data = pd.concat([all_data, filtered_data], ignore_index=True)
                         processed_count += 1
@@ -264,7 +366,7 @@ def integrate_excel_files_streamlit(uploaded_files, target_month=None):
                             filtered_data = file_data_copy[file_data_copy['month'] == target_month].copy()
                             
                             if not filtered_data.empty:
-                                filtered_data.insert(0, '数据来源', source_name)
+                                filtered_data.insert(0, '数据来源', mapped_source)
                                 if retention_col:
                                     filtered_data.rename(columns={retention_col: 'date'}, inplace=True)
                                 else:
@@ -274,7 +376,7 @@ def integrate_excel_files_streamlit(uploaded_files, target_month=None):
                                 processed_count += 1
                         except:
                             # 如果日期处理失败，保留所有数据
-                            file_data_copy.insert(0, '数据来源', source_name)
+                            file_data_copy.insert(0, '数据来源', mapped_source)
                             if retention_col:
                                 file_data_copy.rename(columns={retention_col: 'date'}, inplace=True)
                             all_data = pd.concat([all_data, file_data_copy], ignore_index=True)
@@ -583,74 +685,101 @@ def calculate_lt_values(fitting_results, max_days=365):
 
 # ===== 页面内容 =====
 if page == "数据上传与汇总":
-    st.header("📂 数据上传与汇总")
+    st.header("数据上传与汇总")
     
-    col1, col2 = st.columns([2, 1])
+    # 显示默认渠道映射状态
+    with st.expander("渠道映射配置", expanded=False):
+        st.markdown("**当前渠道映射状态:**")
+        
+        col1, col2 = st.columns([1, 2])
+        with col1:
+            if st.session_state.channel_mapping:
+                st.success(f"已配置 {len(st.session_state.channel_mapping)} 个渠道映射")
+                st.text("使用默认渠道映射表")
+            else:
+                st.warning("未配置渠道映射")
+        
+        with col2:
+            # 显示部分映射示例
+            if st.session_state.channel_mapping:
+                sample_items = list(st.session_state.channel_mapping.items())[:5]
+                for pid, channel in sample_items:
+                    st.text(f"{pid} → {channel}")
+                if len(st.session_state.channel_mapping) > 5:
+                    st.text(f"... 还有 {len(st.session_state.channel_mapping) - 5} 个映射")
+        
+        # 自定义渠道映射文件上传
+        st.markdown("**上传自定义渠道映射表 (可选):**")
+        channel_file = st.file_uploader(
+            "选择渠道映射文件",
+            type=['xlsx', 'xls'],
+            help="第一列为渠道名，后续列为对应的渠道号。如不上传将使用默认映射表"
+        )
+        
+        if channel_file:
+            try:
+                channel_df = pd.read_excel(channel_file)
+                custom_mapping = parse_channel_mapping(channel_df)
+                st.session_state.channel_mapping = custom_mapping
+                st.success(f"自定义渠道映射已加载，共 {len(custom_mapping)} 个映射")
+                st.dataframe(channel_df.head(), use_container_width=True)
+            except Exception as e:
+                st.error(f"渠道映射文件读取失败: {str(e)}")
+    
+    # 数据文件上传
+    st.subheader("数据文件处理")
+    
+    col1, col2 = st.columns([3, 1])
     
     with col1:
-        st.subheader("1. 上传数据文件")
         uploaded_files = st.file_uploader(
-            "选择Excel文件",
+            "选择Excel数据文件",
             type=['xlsx', 'xls'],
             accept_multiple_files=True,
             help="支持上传多个Excel文件，系统会自动解析留存数据"
         )
         
         # 目标月份选择
+        default_month = get_default_target_month()
         target_month = st.text_input(
             "目标月份 (YYYY-MM)",
-            value=datetime.datetime.now().strftime("%Y-%m"),
-            help="指定要分析的月份，格式如：2024-01"
-        )
-        
-        st.subheader("2. 渠道映射配置")
-        channel_file = st.file_uploader(
-            "上传渠道映射表 (可选)",
-            type=['xlsx', 'xls'],
-            help="第一列为渠道名，后续列为对应的渠道号"
+            value=default_month,
+            help=f"当前默认为2个月前: {default_month}"
         )
     
     with col2:
         st.markdown('<div class="status-card">', unsafe_allow_html=True)
-        st.markdown("### 📊 处理状态")
+        st.markdown("### 处理状态")
         
         if uploaded_files:
             st.success(f"已选择 {len(uploaded_files)} 个文件")
             for file in uploaded_files:
                 st.text(f"• {file.name}")
         else:
-            st.info("请选择数据文件")
+            st.info("未选择数据文件")
         
-        if channel_file:
-            st.success("✅ 渠道映射表已上传")
-        else:
-            st.warning("⚠️ 未上传渠道映射表")
+        st.text(f"目标月份: {target_month}")
+        st.text(f"渠道映射: {len(st.session_state.channel_mapping)} 个")
         
         st.markdown('</div>', unsafe_allow_html=True)
     
     # 处理按钮
-    if st.button("🚀 开始处理数据", type="primary"):
+    if st.button("开始处理数据", type="primary", use_container_width=True):
         if uploaded_files:
             with st.spinner("正在处理数据文件..."):
                 try:
                     # 处理数据文件
                     merged_data, processed_count = integrate_excel_files_streamlit(
-                        uploaded_files, target_month
+                        uploaded_files, target_month, st.session_state.channel_mapping
                     )
                     
                     if merged_data is not None and not merged_data.empty:
                         st.session_state.merged_data = merged_data
                         
-                        # 处理渠道映射
-                        if channel_file:
-                            channel_df = pd.read_excel(channel_file)
-                            channel_mapping = parse_channel_mapping(channel_df)
-                            st.session_state.channel_mapping = channel_mapping
-                        
-                        st.success(f"✅ 数据处理完成！成功处理 {processed_count} 个文件")
+                        st.success(f"数据处理完成！成功处理 {processed_count} 个文件")
                         
                         # 显示数据预览
-                        st.subheader("📋 数据预览")
+                        st.subheader("数据预览")
                         st.dataframe(merged_data.head(10), use_container_width=True)
                         
                         # 显示统计信息
@@ -666,18 +795,18 @@ if page == "数据上传与汇总":
                             st.metric("总新增用户", f"{total_new_users:,.0f}")
                     
                     else:
-                        st.error("❌ 未找到有效数据，请检查文件格式和目标月份设置")
+                        st.error("未找到有效数据，请检查文件格式和目标月份设置")
                 
                 except Exception as e:
-                    st.error(f"❌ 处理过程中出现错误：{str(e)}")
+                    st.error(f"处理过程中出现错误：{str(e)}")
         else:
             st.error("请先选择要处理的文件")
 
 elif page == "留存率计算":
-    st.header("📈 留存率计算")
+    st.header("留存率计算")
     
     if st.session_state.merged_data is None:
-        st.warning("⚠️ 请先在「数据上传与汇总」页面处理数据")
+        st.warning("请先在「数据上传与汇总」页面处理数据")
         if st.button("返回数据上传页面"):
             st.experimental_rerun()
     else:
@@ -686,7 +815,7 @@ elif page == "留存率计算":
         col1, col2 = st.columns([3, 1])
         
         with col1:
-            st.subheader("留存率分析")
+            st.subheader("留存率分析配置")
             
             # 数据来源选择
             data_sources = merged_data['数据来源'].unique()
@@ -699,13 +828,13 @@ elif page == "留存率计算":
         
         with col2:
             st.markdown('<div class="status-card">', unsafe_allow_html=True)
-            st.markdown("### 📊 分析范围")
+            st.markdown("### 分析范围")
             st.text(f"数据来源: {len(selected_sources)}")
             st.text(f"总记录数: {len(merged_data)}")
             st.text(f"分析天数: 1-30天")
             st.markdown('</div>', unsafe_allow_html=True)
         
-        if st.button("🔄 计算留存率", type="primary"):
+        if st.button("计算留存率", type="primary", use_container_width=True):
             if selected_sources:
                 with st.spinner("正在计算留存率..."):
                     # 过滤选中的数据来源
@@ -715,13 +844,13 @@ elif page == "留存率计算":
                     retention_results = calculate_retention_rates(filtered_data)
                     st.session_state.retention_data = retention_results
                     
-                    st.success("✅ 留存率计算完成！")
+                    st.success("留存率计算完成！")
                     
                     # 显示结果
-                    st.subheader("📊 留存率结果")
+                    st.subheader("留存率结果")
                     
                     for result in retention_results:
-                        with st.expander(f"📱 {result['data_source']} - 留存率详情"):
+                        with st.expander(f"{result['data_source']} - 留存率详情"):
                             retention_rates = result['retention_rates']
                             
                             # 创建留存率表格
@@ -758,10 +887,10 @@ elif page == "留存率计算":
                 st.error("请选择至少一个数据来源")
 
 elif page == "LT拟合分析":
-    st.header("🔧 LT拟合分析")
+    st.header("LT拟合分析")
     
     if st.session_state.retention_data is None:
-        st.warning("⚠️ 请先在「留存率计算」页面计算留存率")
+        st.warning("请先在「留存率计算」页面计算留存率")
         if st.button("返回留存率计算页面"):
             st.experimental_rerun()
     else:
@@ -790,13 +919,13 @@ elif page == "LT拟合分析":
         
         with col2:
             st.markdown('<div class="status-card">', unsafe_allow_html=True)
-            st.markdown("### 🔧 拟合设置")
+            st.markdown("### 拟合设置")
             st.text(f"数据来源: {len(retention_data)}")
             st.text(f"拟合方法: {len(fit_methods)}")
             st.text(f"LT天数: {max_days}")
             st.markdown('</div>', unsafe_allow_html=True)
         
-        if st.button("📊 开始拟合分析", type="primary"):
+        if st.button("开始拟合分析", type="primary", use_container_width=True):
             with st.spinner("正在进行曲线拟合..."):
                 # 执行拟合分析
                 fitting_results = fit_retention_curves(retention_data)
@@ -805,15 +934,15 @@ elif page == "LT拟合分析":
                 lt_results = calculate_lt_values(fitting_results, max_days)
                 st.session_state.lt_results = lt_results
                 
-                st.success("✅ 拟合分析完成！")
+                st.success("拟合分析完成！")
                 
                 # 显示拟合结果
-                st.subheader("📈 拟合结果")
+                st.subheader("拟合结果")
                 
                 for i, result in enumerate(fitting_results):
                     source = result['data_source']
                     
-                    with st.expander(f"🔍 {source} - 拟合分析详情", expanded=True):
+                    with st.expander(f"{source} - 拟合分析详情", expanded=True):
                         col1, col2 = st.columns([1, 1])
                         
                         with col1:
@@ -884,7 +1013,7 @@ elif page == "LT拟合分析":
                                 plt.close()
 
 elif page == "ARPU计算":
-    st.header("💰 ARPU计算")
+    st.header("ARPU计算")
     
     st.subheader("上传ARPU数据")
     
@@ -899,17 +1028,17 @@ elif page == "ARPU计算":
         try:
             # 读取ARPU文件
             arpu_df = pd.read_excel(arpu_file)
-            st.success("✅ ARPU文件上传成功！")
+            st.success("ARPU文件上传成功！")
             
             # 显示文件预览
-            st.subheader("📋 数据预览")
+            st.subheader("数据预览")
             st.dataframe(arpu_df.head(10), use_container_width=True)
             
             # 数据列选择
             col1, col2 = st.columns(2)
             
             with col1:
-                st.subheader("🔧 数据列映射")
+                st.subheader("数据列映射")
                 
                 # 让用户选择关键列
                 source_col = st.selectbox(
@@ -931,7 +1060,7 @@ elif page == "ARPU计算":
                 )
             
             with col2:
-                st.subheader("📊 数据统计")
+                st.subheader("数据统计")
                 
                 # 显示基本统计
                 if arpu_col in arpu_df.columns:
@@ -946,7 +1075,7 @@ elif page == "ARPU计算":
                         st.metric("有效记录", f"{arpu_values.notna().sum()}")
             
             # 处理ARPU数据
-            if st.button("💾 保存ARPU数据", type="primary"):
+            if st.button("保存ARPU数据", type="primary", use_container_width=True):
                 try:
                     # 标准化ARPU数据
                     processed_arpu = arpu_df.copy()
@@ -961,23 +1090,23 @@ elif page == "ARPU计算":
                     
                     st.session_state.arpu_data = arpu_summary
                     
-                    st.success("✅ ARPU数据处理完成！")
+                    st.success("ARPU数据处理完成！")
                     
                     # 显示汇总结果
-                    st.subheader("📈 ARPU汇总结果")
+                    st.subheader("ARPU汇总结果")
                     st.dataframe(arpu_summary, use_container_width=True)
                     
                 except Exception as e:
-                    st.error(f"❌ ARPU数据处理失败：{str(e)}")
+                    st.error(f"ARPU数据处理失败：{str(e)}")
         
         except Exception as e:
-            st.error(f"❌ 文件读取失败：{str(e)}")
+            st.error(f"文件读取失败：{str(e)}")
     
     else:
-        st.info("📁 请上传ARPU数据文件")
+        st.info("请上传ARPU数据文件")
         
         # 如果没有ARPU数据，提供手动输入选项
-        st.subheader("🔧 手动设置ARPU")
+        st.subheader("手动设置ARPU")
         
         if st.session_state.lt_results:
             # 基于已有的LT结果创建ARPU输入
@@ -995,7 +1124,7 @@ elif page == "ARPU计算":
                 )
                 arpu_inputs[source] = arpu_value
             
-            if st.button("💾 保存手动ARPU设置", type="primary"):
+            if st.button("保存手动ARPU设置", type="primary", use_container_width=True):
                 # 创建ARPU数据框
                 arpu_df = pd.DataFrame([
                     {'data_source': source, 'arpu_value': value} 
@@ -1003,22 +1132,22 @@ elif page == "ARPU计算":
                 ])
                 
                 st.session_state.arpu_data = arpu_df
-                st.success("✅ ARPU设置已保存！")
+                st.success("ARPU设置已保存！")
                 st.dataframe(arpu_df, use_container_width=True)
         
         else:
-            st.warning("⚠️ 请先完成LT拟合分析，然后再设置ARPU")
+            st.warning("请先完成LT拟合分析，然后再设置ARPU")
 
 elif page == "LTV结果报告":
-    st.header("📊 LTV结果报告")
+    st.header("LTV结果报告")
     
     # 检查必要数据是否存在
     if st.session_state.lt_results is None:
-        st.warning("⚠️ 请先完成LT拟合分析")
+        st.warning("请先完成LT拟合分析")
         if st.button("跳转到LT拟合分析"):
             st.experimental_rerun()
     elif st.session_state.arpu_data is None:
-        st.warning("⚠️ 请先完成ARPU计算")
+        st.warning("请先完成ARPU计算")
         if st.button("跳转到ARPU计算"):
             st.experimental_rerun()
     else:
@@ -1055,7 +1184,7 @@ elif page == "LTV结果报告":
         st.session_state.ltv_results = ltv_results
         
         # 显示LTV结果
-        st.subheader("🎯 LTV计算结果")
+        st.subheader("LTV计算结果")
         
         # 创建结果表格
         ltv_df = pd.DataFrame(ltv_results)
@@ -1077,7 +1206,7 @@ elif page == "LTV结果报告":
         st.dataframe(ltv_df, use_container_width=True)
         
         # 关键指标展示
-        st.subheader("📈 关键指标")
+        st.subheader("关键指标")
         
         col1, col2, col3, col4 = st.columns(4)
         
@@ -1099,7 +1228,7 @@ elif page == "LTV结果报告":
             st.metric("平均ARPU", f"{avg_arpu:.2f}")
         
         # LTV对比图表
-        st.subheader("📊 LTV对比分析")
+        st.subheader("LTV对比分析")
         
         col1, col2 = st.columns(2)
         
@@ -1146,7 +1275,7 @@ elif page == "LTV结果报告":
             plt.close()
         
         # 模型质量分析
-        st.subheader("🔧 模型质量分析")
+        st.subheader("模型质量分析")
         
         col1, col2 = st.columns(2)
         
@@ -1184,7 +1313,7 @@ elif page == "LTV结果报告":
             plt.close()
         
         # 导出功能
-        st.subheader("💾 结果导出")
+        st.subheader("结果导出")
         
         col1, col2 = st.columns(2)
         
@@ -1196,10 +1325,11 @@ elif page == "LTV结果报告":
             csv_data = export_df.to_csv(index=False, encoding='utf-8-sig')
             
             st.download_button(
-                label="📁 下载LTV结果 (CSV)",
+                label="下载LTV结果 (CSV)",
                 data=csv_data,
                 file_name=f"LTV_Results_{datetime.datetime.now().strftime('%Y%m%d_%H%M')}.csv",
-                mime="text/csv"
+                mime="text/csv",
+                use_container_width=True
             )
         
         with col2:
@@ -1229,15 +1359,16 @@ LTV分析报告
 """
             
             st.download_button(
-                label="📄 下载详细报告 (TXT)",
+                label="下载详细报告 (TXT)",
                 data=report_text,
                 file_name=f"LTV_Report_{datetime.datetime.now().strftime('%Y%m%d_%H%M')}.txt",
-                mime="text/plain"
+                mime="text/plain",
+                use_container_width=True
             )
 
 # 底部信息
 st.sidebar.markdown("---")
-st.sidebar.markdown("### 📋 分析步骤")
+st.sidebar.markdown("### 分析步骤")
 st.sidebar.markdown("""
 1. **数据上传与汇总** - 上传原始数据文件
 2. **留存率计算** - 计算用户留存率
@@ -1247,4 +1378,4 @@ st.sidebar.markdown("""
 """)
 
 st.sidebar.markdown("---")
-st.sidebar.info("💡 **提示**: 请按照流程顺序完成各个步骤，每一步的结果都会保存在当前会话中。")
+st.sidebar.info("**提示**: 请按照流程顺序完成各个步骤，每一步的结果都会保存在当前会话中。")
