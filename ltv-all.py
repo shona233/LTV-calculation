@@ -8,11 +8,9 @@ import datetime
 import tempfile
 import zipfile
 import io
-from scipy.optimize import curve_fit
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 import re
-from matplotlib.font_manager import FontProperties
 
 # 忽略警告
 warnings.filterwarnings('ignore', category=UserWarning, module='openpyxl.styles.stylesheet')
@@ -97,7 +95,7 @@ page = st.sidebar.selectbox(
     [
         "数据上传与汇总", 
         "留存率计算", 
-        "LT拟合分析", 
+        "LT简化计算", 
         "ARPU计算", 
         "LTV结果报告"
     ],
@@ -315,33 +313,86 @@ def parse_channel_mapping(channel_df):
     
     return pid_to_channel
 
-# ===== LT拟合计算功能 =====
-def power_function(x, a, b):
-    """幂函数：y = a * x^b"""
-    return a * np.power(x, b)
+# ===== 简化的LT计算功能（不使用scipy）=====
+def simple_power_regression(x, y):
+    """简化的幂函数拟合，使用对数线性回归"""
+    try:
+        # 过滤掉非正数
+        valid_idx = (x > 0) & (y > 0)
+        if np.sum(valid_idx) < 2:
+            return 1.0, -0.5  # 默认参数
+        
+        x_valid = x[valid_idx]
+        y_valid = y[valid_idx]
+        
+        # 对数线性回归: log(y) = log(a) + b*log(x)
+        log_x = np.log(x_valid)
+        log_y = np.log(y_valid)
+        
+        # 使用最小二乘法
+        n = len(log_x)
+        sum_log_x = np.sum(log_x)
+        sum_log_y = np.sum(log_y)
+        sum_log_x_log_y = np.sum(log_x * log_y)
+        sum_log_x_sq = np.sum(log_x * log_x)
+        
+        # 计算斜率和截距
+        b = (n * sum_log_x_log_y - sum_log_x * sum_log_y) / (n * sum_log_x_sq - sum_log_x * sum_log_x)
+        log_a = (sum_log_y - b * sum_log_x) / n
+        a = np.exp(log_a)
+        
+        return a, b
+    except:
+        return 1.0, -0.5  # 默认参数
 
-def exponential_function(x, c, d):
-    """指数函数：y = c * exp(d * x)"""
+def simple_exponential_regression(x, y):
+    """简化的指数函数拟合"""
+    try:
+        # 过滤掉非正数
+        valid_idx = y > 0
+        if np.sum(valid_idx) < 2:
+            return y[0] if len(y) > 0 else 1.0, -0.001
+        
+        x_valid = x[valid_idx]
+        y_valid = y[valid_idx]
+        
+        # 线性回归: log(y) = log(c) + d*x
+        log_y = np.log(y_valid)
+        
+        # 使用最小二乘法
+        n = len(x_valid)
+        sum_x = np.sum(x_valid)
+        sum_log_y = np.sum(log_y)
+        sum_x_log_y = np.sum(x_valid * log_y)
+        sum_x_sq = np.sum(x_valid * x_valid)
+        
+        # 计算斜率和截距
+        d = (n * sum_x_log_y - sum_x * sum_log_y) / (n * sum_x_sq - sum_x * sum_x)
+        log_c = (sum_log_y - d * sum_x) / n
+        c = np.exp(log_c)
+        
+        return c, d
+    except:
+        return y[0] if len(y) > 0 else 1.0, -0.001
+
+def simple_power_function(x, a, b):
+    """简化的幂函数：y = a * x^b"""
+    return a * np.power(np.maximum(x, 0.1), b)
+
+def simple_exponential_function(x, c, d):
+    """简化的指数函数：y = c * exp(d * x)"""
     return c * np.exp(d * x)
 
-def calculate_cumulative_lt(days_array, rates_array, target_days):
-    """计算指定天数的累积LT值"""
-    result = {}
-    for day in target_days:
-        idx = np.searchsorted(days_array, day, side='right')
-        if idx > 0:
-            cumulative_lt = 1.0 + np.sum(rates_array[1:idx])
-            result[day] = cumulative_lt
-    return result
-
-def calculate_lt(data, channel_name, lt_years=5, return_curve_data=False, key_days=None):
-    """计算LT值"""
+def calculate_lt_simple(data, channel_name, lt_years=5):
+    """简化版LT计算，不依赖scipy"""
+    
+    # 渠道规则
     CHANNEL_RULES = {
         "华为": {"stage_2": [30, 120], "stage_3_base": [120, 220]},
         "小米": {"stage_2": [30, 190], "stage_3_base": [190, 290]},
         "oppo": {"stage_2": [30, 160], "stage_3_base": [160, 260]},
         "vivo": {"stage_2": [30, 150], "stage_3_base": [150, 250]},
-        "iphone": {"stage_2": [30, 150], "stage_3_base": [150, 250], "stage_2_func": "log"},
+        "iphone": {"stage_2": [30, 150], "stage_3_base": [150, 250]},
         "其他": {"stage_2": [30, 100], "stage_3_base": [100, 200]}
     }
 
@@ -365,185 +416,47 @@ def calculate_lt(data, channel_name, lt_years=5, return_curve_data=False, key_da
     days = data["留存天数"].values
     rates = data["留存率"].values
 
-    fit_params = {}
-
     try:
-        popt_power, _ = curve_fit(power_function, days, rates)
-        a, b = popt_power
-        fit_params["power"] = {"a": a, "b": b}
-
+        # 第一阶段：使用简化幂函数拟合
+        a, b = simple_power_regression(days, rates)
+        
+        # 生成1-30天完整数据
         days_full = np.arange(1, 31)
-        rates_full = power_function(days_full, a, b)
+        rates_full = simple_power_function(days_full, a, b)
+        rates_full = np.maximum(rates_full, 0)  # 确保非负
         lt1_to_30 = np.sum(rates_full)
-    except Exception as e:
-        st.error(f"{channel_name} 第一阶段拟合失败：{e}")
-        lt1_to_30 = 0.0
-
-    try:
+        
+        # 第二阶段
         days_stage_2 = np.arange(stage_2_start, stage_2_end + 1)
-        rates_stage_2 = power_function(days_stage_2, a, b)
+        rates_stage_2 = simple_power_function(days_stage_2, a, b)
+        rates_stage_2 = np.maximum(rates_stage_2, 0)
         lt_stage_2 = np.sum(rates_stage_2)
+        
+        # 第三阶段：尝试指数拟合，失败则用幂函数
+        try:
+            days_stage_3_base = np.arange(stage_3_base_start, stage_3_base_end + 1)
+            rates_stage_3_base = simple_power_function(days_stage_3_base, a, b)
+            
+            c, d = simple_exponential_regression(days_stage_3_base, rates_stage_3_base)
+            
+            days_stage_3 = np.arange(stage_3_base_start, max_days + 1)
+            rates_stage_3 = simple_exponential_function(days_stage_3, c, d)
+            rates_stage_3 = np.maximum(rates_stage_3, 0)
+            lt_stage_3 = np.sum(rates_stage_3)
+        except:
+            # 指数拟合失败，使用幂函数
+            days_stage_3 = np.arange(stage_3_base_start, max_days + 1)
+            rates_stage_3 = simple_power_function(days_stage_3, a, b)
+            rates_stage_3 = np.maximum(rates_stage_3, 0)
+            lt_stage_3 = np.sum(rates_stage_3)
+        
+        total_lt = 1.0 + lt1_to_30 + lt_stage_2 + lt_stage_3
+        
+        return total_lt, {"a": a, "b": b}
+        
     except Exception as e:
-        st.error(f"{channel_name} 第二阶段预测失败：{e}")
-        lt_stage_2 = 0.0
-
-    try:
-        days_stage_3_base = np.arange(stage_3_base_start, stage_3_base_end + 1)
-        rates_stage_3_base = power_function(days_stage_3_base, a, b)
-
-        initial_c = rates_stage_3_base[0]
-        initial_d = -0.001
-        popt_exp, _ = curve_fit(
-            exponential_function,
-            days_stage_3_base,
-            rates_stage_3_base,
-            p0=[initial_c, initial_d],
-            bounds=([0, -np.inf], [np.inf, 0])
-        )
-        c, d = popt_exp
-        fit_params["exponential"] = {"c": c, "d": d}
-        days_stage_3 = np.arange(stage_3_base_start, max_days + 1)
-        rates_stage_3 = exponential_function(days_stage_3, c, d)
-        lt_stage_3 = np.sum(rates_stage_3)
-    except Exception as e:
-        st.warning(f"{channel_name} 第三阶段指数拟合失败，使用幂函数预测")
-        days_stage_3 = np.arange(stage_3_base_start, max_days + 1)
-        rates_stage_3 = power_function(days_stage_3, a, b)
-        lt_stage_3 = np.sum(rates_stage_3)
-
-    total_lt = 1.0 + lt1_to_30 + lt_stage_2 + lt_stage_3
-
-    if return_curve_data:
-        all_days = np.concatenate([days_full, days_stage_2, days_stage_3])
-        all_rates = np.concatenate([rates_full, rates_stage_2, rates_stage_3])
-
-        sort_idx = np.argsort(all_days)
-        all_days = all_days[sort_idx]
-        all_rates = all_rates[sort_idx]
-
-        max_idx = np.searchsorted(all_days, lt_years * 365, side='right')
-        all_days = all_days[:max_idx]
-        all_rates = all_rates[:max_idx]
-
-        key_days_lt = {}
-        if key_days:
-            key_days_lt = calculate_cumulative_lt(all_days, all_rates, key_days)
-
-        return total_lt, all_days, all_rates, key_days_lt, fit_params
-
-    return total_lt
-
-def create_visualization_plots(visualization_data_2y, visualization_data_5y, original_data):
-    """创建可视化图表"""
-    figures = []
-    
-    # 1. 拟合效果比较图
-    channels = sorted(visualization_data_2y.keys(), key=lambda x: visualization_data_2y[x]['lt'])
-    n_channels = len(channels)
-    n_cols = 3
-    n_rows = (n_channels + n_cols - 1) // n_cols
-
-    fig1, axes = plt.subplots(n_rows, n_cols, figsize=(15, 5*n_rows), squeeze=False)
-    
-    for i, channel_name in enumerate(channels):
-        row = i // n_cols
-        col = i % n_cols
-        ax = axes[row, col]
-
-        data = visualization_data_2y[channel_name]
-
-        if channel_name in original_data:
-            ax.scatter(
-                original_data[channel_name]["days"],
-                original_data[channel_name]["rates"],
-                color='red',
-                s=50,
-                alpha=0.7,
-                label='实际数据'
-            )
-
-        fit_days = data["days"]
-        fit_rates = data["rates"]
-        idx_100 = np.searchsorted(fit_days, 100, side='right')
-        ax.plot(
-            fit_days[:idx_100],
-            fit_rates[:idx_100],
-            color='blue',
-            linewidth=2,
-            label='拟合曲线'
-        )
-
-        ax.set_title(f'{channel_name} (LT={data["lt"]:.2f})')
-        ax.set_xlabel('留存天数')
-        ax.set_ylabel('留存率')
-        ax.set_ylim(0, 0.6)
-        ax.set_yticks([0, 0.15, 0.3, 0.45, 0.6])
-        ax.set_yticklabels(['0%', '15%', '30%', '45%', '60%'])
-        ax.grid(True, ls="--", alpha=0.3)
-        ax.legend()
-
-    for i in range(len(channels), n_rows * n_cols):
-        row = i // n_cols
-        col = i % n_cols
-        fig1.delaxes(axes[row, col])
-
-    plt.tight_layout()
-    figures.append(("拟合效果比较", fig1))
-
-    # 2. 2年LT曲线
-    sorted_channels_2y = sorted(visualization_data_2y.items(), key=lambda x: x[1]['lt'])
-    fig2 = plt.figure(figsize=(14, 8))
-    ax2 = fig2.add_subplot(111)
-    colors = plt.cm.tab10.colors
-
-    for idx, (channel_name, data) in enumerate(sorted_channels_2y):
-        color = colors[idx % len(colors)]
-        ax2.plot(
-            data["days"],
-            data["rates"],
-            label=f"{channel_name} (LT={data['lt']:.2f})",
-            color=color,
-            linewidth=2
-        )
-
-    ax2.set_ylim(0, 0.6)
-    ax2.set_yticks([0, 0.15, 0.3, 0.45, 0.6])
-    ax2.set_yticklabels(['0%', '15%', '30%', '45%', '60%'])
-    ax2.grid(True, ls="--", alpha=0.5)
-    ax2.set_xlabel('留存天数')
-    ax2.set_ylabel('留存率')
-    ax2.set_title('所有渠道2年LT留存曲线比较 (按LT值从低到高排序)')
-    ax2.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
-    plt.tight_layout()
-    figures.append(("2年LT曲线", fig2))
-
-    # 3. 5年LT曲线
-    sorted_channels_5y = sorted(visualization_data_5y.items(), key=lambda x: x[1]['lt'])
-    fig3 = plt.figure(figsize=(14, 8))
-    ax3 = fig3.add_subplot(111)
-
-    for idx, (channel_name, data) in enumerate(sorted_channels_5y):
-        color = colors[idx % len(colors)]
-        ax3.plot(
-            data["days"],
-            data["rates"],
-            label=f"{channel_name} (LT={data['lt']:.2f})",
-            color=color,
-            linewidth=2
-        )
-
-    ax3.set_ylim(0, 0.6)
-    ax3.set_yticks([0, 0.15, 0.3, 0.45, 0.6])
-    ax3.set_yticklabels(['0%', '15%', '30%', '45%', '60%'])
-    ax3.grid(True, ls="--", alpha=0.5)
-    ax3.set_xlabel('留存天数')
-    ax3.set_ylabel('留存率')
-    ax3.set_title('所有渠道5年LT留存曲线比较 (按LT值从低到高排序)')
-    ax3.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
-    plt.tight_layout()
-    figures.append(("5年LT曲线", fig3))
-
-    return figures
+        st.error(f"{channel_name} LT计算失败：{e}")
+        return 1.0, {"a": 1.0, "b": -0.5}
 
 # ===== 页面逻辑 =====
 if page == "数据上传与汇总":
@@ -759,9 +672,9 @@ elif page == "留存率计算":
     else:
         st.warning("请先完成数据上传与汇总")
 
-elif page == "LT拟合分析":
-    st.header("LT拟合分析")
-    st.markdown("使用幂函数和指数函数对留存数据进行拟合，计算生命周期价值。")
+elif page == "LT简化计算":
+    st.header("LT简化计算")
+    st.markdown("使用简化算法进行生命周期价值计算，无需复杂数学库依赖。")
     
     if st.session_state.retention_data is not None:
         col1, col2 = st.columns([3, 1])
@@ -777,23 +690,16 @@ elif page == "LT拟合分析":
         
         with col2:
             st.markdown('<div class="status-card">', unsafe_allow_html=True)
-            st.subheader("分析设置")
+            st.subheader("计算设置")
             
             calculate_2y = st.checkbox("计算2年LT", value=True)
             calculate_5y = st.checkbox("计算5年LT", value=True)
-            show_plots = st.checkbox("生成可视化图表", value=True)
             
-            if st.button("开始LT拟合分析", type="primary"):
-                with st.spinner("正在进行LT拟合计算..."):
+            if st.button("开始LT简化计算", type="primary"):
+                with st.spinner("正在进行LT计算..."):
                     try:
-                        key_days = [1, 7, 30, 60, 90, 100, 150, 200, 300]
-                        
                         summary_data = []
-                        key_days_summary = []
-                        visualization_data_2y = {}
-                        visualization_data_5y = {}
                         fit_params_data = {}
-                        original_data = {}
                         
                         progress_bar = st.progress(0)
                         status_text = st.empty()
@@ -814,43 +720,20 @@ elif page == "LT拟合分析":
                                     '留存率': summary_df['月均留存率'] / 100  # 转换为小数
                                 })
                                 
-                                # 保存原始数据用于可视化
-                                original_data[channel_name] = {
-                                    "days": fit_data["留存天数"].values,
-                                    "rates": fit_data["留存率"].values
-                                }
-                                
                                 results = {}
                                 
                                 if calculate_2y:
-                                    lt_2_years, days_2y, rates_2y, key_days_lt_2y, fit_params = calculate_lt(
-                                        fit_data, channel_name, lt_years=2, return_curve_data=True, key_days=key_days
+                                    lt_2_years, fit_params = calculate_lt_simple(
+                                        fit_data, channel_name, lt_years=2
                                     )
                                     results['2年LT'] = lt_2_years
-                                    visualization_data_2y[channel_name] = {
-                                        "days": days_2y,
-                                        "rates": rates_2y,
-                                        "lt": lt_2_years
-                                    }
                                     fit_params_data[channel_name] = fit_params
                                 
                                 if calculate_5y:
-                                    lt_5_years, days_5y, rates_5y, key_days_lt_5y, _ = calculate_lt(
-                                        fit_data, channel_name, lt_years=5, return_curve_data=True, key_days=key_days
+                                    lt_5_years, _ = calculate_lt_simple(
+                                        fit_data, channel_name, lt_years=5
                                     )
                                     results['5年LT'] = lt_5_years
-                                    visualization_data_5y[channel_name] = {
-                                        "days": days_5y,
-                                        "rates": rates_5y,
-                                        "lt": lt_5_years
-                                    }
-                                    
-                                    # 保存关键时间点LT值
-                                    key_days_row = {"渠道名称": channel_name}
-                                    for day in key_days:
-                                        if day in key_days_lt_5y:
-                                            key_days_row[f"{day}天LT"] = key_days_lt_5y[day]
-                                    key_days_summary.append(key_days_row)
                                 
                                 summary_row = {"渠道名称": channel_name}
                                 summary_row.update(results)
@@ -863,47 +746,33 @@ elif page == "LT拟合分析":
                         # 保存结果
                         lt_results = {
                             'summary': pd.DataFrame(summary_data),
-                            'key_days': pd.DataFrame(key_days_summary) if key_days_summary else pd.DataFrame(),
-                            'fit_params': fit_params_data,
-                            'visualization_2y': visualization_data_2y,
-                            'visualization_5y': visualization_data_5y,
-                            'original_data': original_data
+                            'fit_params': fit_params_data
                         }
                         
                         st.session_state.lt_results = lt_results
-                        st.success("LT拟合分析完成")
+                        st.success("LT简化计算完成")
                         
                     except Exception as e:
-                        st.error(f"LT拟合分析失败：{e}")
+                        st.error(f"LT计算失败：{e}")
             
             st.markdown('</div>', unsafe_allow_html=True)
         
         # 显示分析结果
         if st.session_state.lt_results:
-            st.subheader("LT分析结果")
+            st.subheader("LT计算结果")
             
-            tab1, tab2, tab3, tab4 = st.tabs(["计算结果", "关键时间点", "拟合参数", "可视化图表"])
+            tab1, tab2 = st.tabs(["计算结果", "拟合参数"])
             
             with tab1:
                 st.dataframe(st.session_state.lt_results['summary'], use_container_width=True)
             
             with tab2:
-                if not st.session_state.lt_results['key_days'].empty:
-                    st.dataframe(st.session_state.lt_results['key_days'], use_container_width=True)
-                else:
-                    st.info("无关键时间点数据")
-            
-            with tab3:
                 if st.session_state.lt_results['fit_params']:
                     fit_params_list = []
                     for channel_name, params in st.session_state.lt_results['fit_params'].items():
                         row = {"渠道名称": channel_name}
-                        if "power" in params:
-                            row["幂函数_a"] = f"{params['power']['a']:.6e}"
-                            row["幂函数_b"] = f"{params['power']['b']:.6f}"
-                        if "exponential" in params:
-                            row["指数函数_c"] = f"{params['exponential']['c']:.6e}"
-                            row["指数函数_d"] = f"{params['exponential']['d']:.6f}"
+                        row["幂函数_a"] = f"{params['a']:.6f}"
+                        row["幂函数_b"] = f"{params['b']:.6f}"
                         fit_params_list.append(row)
                     
                     fit_params_df = pd.DataFrame(fit_params_list)
@@ -911,30 +780,11 @@ elif page == "LT拟合分析":
                 else:
                     st.info("无拟合参数数据")
             
-            with tab4:
-                if show_plots and st.session_state.lt_results['visualization_2y'] and st.session_state.lt_results['visualization_5y']:
-                    try:
-                        figures = create_visualization_plots(
-                            st.session_state.lt_results['visualization_2y'],
-                            st.session_state.lt_results['visualization_5y'],
-                            st.session_state.lt_results['original_data']
-                        )
-                        
-                        for title, fig in figures:
-                            st.subheader(title)
-                            st.pyplot(fig)
-                    except Exception as e:
-                        st.error(f"图表生成失败：{e}")
-                else:
-                    st.info("请在分析设置中勾选'生成可视化图表'")
-            
             # 提供结果下载
             if st.button("下载分析报告"):
                 output = io.BytesIO()
                 with pd.ExcelWriter(output, engine='openpyxl') as writer:
                     st.session_state.lt_results['summary'].to_excel(writer, sheet_name='LT总结', index=False)
-                    if not st.session_state.lt_results['key_days'].empty:
-                        st.session_state.lt_results['key_days'].to_excel(writer, sheet_name='关键时间点LT', index=False)
                     if fit_params_list:
                         fit_params_df.to_excel(writer, sheet_name='拟合参数', index=False)
                 
@@ -1200,9 +1050,6 @@ elif page == "LTV结果报告":
                 ltv_results.to_excel(writer, sheet_name='LTV最终结果', index=False)
                 
                 # 保存其他相关数据
-                if st.session_state.lt_results['key_days'] is not None and not st.session_state.lt_results['key_days'].empty:
-                    st.session_state.lt_results['key_days'].to_excel(writer, sheet_name='关键时间点LT', index=False)
-                
                 st.session_state.arpu_data.to_excel(writer, sheet_name='ARPU计算结果', index=False)
                 st.session_state.lt_results['summary'].to_excel(writer, sheet_name='LT分析结果', index=False)
             
@@ -1214,7 +1061,7 @@ elif page == "LTV结果报告":
             )
     
     elif st.session_state.lt_results is None:
-        st.warning("请先完成LT拟合分析")
+        st.warning("请先完成LT简化计算")
     elif st.session_state.arpu_data is None:
         st.warning("请先完成ARPU计算")
     
@@ -1231,7 +1078,7 @@ progress_items = [
     ("渠道映射表", st.session_state.channel_mapping is not None),
     ("数据汇总", st.session_state.merged_data is not None),
     ("留存率计算", st.session_state.retention_data is not None),
-    ("LT拟合分析", st.session_state.lt_results is not None),
+    ("LT简化计算", st.session_state.lt_results is not None),
     ("ARPU计算", st.session_state.arpu_data is not None),
     ("LTV结果报告", st.session_state.ltv_results is not None)
 ]
