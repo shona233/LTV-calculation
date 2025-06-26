@@ -123,32 +123,48 @@ st.markdown("""
         margin-bottom: 0.8rem;
     }
     
-    /* 进度指示器 */
-    .progress-container {
+    /* 导航步骤样式 */
+    .nav-container {
         background: rgba(255, 255, 255, 0.9);
         border-radius: 12px;
         padding: 1rem;
         margin-bottom: 1rem;
     }
     
-    .progress-step {
+    .nav-step {
         display: flex;
         align-items: center;
-        margin-bottom: 1rem;
-        padding: 0.5rem;
+        margin-bottom: 0.5rem;
+        padding: 0.8rem;
         border-radius: 8px;
-        transition: background-color 0.3s ease;
+        transition: all 0.3s ease;
         cursor: pointer;
+        border: 1px solid transparent;
+        text-decoration: none;
     }
     
-    .progress-step.active {
+    .nav-step:hover {
+        background: rgba(37, 99, 235, 0.1);
+        border-color: rgba(37, 99, 235, 0.3);
+        transform: translateX(5px);
+    }
+    
+    .nav-step.active {
         background: linear-gradient(135deg, #1e40af 0%, #2563eb 100%);
         color: white;
+        box-shadow: 0 4px 15px rgba(37, 99, 235, 0.3);
     }
     
-    .progress-step.completed {
+    .nav-step.completed {
         background: linear-gradient(135deg, #059669 0%, #10b981 100%);
         color: white;
+        box-shadow: 0 4px 15px rgba(5, 150, 105, 0.3);
+    }
+    
+    .nav-step.warning {
+        background: linear-gradient(135deg, #d97706 0%, #f59e0b 100%);
+        color: white;
+        box-shadow: 0 4px 15px rgba(217, 119, 6, 0.3);
     }
     
     .step-number {
@@ -161,6 +177,21 @@ st.markdown("""
         justify-content: center;
         margin-right: 1rem;
         font-weight: 600;
+        flex-shrink: 0;
+    }
+    
+    .step-content {
+        flex: 1;
+    }
+    
+    .step-title {
+        font-weight: 600;
+        margin-bottom: 0.2rem;
+    }
+    
+    .step-desc {
+        font-size: 0.85rem;
+        opacity: 0.8;
     }
     
     /* 按钮样式 */
@@ -373,7 +404,7 @@ if st.session_state.current_step is None:
 if st.session_state.excluded_data is None:
     st.session_state.excluded_data = []
 
-# 分析步骤定义（新增异常数据剔除步骤）
+# 分析步骤定义
 ANALYSIS_STEPS = [
     {"name": "数据上传与汇总", "icon": "01", "desc": "上传原始数据文件"},
     {"name": "异常数据剔除", "icon": "02", "desc": "剔除异常数据点"},
@@ -383,43 +414,99 @@ ANALYSIS_STEPS = [
     {"name": "LTV结果报告", "icon": "06", "desc": "生成最终报告"}
 ]
 
+# 检查步骤完成状态
+def get_step_status(step_index):
+    """获取步骤状态：completed, active, warning, normal"""
+    if step_index == st.session_state.current_step:
+        return "active"
+    
+    # 检查是否已完成
+    if step_index == 0 and st.session_state.merged_data is not None:
+        return "completed"
+    elif step_index == 1 and st.session_state.cleaned_data is not None:
+        return "completed"
+    elif step_index == 2 and st.session_state.retention_data is not None:
+        return "completed"
+    elif step_index == 3 and st.session_state.lt_results is not None:
+        return "completed"
+    elif step_index == 4 and st.session_state.arpu_data is not None:
+        return "completed"
+    elif step_index == 5 and st.session_state.ltv_results is not None:
+        return "completed"
+    
+    # 检查是否有依赖警告
+    elif step_index == 1 and st.session_state.merged_data is None:
+        return "warning"
+    elif step_index == 2 and st.session_state.merged_data is None:
+        return "warning"
+    elif step_index == 3 and st.session_state.retention_data is None:
+        return "warning"
+    elif step_index == 4 and st.session_state.lt_results is None:
+        return "warning"
+    elif step_index == 5 and (st.session_state.lt_results is None or st.session_state.arpu_data is None):
+        return "warning"
+    
+    return "normal"
+
 # 侧边栏导航
 with st.sidebar:
-    st.markdown("""
-    <div class="progress-container">
-        <h4 style="text-align: center; margin-bottom: 1rem; color: #495057;">分析流程</h4>
-    """, unsafe_allow_html=True)
+    st.markdown('<div class="nav-container">', unsafe_allow_html=True)
+    st.markdown('<h4 style="text-align: center; margin-bottom: 1rem; color: #495057;">分析流程</h4>', unsafe_allow_html=True)
     
-    # 页面选择（改为直接选择框）
-    page = st.selectbox(
-        "选择分析模块",
-        [step["name"] for step in ANALYSIS_STEPS],
-        index=st.session_state.current_step,
-        key="page_selector"
-    )
-    
-    # 更新当前步骤
-    st.session_state.current_step = [step["name"] for step in ANALYSIS_STEPS].index(page)
-    
-    # 进度指示器
+    # 创建可点击的导航步骤
     for i, step in enumerate(ANALYSIS_STEPS):
-        step_class = ""
-        if i < st.session_state.current_step:
-            step_class = "completed"
-        elif i == st.session_state.current_step:
-            step_class = "active"
+        step_status = get_step_status(i)
         
-        st.markdown(f"""
-        <div class="progress-step {step_class}">
+        # 创建唯一的按钮key
+        button_key = f"nav_step_{i}"
+        
+        # 使用HTML和JavaScript创建可点击的导航项
+        nav_html = f"""
+        <div class="nav-step {step_status}" onclick="document.getElementById('{button_key}').click()">
             <div class="step-number">{step['icon']}</div>
-            <div>
-                <strong>{step['name']}</strong><br>
-                <small>{step['desc']}</small>
+            <div class="step-content">
+                <div class="step-title">{step['name']}</div>
+                <div class="step-desc">{step['desc']}</div>
             </div>
+        </div>
+        """
+        
+        st.markdown(nav_html, unsafe_allow_html=True)
+        
+        # 隐藏的按钮用于处理点击事件
+        if st.button("", key=button_key, help=f"跳转到{step['name']}", 
+                    type="secondary", use_container_width=True):
+            st.session_state.current_step = i
+            st.rerun()
+    
+    st.markdown('</div>', unsafe_allow_html=True)
+    
+    # 状态信息
+    st.markdown('<div class="nav-container">', unsafe_allow_html=True)
+    st.markdown('<h4 style="text-align: center; margin-bottom: 1rem; color: #495057;">当前状态</h4>', unsafe_allow_html=True)
+    
+    # 数据状态
+    status_items = [
+        ("原始数据", "✅" if st.session_state.merged_data is not None else "❌"),
+        ("清理数据", "✅" if st.session_state.cleaned_data is not None else "❌"),
+        ("留存数据", "✅" if st.session_state.retention_data is not None else "❌"),
+        ("LT结果", "✅" if st.session_state.lt_results is not None else "❌"),
+        ("ARPU数据", "✅" if st.session_state.arpu_data is not None else "❌"),
+        ("LTV结果", "✅" if st.session_state.ltv_results is not None else "❌")
+    ]
+    
+    for status_name, status_icon in status_items:
+        st.markdown(f"""
+        <div style="display: flex; justify-content: space-between; padding: 0.3rem 0; border-bottom: 1px solid #e9ecef;">
+            <span style="font-size: 0.9rem;">{status_name}</span>
+            <span>{status_icon}</span>
         </div>
         """, unsafe_allow_html=True)
     
-    st.markdown("</div>", unsafe_allow_html=True)
+    st.markdown('</div>', unsafe_allow_html=True)
+
+# 获取当前页面
+current_page = ANALYSIS_STEPS[st.session_state.current_step]["name"]
 
 # 数据整合功能（保留原有逻辑）
 def standardize_output_columns(df):
@@ -984,8 +1071,14 @@ def create_advanced_visualization(fitting_results, lt_results):
         'retention_curves': create_retention_curves()
     }
 
+# 显示依赖提示
+def show_dependency_warning(required_step):
+    """显示依赖提示"""
+    st.warning(f"⚠️ 此步骤需要先完成「{required_step}」")
+    st.info("您可以点击左侧导航直接跳转到对应步骤，或者继续查看当前步骤的功能介绍。")
+
 # 页面内容
-if page == "数据上传与汇总":
+if current_page == "数据上传与汇总":
     st.header("数据上传与汇总")
     
     # 渠道映射配置
@@ -1125,22 +1218,33 @@ if page == "数据上传与汇总":
     else:
         st.info("请选择Excel文件开始数据处理")
 
-elif page == "异常数据剔除":
+elif current_page == "异常数据剔除":
     st.header("异常数据剔除")
     
     if st.session_state.merged_data is None:
-        st.warning("请先在「数据上传与汇总」页面处理数据")
-        if st.button("返回数据上传页面"):
-            st.session_state.current_step = 0
-            st.rerun()
-    else:
+        show_dependency_warning("数据上传与汇总")
+    
+    # 不管有没有数据都显示功能介绍
+    st.markdown('<div class="glass-card">', unsafe_allow_html=True)
+    st.subheader("功能说明")
+    st.markdown("""
+    此步骤用于识别和剔除异常数据点，提高留存率计算的准确性：
+    
+    **剔除选项包括：**
+    - 📊 **按数据来源剔除**: 排除整个渠道的数据
+    - 📅 **按日期剔除**: 排除特定日期的所有数据
+    - 👥 **新增用户数阈值**: 剔除新增用户过少的记录
+    - 📈 **留存率异常检测**: 剔除留存率异常高的记录
+    - 🔍 **数据完整性检查**: 剔除数据不完整的记录
+    """)
+    st.markdown('</div>', unsafe_allow_html=True)
+    
+    if st.session_state.merged_data is not None:
         merged_data = st.session_state.merged_data
         
         st.markdown('<div class="glass-card">', unsafe_allow_html=True)
-        st.subheader("异常数据识别与剔除")
+        st.subheader("数据概览")
         
-        # 显示数据概览
-        st.markdown("### 数据概览")
         col1, col2, col3 = st.columns(3)
         with col1:
             st.metric("总记录数", f"{len(merged_data):,}")
@@ -1334,7 +1438,7 @@ elif page == "异常数据剔除":
                 st.session_state.cleaned_data = merged_data.copy()
                 st.info("未发现需要剔除的异常数据，所有数据将保留")
 
-elif page == "留存率计算":
+elif current_page == "留存率计算":
     st.header("留存率计算")
     
     # 确定使用的数据源
@@ -1348,11 +1452,22 @@ elif page == "留存率计算":
         working_data = None
         data_source_info = "无可用数据"
     
+    # 功能说明
+    st.markdown('<div class="glass-card">', unsafe_allow_html=True)
+    st.subheader("功能说明")
+    st.markdown("""
+    此步骤计算各渠道的用户留存率：
+    
+    **计算方法：**
+    - 📊 **加权平均**: 根据新增用户数对留存率进行加权平均
+    - 📅 **日期范围**: 分析1-30天的用户留存情况
+    - 🎯 **渠道分析**: 为每个数据来源独立计算留存率
+    - 📈 **数据可视化**: 生成留存率曲线图和关键指标
+    """)
+    st.markdown('</div>', unsafe_allow_html=True)
+    
     if working_data is None:
-        st.warning("请先完成前面的步骤以获取数据")
-        if st.button("返回数据上传页面"):
-            st.session_state.current_step = 0
-            st.rerun()
+        show_dependency_warning("数据上传与汇总")
     else:
         st.markdown('<div class="glass-card">', unsafe_allow_html=True)
         st.subheader("留存率分析配置")
@@ -1449,14 +1564,25 @@ elif page == "留存率计算":
             else:
                 st.error("请选择至少一个数据来源")
 
-elif page == "LT拟合分析":
+elif current_page == "LT拟合分析":
     st.header("LT拟合分析")
     
+    # 功能说明
+    st.markdown('<div class="glass-card">', unsafe_allow_html=True)
+    st.subheader("功能说明")
+    st.markdown("""
+    此步骤使用数学模型拟合留存率曲线，计算用户生命周期(LT)：
+    
+    **拟合方法：**
+    - 📊 **幂函数拟合**: y = a × x^b，适用于衰减型留存曲线
+    - 📈 **指数函数拟合**: y = c × e^(d×x)，适用于快速衰减型曲线
+    - 🎯 **最佳模型选择**: 自动选择拟合度(R²)最高的模型
+    - 📐 **LT计算**: 基于拟合曲线计算用户生命周期值
+    """)
+    st.markdown('</div>', unsafe_allow_html=True)
+    
     if st.session_state.retention_data is None:
-        st.warning("请先在「留存率计算」页面计算留存率")
-        if st.button("返回留存率计算页面"):
-            st.session_state.current_step = 2
-            st.rerun()
+        show_dependency_warning("留存率计算")
     else:
         retention_data = st.session_state.retention_data
         
@@ -1537,8 +1663,25 @@ elif page == "LT拟合分析":
                     plt.close()
                     st.markdown('</div>', unsafe_allow_html=True)
 
-elif page == "ARPU计算":
+elif current_page == "ARPU计算":
     st.header("ARPU计算")
+    
+    # 功能说明
+    st.markdown('<div class="glass-card">', unsafe_allow_html=True)
+    st.subheader("功能说明")
+    st.markdown("""
+    此步骤设置或计算每个用户的平均收入价值(ARPU)：
+    
+    **支持方式：**
+    - 📂 **文件上传**: 上传包含ARPU数据的Excel文件
+    - ✍️ **手动输入**: 为每个渠道手动设置ARPU值
+    - 📊 **自动计算**: 基于上传的付费数据自动计算平均值
+    - 🎯 **渠道匹配**: 自动匹配各渠道对应的ARPU值
+    """)
+    st.markdown('</div>', unsafe_allow_html=True)
+    
+    if st.session_state.lt_results is None:
+        show_dependency_warning("LT拟合分析")
     
     st.markdown('<div class="glass-card">', unsafe_allow_html=True)
     st.subheader("上传ARPU数据")
@@ -1662,24 +1805,33 @@ elif page == "ARPU计算":
                 st.dataframe(arpu_df, use_container_width=True)
         
         else:
-            st.warning("请先完成LT拟合分析，然后再设置ARPU")
+            st.info("💡 请先完成LT拟合分析，然后再设置ARPU")
     
     st.markdown('</div>', unsafe_allow_html=True)
 
-elif page == "LTV结果报告":
+elif current_page == "LTV结果报告":
     st.header("LTV结果报告")
+    
+    # 功能说明
+    st.markdown('<div class="glass-card">', unsafe_allow_html=True)
+    st.subheader("功能说明")
+    st.markdown("""
+    此步骤生成最终的LTV分析报告：
+    
+    **报告内容：**
+    - 🎯 **LTV计算**: LTV = LT × ARPU
+    - 📊 **对比分析**: 各渠道LTV值对比
+    - 📈 **可视化图表**: LTV条形图、LT vs ARPU散点图
+    - 📋 **详细报告**: 包含所有计算参数的完整报告
+    - 💾 **结果导出**: 支持CSV和TXT格式导出
+    """)
+    st.markdown('</div>', unsafe_allow_html=True)
     
     # 检查必要数据是否存在
     if st.session_state.lt_results is None:
-        st.warning("请先完成LT拟合分析")
-        if st.button("跳转到LT拟合分析"):
-            st.session_state.current_step = 3
-            st.rerun()
+        show_dependency_warning("LT拟合分析")
     elif st.session_state.arpu_data is None:
-        st.warning("请先完成ARPU计算")
-        if st.button("跳转到ARPU计算"):
-            st.session_state.current_step = 4
-            st.rerun()
+        show_dependency_warning("ARPU计算")
     else:
         # 计算LTV
         lt_results = st.session_state.lt_results
@@ -1905,13 +2057,13 @@ LTV分析报告
 with st.sidebar:
     st.markdown("---")
     st.markdown("""
-    <div class="progress-container">
+    <div class="nav-container">
         <h4 style="text-align: center; color: #495057;">使用提示</h4>
         <p style="font-size: 0.9rem; color: #6c757d; text-align: center;">
-        请按照流程顺序完成各个步骤，每一步的结果都会保存在当前会话中。
+        您可以点击任意步骤直接跳转查看功能，系统会自动提示依赖关系。
         </p>
         <p style="font-size: 0.8rem; color: #adb5bd; text-align: center;">
-        Enhanced Analytics Platform
+        Enhanced Analytics Platform v2.0
         </p>
     </div>
     """, unsafe_allow_html=True)
