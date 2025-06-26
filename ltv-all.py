@@ -1240,6 +1240,54 @@ elif current_page == "异常数据剔除":
             st.markdown("### 按数据来源剔除")
             
             all_sources = merged_data['数据来源'].unique().tolist()
+elif current_page == "异常数据剔除":
+    if st.session_state.merged_data is None:
+        show_dependency_warning("数据上传与汇总")
+    
+    # 功能介绍
+    st.markdown('<div class="glass-card">', unsafe_allow_html=True)
+    st.subheader("功能说明")
+    st.markdown("""
+    此步骤用于识别和剔除异常数据点，提高留存率计算的准确性。异常数据可能来源于系统错误、数据采集问题或特殊事件影响。
+    注意：所有剔除条件必须同时满足才会被剔除（"且"关系）。
+    """)
+    st.markdown('</div>', unsafe_allow_html=True)
+    
+    if st.session_state.merged_data is not None:
+        merged_data = st.session_state.merged_data
+        
+        st.markdown('<div class="glass-card">', unsafe_allow_html=True)
+        st.subheader("数据概览")
+        
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.metric("总记录数", f"{len(merged_data):,}")
+        with col2:
+            st.metric("数据来源数", merged_data['数据来源'].nunique())
+        with col3:
+            st.metric("已剔除记录", len(st.session_state.excluded_data) if st.session_state.excluded_data else 0)
+        
+        # 数据预览
+        st.markdown("### 数据预览")
+        display_cols = ['数据来源', 'date', '回传新增数', '1', '7', '15', '30']
+        available_cols = [col for col in display_cols if col in merged_data.columns]
+        if available_cols:
+            st.dataframe(merged_data[available_cols].head(8), use_container_width=True)
+        else:
+            st.dataframe(merged_data.head(8), use_container_width=True)
+        
+        st.markdown('</div>', unsafe_allow_html=True)
+        
+        # 异常数据剔除界面
+        st.markdown('<div class="glass-card">', unsafe_allow_html=True)
+        st.subheader("异常数据剔除配置")
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.markdown("### 按数据来源剔除")
+            
+            all_sources = merged_data['数据来源'].unique().tolist()
             excluded_sources = st.multiselect(
                 "选择要剔除的数据来源",
                 options=all_sources,
@@ -1276,85 +1324,102 @@ elif current_page == "异常数据剔除":
         st.info("注意：只有同时满足所有选中条件的记录才会被剔除（且关系）")
         
         # 计算所有剔除条件（改为且关系）
-        exclusion_mask = pd.Series([True] * len(merged_data), index=merged_data.index)
-        
-        # 按数据来源剔除
-        if excluded_sources:
-            source_mask = merged_data['数据来源'].isin(excluded_sources)
-            exclusion_mask &= source_mask
-        
-        # 按日期剔除
-        if 'date' in merged_data.columns and excluded_dates:
-            date_mask = merged_data['date'].isin(excluded_dates)
-            exclusion_mask &= date_mask
-        
-        # 如果没有选择任何剔除条件，则不剔除任何数据
-        if not excluded_sources and not excluded_dates:
-            exclusion_mask = pd.Series([False] * len(merged_data), index=merged_data.index)
-        
-        to_exclude = merged_data[exclusion_mask]
-        to_keep = merged_data[~exclusion_mask]
+        try:
+            exclusion_mask = pd.Series([True] * len(merged_data), index=merged_data.index)
+            
+            # 按数据来源剔除
+            if excluded_sources:
+                source_mask = merged_data['数据来源'].isin(excluded_sources)
+                exclusion_mask &= source_mask
+            
+            # 按日期剔除
+            if 'date' in merged_data.columns and excluded_dates:
+                date_mask = merged_data['date'].isin(excluded_dates)
+                exclusion_mask &= date_mask
+            
+            # 如果没有选择任何剔除条件，则不剔除任何数据
+            if not excluded_sources and not excluded_dates:
+                exclusion_mask = pd.Series([False] * len(merged_data), index=merged_data.index)
+            
+            to_exclude = merged_data[exclusion_mask]
+            to_keep = merged_data[~exclusion_mask]
+            
+        except Exception as e:
+            st.error(f"计算剔除条件时出错: {str(e)}")
+            to_exclude = pd.DataFrame()
+            to_keep = merged_data.copy()
         
         col1, col2 = st.columns(2)
         
         with col1:
             st.markdown("### 将被剔除的数据")
             st.markdown(f"**数量:** {len(to_exclude)} 条")
-            if len(to_exclude) > 0:
+            if len(to_exclude) > 0 and available_cols:
                 st.dataframe(to_exclude[available_cols].head(10), use_container_width=True)
+            elif len(to_exclude) > 0:
+                st.dataframe(to_exclude.head(10), use_container_width=True)
         
         with col2:
             st.markdown("### 保留的数据")
             st.markdown(f"**数量:** {len(to_keep)} 条")
-            if len(to_keep) > 0:
+            if len(to_keep) > 0 and available_cols:
                 st.dataframe(to_keep[available_cols].head(10), use_container_width=True)
+            elif len(to_keep) > 0:
+                st.dataframe(to_keep.head(10), use_container_width=True)
         
         st.markdown('</div>', unsafe_allow_html=True)
         
         # 确认剔除
         if st.button("确认剔除异常数据", type="primary", use_container_width=True):
-            if len(to_exclude) > 0:
-                excluded_records = []
-                for _, row in to_exclude.iterrows():
-                    data_source = row.get('数据来源', 'Unknown')
-                    date_val = row.get('date', 'Unknown')
-                    excluded_records.append(f"{data_source} - {date_val}")
-                
-                st.session_state.excluded_data = excluded_records
-                st.session_state.cleaned_data = to_keep.copy()
-                
-                st.success(f"成功剔除 {len(to_exclude)} 条异常数据，保留 {len(to_keep)} 条有效数据")
-                
-                # 显示清理后的数据统计
-                col1, col2, col3, col4 = st.columns(4)
-                with col1:
-                    st.markdown('<div class="metric-card">', unsafe_allow_html=True)
-                    st.markdown(f'<div class="metric-value">{len(to_keep):,}</div>', unsafe_allow_html=True)
-                    st.markdown('<div class="metric-label">有效记录数</div>', unsafe_allow_html=True)
-                    st.markdown('</div>', unsafe_allow_html=True)
-                
-                with col2:
-                    st.markdown('<div class="metric-card">', unsafe_allow_html=True)
-                    st.markdown(f'<div class="metric-value">{to_keep["数据来源"].nunique()}</div>', unsafe_allow_html=True)
-                    st.markdown('<div class="metric-label">数据来源</div>', unsafe_allow_html=True)
-                    st.markdown('</div>', unsafe_allow_html=True)
-                
-                with col3:
-                    st.markdown('<div class="metric-card">', unsafe_allow_html=True)
-                    st.markdown(f'<div class="metric-value">{len(to_exclude):,}</div>', unsafe_allow_html=True)
-                    st.markdown('<div class="metric-label">剔除记录数</div>', unsafe_allow_html=True)
-                    st.markdown('</div>', unsafe_allow_html=True)
-                
-                with col4:
-                    retention_rate = len(to_keep) / len(merged_data) * 100
-                    st.markdown('<div class="metric-card">', unsafe_allow_html=True)
-                    st.markdown(f'<div class="metric-value">{retention_rate:.1f}%</div>', unsafe_allow_html=True)
-                    st.markdown('<div class="metric-label">数据保留率</div>', unsafe_allow_html=True)
-                    st.markdown('</div>', unsafe_allow_html=True)
-                
-            else:
-                st.session_state.cleaned_data = merged_data.copy()
-                st.info("未发现需要剔除的异常数据，所有数据将保留")
+            try:
+                if len(to_exclude) > 0:
+                    excluded_records = []
+                    for _, row in to_exclude.iterrows():
+                        data_source = row.get('数据来源', 'Unknown')
+                        date_val = row.get('date', 'Unknown')
+                        excluded_records.append(f"{data_source} - {date_val}")
+                    
+                    st.session_state.excluded_data = excluded_records
+                    st.session_state.cleaned_data = to_keep.copy()
+                    
+                    st.success(f"成功剔除 {len(to_exclude)} 条异常数据，保留 {len(to_keep)} 条有效数据")
+                    
+                    # 显示清理后的数据统计
+                    col1, col2, col3, col4 = st.columns(4)
+                    with col1:
+                        st.markdown('<div class="metric-card">', unsafe_allow_html=True)
+                        st.markdown(f'<div class="metric-value">{len(to_keep):,}</div>', unsafe_allow_html=True)
+                        st.markdown('<div class="metric-label">有效记录数</div>', unsafe_allow_html=True)
+                        st.markdown('</div>', unsafe_allow_html=True)
+                    
+                    with col2:
+                        st.markdown('<div class="metric-card">', unsafe_allow_html=True)
+                        st.markdown(f'<div class="metric-value">{to_keep["数据来源"].nunique()}</div>', unsafe_allow_html=True)
+                        st.markdown('<div class="metric-label">数据来源</div>', unsafe_allow_html=True)
+                        st.markdown('</div>', unsafe_allow_html=True)
+                    
+                    with col3:
+                        st.markdown('<div class="metric-card">', unsafe_allow_html=True)
+                        st.markdown(f'<div class="metric-value">{len(to_exclude):,}</div>', unsafe_allow_html=True)
+                        st.markdown('<div class="metric-label">剔除记录数</div>', unsafe_allow_html=True)
+                        st.markdown('</div>', unsafe_allow_html=True)
+                    
+                    with col4:
+                        if len(merged_data) > 0:
+                            retention_rate = len(to_keep) / len(merged_data) * 100
+                        else:
+                            retention_rate = 0
+                        st.markdown('<div class="metric-card">', unsafe_allow_html=True)
+                        st.markdown(f'<div class="metric-value">{retention_rate:.1f}%</div>', unsafe_allow_html=True)
+                        st.markdown('<div class="metric-label">数据保留率</div>', unsafe_allow_html=True)
+                        st.markdown('</div>', unsafe_allow_html=True)
+                    
+                else:
+                    st.session_state.cleaned_data = merged_data.copy()
+                    st.info("未发现需要剔除的异常数据，所有数据将保留")
+            
+            except Exception as e:
+                st.error(f"剔除数据时出错: {str(e)}")
     
     # 步骤说明
     st.markdown("""
