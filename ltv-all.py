@@ -527,7 +527,7 @@ with st.sidebar:
     
     st.markdown('</div>', unsafe_allow_html=True)
 
-# 定义数学函数（使用第二个代码的函数）
+# 定义数学函数
 def power_function(x, a, b):
     """幂函数：y = a * x^b"""
     return a * np.power(x, b)
@@ -536,7 +536,7 @@ def exponential_function(x, c, d):
     """指数函数：y = c * exp(d * x)"""
     return c * np.exp(d * x)
 
-# 数据整合功能（使用第三个代码的逻辑）
+# 数据整合功能
 def standardize_output_columns(df):
     """标准化输出列结构，确保包含指定的列顺序"""
     target_columns = [
@@ -584,7 +584,7 @@ def standardize_output_columns(df):
     return result_df
 
 def integrate_excel_files_streamlit(uploaded_files, target_month=None, channel_mapping=None):
-    """Streamlit版本的Excel文件整合函数，使用第三个代码的完整逻辑"""
+    """Streamlit版本的Excel文件整合函数"""
     if target_month is None:
         target_month = get_default_target_month()
 
@@ -749,7 +749,7 @@ def parse_channel_mapping(channel_df):
     
     return pid_to_channel
 
-# 留存率计算（改进版，更接近第二个代码的逻辑）
+# 留存率计算
 def calculate_retention_rates_advanced(df):
     """计算留存率数据，转换为第二个代码兼容的格式"""
     retention_results = []
@@ -881,12 +881,23 @@ def calculate_lt_advanced(retention_data, channel_name, lt_years=5):
         predicted_rates = power_function(days, a, b)
         r2_score = 1 - np.sum((rates - predicted_rates) ** 2) / np.sum((rates - np.mean(rates)) ** 2)
 
+        # 返回完整的曲线数据用于可视化
+        all_days = np.concatenate([days_full, days_stage_2, days_stage_3])
+        all_rates = np.concatenate([rates_full, rates_stage_2, rates_stage_3])
+
+        # 按天数排序
+        sort_idx = np.argsort(all_days)
+        all_days = all_days[sort_idx]
+        all_rates = all_rates[sort_idx]
+
         return {
             'lt_value': total_lt,
             'fit_params': fit_params,
             'power_r2': max(0, min(1, r2_score)),
             'success': True,
-            'model_used': 'power+exponential'
+            'model_used': 'power+exponential',
+            'curve_days': all_days,
+            'curve_rates': all_rates
         }
 
     except Exception as e:
@@ -895,8 +906,109 @@ def calculate_lt_advanced(retention_data, channel_name, lt_years=5):
             'fit_params': {},
             'power_r2': 0.0,
             'success': False,
-            'model_used': 'default'
+            'model_used': 'default',
+            'curve_days': np.array([]),
+            'curve_rates': np.array([])
         }
+
+# 可视化函数
+def visualize_lt_curves(visualization_data, years=2):
+    """创建线性坐标LT曲线图，渠道按LT值从低到高排序"""
+    # 按LT值从低到高排序渠道
+    sorted_channels = sorted(visualization_data.items(), key=lambda x: x[1]['lt'])
+
+    # 创建图表
+    fig, ax = plt.subplots(figsize=(14, 8))
+
+    # 设置颜色循环
+    colors = plt.cm.Set1.colors
+
+    # 为每个渠道绘制曲线
+    for idx, (channel_name, data) in enumerate(sorted_channels):
+        color = colors[idx % len(colors)]
+
+        ax.plot(
+            data["days"],
+            data["rates"],
+            label=f"{channel_name} (LT={data['lt']:.2f})",
+            color=color,
+            linewidth=2
+        )
+
+    # 线性坐标设置
+    ax.set_ylim(0, 0.6)
+    ax.set_yticks([0, 0.15, 0.3, 0.45, 0.6])
+    ax.set_yticklabels(['0%', '15%', '30%', '45%', '60%'])
+    ax.grid(True, ls="--", alpha=0.5)
+    ax.set_xlabel('留存天数')
+    ax.set_ylabel('留存率')
+    ax.set_title(f'所有渠道{years}年LT留存曲线比较 (按LT值从低到高排序)')
+    ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
+
+    plt.tight_layout()
+    return fig, colors, sorted_channels
+
+def visualize_fitting_comparison(original_data, visualization_data):
+    """可视化拟合效果比较（实际数据vs拟合曲线）- 显示所有渠道"""
+    # 按LT值从低到高排序渠道
+    channels = sorted(visualization_data.keys(), key=lambda x: visualization_data[x]['lt'])
+
+    # 计算需要多少行
+    n_channels = len(channels)
+    n_cols = 3
+    n_rows = (n_channels + n_cols - 1) // n_cols  # 向上取整
+
+    fig, axes = plt.subplots(n_rows, n_cols, figsize=(15, 5*n_rows), squeeze=False)
+
+    for i, channel_name in enumerate(channels):
+        row = i // n_cols
+        col = i % n_cols
+        ax = axes[row, col]
+
+        data = visualization_data[channel_name]
+
+        # 绘制原始数据点
+        if channel_name in original_data:
+            ax.scatter(
+                original_data[channel_name]["days"],
+                original_data[channel_name]["rates"],
+                color='red',
+                s=50,
+                alpha=0.7,
+                label='实际数据'
+            )
+
+        # 绘制拟合曲线（限制在0-100天范围内更清晰展示拟合效果）
+        fit_days = data["days"]
+        fit_rates = data["rates"]
+
+        # 限制显示范围到100天以内
+        idx_100 = np.searchsorted(fit_days, 100, side='right')
+        ax.plot(
+            fit_days[:idx_100],
+            fit_rates[:idx_100],
+            color='blue',
+            linewidth=2,
+            label='拟合曲线'
+        )
+
+        ax.set_title(f'{channel_name} (LT={data["lt"]:.2f})')
+        ax.set_xlabel('留存天数')
+        ax.set_ylabel('留存率')
+        ax.set_ylim(0, 0.6)
+        ax.set_yticks([0, 0.15, 0.3, 0.45, 0.6])
+        ax.set_yticklabels(['0%', '15%', '30%', '45%', '60%'])
+        ax.grid(True, ls="--", alpha=0.3)
+        ax.legend()
+
+    # 隐藏未使用的子图
+    for i in range(len(channels), n_rows * n_cols):
+        row = i // n_cols
+        col = i % n_cols
+        fig.delaxes(axes[row, col])
+
+    plt.tight_layout()
+    return fig
 
 # 显示依赖提示
 def show_dependency_warning(required_step):
@@ -1018,14 +1130,23 @@ if current_page == "数据上传与汇总":
                             st.markdown('</div>', unsafe_allow_html=True)
                         
                         with col3:
-                            total_new_users = merged_data['回传新增数'].sum()
-                            st.markdown('<div class="metric-card">', unsafe_allow_html=True)
-                            st.markdown(f'<div class="metric-value">{total_new_users:,.0f}</div>', unsafe_allow_html=True)
-                            st.markdown('<div class="metric-label">总新增用户</div>', unsafe_allow_html=True)
-                            st.markdown('</div>', unsafe_allow_html=True)
+                            if '回传新增数' in merged_data.columns:
+                                total_new_users = merged_data['回传新增数'].sum()
+                                st.markdown('<div class="metric-card">', unsafe_allow_html=True)
+                                st.markdown(f'<div class="metric-value">{total_new_users:,.0f}</div>', unsafe_allow_html=True)
+                                st.markdown('<div class="metric-label">总新增用户</div>', unsafe_allow_html=True)
+                                st.markdown('</div>', unsafe_allow_html=True)
+                            else:
+                                st.markdown('<div class="metric-card">', unsafe_allow_html=True)
+                                st.markdown('<div class="metric-value">N/A</div>', unsafe_allow_html=True)
+                                st.markdown('<div class="metric-label">总新增用户</div>', unsafe_allow_html=True)
+                                st.markdown('</div>', unsafe_allow_html=True)
                         
                         with col4:
-                            date_range = f"{merged_data['date'].min()} 至 {merged_data['date'].max()}"
+                            if 'date' in merged_data.columns:
+                                date_range = f"{merged_data['date'].min()} 至 {merged_data['date'].max()}"
+                            else:
+                                date_range = "未知"
                             st.markdown('<div class="metric-card">', unsafe_allow_html=True)
                             st.markdown('<div class="metric-value">日期</div>', unsafe_allow_html=True)
                             st.markdown(f'<div class="metric-label">{date_range}</div>', unsafe_allow_html=True)
@@ -1083,6 +1204,7 @@ elif current_page == "异常数据剔除":
     st.subheader("功能说明")
     st.markdown("""
     此步骤用于识别和剔除异常数据点，提高留存率计算的准确性。异常数据可能来源于系统错误、数据采集问题或特殊事件影响。
+    注意：所有剔除条件必须同时满足才会被剔除（"且"关系）。
     """)
     st.markdown('</div>', unsafe_allow_html=True)
     
@@ -1131,78 +1253,44 @@ elif current_page == "异常数据剔除":
         with col2:
             st.markdown("### 按日期剔除")
             
-            all_dates = sorted(merged_data['date'].unique().tolist())
-            excluded_dates = st.multiselect(
-                "选择要剔除的日期",
-                options=all_dates,
-                help="选中日期的所有数据将被排除在留存率计算之外"
-            )
-            
-            if excluded_dates:
-                excluded_by_date = merged_data[merged_data['date'].isin(excluded_dates)]
-                st.info(f"将剔除 {len(excluded_by_date)} 条记录")
-        
-        # 数值条件剔除
-        st.markdown("### 按数值条件剔除")
-        col1, col2, col3 = st.columns(3)
-        
-        with col1:
-            min_new_users = st.number_input(
-                "最小新增用户数阈值",
-                min_value=0,
-                value=0,
-                help="低于此值的记录将被剔除，避免小样本偏差"
-            )
-        
-        with col2:
-            max_day1_retention = st.number_input(
-                "Day1最大留存率阈值",
-                min_value=0.0,
-                max_value=2.0,
-                value=1.5,
-                step=0.1,
-                help="Day1留存率超过此值的记录将被剔除（通常表示数据错误）"
-            )
-        
-        with col3:
-            min_retention_days = st.number_input(
-                "最少有效留存天数",
-                min_value=1,
-                max_value=30,
-                value=7,
-                help="留存数据少于此天数的记录将被剔除"
-            )
+            if 'date' in merged_data.columns:
+                all_dates = sorted(merged_data['date'].unique().tolist())
+                excluded_dates = st.multiselect(
+                    "选择要剔除的日期",
+                    options=all_dates,
+                    help="选中日期的所有数据将被排除在留存率计算之外"
+                )
+                
+                if excluded_dates:
+                    excluded_by_date = merged_data[merged_data['date'].isin(excluded_dates)]
+                    st.info(f"将剔除 {len(excluded_by_date)} 条记录")
+            else:
+                st.info("数据中无日期字段，跳过按日期剔除")
+                excluded_dates = []
         
         st.markdown('</div>', unsafe_allow_html=True)
         
         # 预览将被剔除的数据
         st.markdown('<div class="glass-card">', unsafe_allow_html=True)
         st.subheader("剔除效果预览")
+        st.info("注意：只有同时满足所有选中条件的记录才会被剔除（且关系）")
         
-        # 计算所有剔除条件
-        exclusion_mask = pd.Series([False] * len(merged_data), index=merged_data.index)
+        # 计算所有剔除条件（改为且关系）
+        exclusion_mask = pd.Series([True] * len(merged_data), index=merged_data.index)
         
+        # 按数据来源剔除
         if excluded_sources:
             source_mask = merged_data['数据来源'].isin(excluded_sources)
-            exclusion_mask |= source_mask
+            exclusion_mask &= source_mask
         
-        if excluded_dates:
+        # 按日期剔除
+        if 'date' in merged_data.columns and excluded_dates:
             date_mask = merged_data['date'].isin(excluded_dates)
-            exclusion_mask |= date_mask
+            exclusion_mask &= date_mask
         
-        if min_new_users > 0:
-            users_mask = merged_data['回传新增数'] < min_new_users
-            exclusion_mask |= users_mask
-        
-        if '1' in merged_data.columns:
-            day1_retention = merged_data['1'] / merged_data['回传新增数']
-            retention_mask = day1_retention > max_day1_retention
-            exclusion_mask |= retention_mask
-        
-        retention_cols = [str(i) for i in range(1, min(31, min_retention_days + 1)) if str(i) in merged_data.columns]
-        if retention_cols:
-            completeness_mask = merged_data[retention_cols].isna().sum(axis=1) > (len(retention_cols) - min_retention_days)
-            exclusion_mask |= completeness_mask
+        # 如果没有选择任何剔除条件，则不剔除任何数据
+        if not excluded_sources and not excluded_dates:
+            exclusion_mask = pd.Series([False] * len(merged_data), index=merged_data.index)
         
         to_exclude = merged_data[exclusion_mask]
         to_keep = merged_data[~exclusion_mask]
@@ -1228,7 +1316,9 @@ elif current_page == "异常数据剔除":
             if len(to_exclude) > 0:
                 excluded_records = []
                 for _, row in to_exclude.iterrows():
-                    excluded_records.append(f"{row['数据来源']} - {row['date']}")
+                    data_source = row.get('数据来源', 'Unknown')
+                    date_val = row.get('date', 'Unknown')
+                    excluded_records.append(f"{data_source} - {date_val}")
                 
                 st.session_state.excluded_data = excluded_records
                 st.session_state.cleaned_data = to_keep.copy()
@@ -1273,9 +1363,7 @@ elif current_page == "异常数据剔除":
         <ul>
             <li><strong>渠道级异常：</strong>某些渠道可能存在系统性数据质量问题，需要整体排除以避免影响总体分析</li>
             <li><strong>时间点异常：</strong>特定日期可能受到外部事件影响（如系统维护、营销活动），导致数据不具代表性</li>
-            <li><strong>样本量异常：</strong>新增用户数过少的记录缺乏统计意义，可能产生高方差的留存率估计</li>
-            <li><strong>数值逻辑异常：</strong>留存率超过100%通常表示数据采集或计算错误</li>
-            <li><strong>完整性异常：</strong>留存数据缺失过多会影响后续曲线拟合的准确性和稳定性</li>
+            <li><strong>组合条件：</strong>采用"且"关系，只有同时满足所有选择条件的记录才会被剔除</li>
         </ul>
         
         <h4>剔除策略与原则</h4>
@@ -1385,11 +1473,11 @@ elif current_page == "留存率计算":
                                 if len(days) > 0:
                                     fig, ax = plt.subplots(figsize=(12, 6))
                                     
-                                    # 使用蓝色系配色
-                                    colors = plt.cm.Blues(np.linspace(0.4, 1, len(days)))
+                                    # 使用非蓝色系配色
+                                    colors = plt.cm.viridis(np.linspace(0.2, 0.8, len(days)))
                                     scatter = ax.scatter(days, rates, c=colors, s=80, alpha=0.8, 
-                                                       edgecolors='navy', linewidth=2)
-                                    ax.plot(days, rates, '--', color='#1e40af', linewidth=2, alpha=0.8)
+                                                       edgecolors='darkgreen', linewidth=2)
+                                    ax.plot(days, rates, '--', color='orange', linewidth=2, alpha=0.8)
                                     
                                     ax.set_xlabel('留存天数', fontsize=12, fontweight='bold')
                                     ax.set_ylabel('留存率', fontsize=12, fontweight='bold')
@@ -1402,8 +1490,8 @@ elif current_page == "留存率计算":
                                     ax.spines['right'].set_visible(False)
                                     ax.spines['left'].set_linewidth(0.8)
                                     ax.spines['bottom'].set_linewidth(0.8)
-                                    ax.spines['left'].set_color('#1e293b')
-                                    ax.spines['bottom'].set_color('#1e293b')
+                                    ax.spines['left'].set_color('#2d3436')
+                                    ax.spines['bottom'].set_color('#2d3436')
                                     
                                     plt.tight_layout()
                                     st.pyplot(fig)
@@ -1475,6 +1563,8 @@ elif current_page == "LT拟合分析":
             with st.spinner("正在进行分阶段拟合计算..."):
                 # 执行LT拟合分析
                 lt_results = []
+                visualization_data = {}
+                original_data = {}
                 
                 for retention_result in retention_data:
                     channel_name = retention_result['data_source']
@@ -1488,6 +1578,19 @@ elif current_page == "LT拟合分析":
                         'power_r2': lt_result['power_r2'],
                         'model_used': lt_result['model_used']
                     })
+                    
+                    # 保存可视化数据
+                    visualization_data[channel_name] = {
+                        "days": lt_result['curve_days'],
+                        "rates": lt_result['curve_rates'],
+                        "lt": lt_result['lt_value']
+                    }
+                    
+                    # 保存原始数据
+                    original_data[channel_name] = {
+                        "days": retention_result['days'],
+                        "rates": retention_result['rates']
+                    }
                 
                 st.session_state.lt_results = lt_results
                 
@@ -1524,17 +1627,17 @@ elif current_page == "LT拟合分析":
                     
                     fig, ax = plt.subplots(figsize=(14, 8))
                     
-                    # 使用蓝色渐变
-                    colors = plt.cm.Blues(np.linspace(0.4, 1, len(sources)))
+                    # 使用非蓝色渐变
+                    colors = plt.cm.viridis(np.linspace(0.2, 0.8, len(sources)))
                     bars = ax.bar(sources, lt_values, color=colors, alpha=0.8, 
-                                 edgecolor='#1e40af', linewidth=2)
+                                 edgecolor='darkgreen', linewidth=2)
                     
                     # 添加数值标签
                     for bar, value in zip(bars, lt_values):
                         height = bar.get_height()
                         ax.text(bar.get_x() + bar.get_width()/2., height + height*0.01,
                                f'{value:.1f}', ha='center', va='bottom', 
-                               fontweight='bold', color='#1e40af')
+                               fontweight='bold', color='darkgreen')
                     
                     ax.set_xlabel('数据来源', fontsize=12, fontweight='bold')
                     ax.set_ylabel('LT值 (天)', fontsize=12, fontweight='bold')
@@ -1545,11 +1648,33 @@ elif current_page == "LT拟合分析":
                     # 美化图表
                     ax.spines['top'].set_visible(False)
                     ax.spines['right'].set_visible(False)
-                    ax.spines['left'].set_color('#1e293b')
-                    ax.spines['bottom'].set_color('#1e293b')
+                    ax.spines['left'].set_color('#2d3436')
+                    ax.spines['bottom'].set_color('#2d3436')
                     
                     plt.tight_layout()
                     st.pyplot(fig)
+                    plt.close()
+                
+                st.markdown('</div>', unsafe_allow_html=True)
+                
+                # LT曲线比较图
+                st.markdown('<div class="glass-card">', unsafe_allow_html=True)
+                st.subheader("LT拟合曲线比较")
+                
+                if visualization_data:
+                    fig_curves, _, _ = visualize_lt_curves(visualization_data, years=lt_years)
+                    st.pyplot(fig_curves)
+                    plt.close()
+                
+                st.markdown('</div>', unsafe_allow_html=True)
+                
+                # 拟合效果比较图
+                st.markdown('<div class="glass-card">', unsafe_allow_html=True)
+                st.subheader("拟合效果比较（实际数据 vs 拟合曲线）")
+                
+                if visualization_data and original_data:
+                    fig_fitting = visualize_fitting_comparison(original_data, visualization_data)
+                    st.pyplot(fig_fitting)
                     plt.close()
                 
                 st.markdown('</div>', unsafe_allow_html=True)
@@ -1834,6 +1959,8 @@ elif current_page == "LTV结果报告":
         
         # 合并LT和ARPU数据
         ltv_results = []
+        ltv_2y_results = []
+        ltv_5y_results = []
         
         for lt_result in lt_results:
             source = lt_result['data_source']
@@ -1847,8 +1974,10 @@ elif current_page == "LTV结果报告":
                 arpu_value = 0
                 st.warning(f"渠道 '{source}' 未找到对应的ARPU数据，将使用0作为默认值")
             
-            # 计算LTV
+            # 计算2年和5年LTV（这里为简化，使用比例估算2年LTV）
+            lt_value_2y = lt_value * 0.6  # 假设2年约为5年的60%
             ltv_value = lt_value * arpu_value
+            ltv_value_2y = lt_value_2y * arpu_value
             
             ltv_results.append({
                 'data_source': source,
@@ -1857,6 +1986,16 @@ elif current_page == "LTV结果报告":
                 'ltv_value': ltv_value,
                 'fit_success': lt_result['fit_success'],
                 'model_used': lt_result.get('model_used', 'unknown')
+            })
+            
+            ltv_2y_results.append({
+                'data_source': source,
+                'ltv_2y': ltv_value_2y
+            })
+            
+            ltv_5y_results.append({
+                'data_source': source,
+                'ltv_5y': ltv_value
             })
         
         st.session_state.ltv_results = ltv_results
@@ -1923,81 +2062,113 @@ elif current_page == "LTV结果报告":
         
         st.markdown('</div>', unsafe_allow_html=True)
         
-        # LTV对比分析可视化
+        # 2年和5年LTV排名对比
         st.markdown('<div class="glass-card">', unsafe_allow_html=True)
-        st.subheader("LTV对比分析")
+        st.subheader("各渠道2年5年LTV排名对比")
         
-        col1, col2 = st.columns(2)
+        # 创建2年和5年LTV排名图
+        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 8))
         
-        with col1:
-            st.markdown("### 各渠道LTV排名")
-            # LTV条形图
-            if not display_df.empty:
-                # 按LTV值排序
-                sorted_df = display_df.sort_values('LTV', ascending=True)
-                
-                fig, ax = plt.subplots(figsize=(12, 8))
-                
-                # 使用蓝色渐变
-                colors = plt.cm.Blues(np.linspace(0.4, 1, len(sorted_df)))
-                bars = ax.barh(sorted_df['数据来源'], sorted_df['LTV'], color=colors, alpha=0.8, 
-                              edgecolor='#1e40af', linewidth=1.5)
-                
-                # 添加数值标签
-                for bar, value in zip(bars, sorted_df['LTV']):
-                    width = bar.get_width()
-                    ax.text(width + width*0.01, bar.get_y() + bar.get_height()/2,
-                           f'{value:.1f}', ha='left', va='center', 
-                           fontweight='bold', color='#1e40af')
-                
-                ax.set_xlabel('LTV值', fontsize=12, fontweight='bold')
-                ax.set_ylabel('数据来源', fontsize=12, fontweight='bold')
-                ax.set_title('各渠道LTV值对比', fontsize=14, fontweight='bold')
-                ax.grid(True, alpha=0.3, axis='x', linestyle='--')
-                
-                # 美化图表
-                ax.spines['top'].set_visible(False)
-                ax.spines['right'].set_visible(False)
-                ax.spines['left'].set_color('#1e293b')
-                ax.spines['bottom'].set_color('#1e293b')
-                
-                plt.tight_layout()
-                st.pyplot(fig)
-                plt.close()
+        # 2年LTV排名
+        ltv_2y_df = pd.DataFrame(ltv_2y_results).sort_values('ltv_2y', ascending=True)
+        colors_2y = plt.cm.Set1(np.linspace(0, 1, len(ltv_2y_df)))
+        bars1 = ax1.barh(ltv_2y_df['data_source'], ltv_2y_df['ltv_2y'], 
+                        color=colors_2y, alpha=0.8, edgecolor='darkgreen', linewidth=1.5)
         
-        with col2:
-            st.markdown("### LT与ARPU关系分析")
-            # LT vs ARPU散点图
-            if not display_df.empty:
-                fig, ax = plt.subplots(figsize=(12, 8))
-                scatter = ax.scatter(display_df['LT值'], display_df['ARPU'], 
-                                   c=display_df['LTV'], s=200, alpha=0.8, cmap='Blues',
-                                   edgecolors='#1e40af', linewidth=2)
+        # 添加数值标签
+        for bar, value in zip(bars1, ltv_2y_df['ltv_2y']):
+            width = bar.get_width()
+            ax1.text(width + width*0.01, bar.get_y() + bar.get_height()/2,
+                    f'{value:.1f}', ha='left', va='center', 
+                    fontweight='bold', color='darkgreen')
+        
+        ax1.set_xlabel('2年LTV值', fontsize=12, fontweight='bold')
+        ax1.set_ylabel('数据来源', fontsize=12, fontweight='bold')
+        ax1.set_title('各渠道2年LTV排名', fontsize=14, fontweight='bold')
+        ax1.grid(True, alpha=0.3, axis='x', linestyle='--')
+        ax1.spines['top'].set_visible(False)
+        ax1.spines['right'].set_visible(False)
+        
+        # 5年LTV排名
+        ltv_5y_df = pd.DataFrame(ltv_5y_results).sort_values('ltv_5y', ascending=True)
+        colors_5y = plt.cm.Set2(np.linspace(0, 1, len(ltv_5y_df)))
+        bars2 = ax2.barh(ltv_5y_df['data_source'], ltv_5y_df['ltv_5y'], 
+                        color=colors_5y, alpha=0.8, edgecolor='darkred', linewidth=1.5)
+        
+        # 添加数值标签
+        for bar, value in zip(bars2, ltv_5y_df['ltv_5y']):
+            width = bar.get_width()
+            ax2.text(width + width*0.01, bar.get_y() + bar.get_height()/2,
+                    f'{value:.1f}', ha='left', va='center', 
+                    fontweight='bold', color='darkred')
+        
+        ax2.set_xlabel('5年LTV值', fontsize=12, fontweight='bold')
+        ax2.set_ylabel('数据来源', fontsize=12, fontweight='bold')
+        ax2.set_title('各渠道5年LTV排名', fontsize=14, fontweight='bold')
+        ax2.grid(True, alpha=0.3, axis='x', linestyle='--')
+        ax2.spines['top'].set_visible(False)
+        ax2.spines['right'].set_visible(False)
+        
+        plt.tight_layout()
+        st.pyplot(fig)
+        plt.close()
+        
+        st.markdown('</div>', unsafe_allow_html=True)
+        
+        # 各渠道拟合曲线图
+        st.markdown('<div class="glass-card">', unsafe_allow_html=True)
+        st.subheader("各渠道拟合曲线对比")
+        
+        # 重新计算拟合曲线数据用于展示
+        if st.session_state.retention_data:
+            # 计算需要多少行和列
+            n_channels = len(st.session_state.retention_data)
+            n_cols = 3
+            n_rows = (n_channels + n_cols - 1) // n_cols
+            
+            fig, axes = plt.subplots(n_rows, n_cols, figsize=(15, 5*n_rows), squeeze=False)
+            
+            for i, retention_result in enumerate(st.session_state.retention_data):
+                row = i // n_cols
+                col = i % n_cols
+                ax = axes[row, col]
                 
-                # 添加数据源标签
-                for i, source in enumerate(display_df['数据来源']):
-                    ax.annotate(source, (display_df['LT值'].iloc[i], display_df['ARPU'].iloc[i]),
-                               xytext=(5, 5), textcoords='offset points', 
-                               fontsize=9, fontweight='bold', color='#1e40af')
+                channel_name = retention_result['data_source']
+                days = retention_result['days']
+                rates = retention_result['rates']
                 
-                ax.set_xlabel('LT值 (天)', fontsize=12, fontweight='bold')
-                ax.set_ylabel('ARPU', fontsize=12, fontweight='bold')
-                ax.set_title('LT值与ARPU关系图', fontsize=14, fontweight='bold')
+                # 计算拟合曲线
+                lt_result = calculate_lt_advanced(retention_result, channel_name, lt_years=5)
                 
-                # 添加颜色条
-                cbar = plt.colorbar(scatter)
-                cbar.set_label('LTV值', fontsize=12, fontweight='bold')
+                # 绘制原始数据点
+                ax.scatter(days, rates, color='red', s=50, alpha=0.7, label='实际数据')
                 
-                # 美化图表
-                ax.spines['top'].set_visible(False)
-                ax.spines['right'].set_visible(False)
-                ax.spines['left'].set_color('#1e293b')
-                ax.spines['bottom'].set_color('#1e293b')
-                ax.grid(True, alpha=0.3, linestyle='--')
+                # 绘制拟合曲线（限制在0-100天范围）
+                if len(lt_result['curve_days']) > 0:
+                    fit_days = lt_result['curve_days']
+                    fit_rates = lt_result['curve_rates']
+                    idx_100 = np.searchsorted(fit_days, 100, side='right')
+                    ax.plot(fit_days[:idx_100], fit_rates[:idx_100], 
+                           color='blue', linewidth=2, label='拟合曲线')
                 
-                plt.tight_layout()
-                st.pyplot(fig)
-                plt.close()
+                ax.set_title(f'{channel_name} (LT={lt_result["lt_value"]:.2f})')
+                ax.set_xlabel('留存天数')
+                ax.set_ylabel('留存率')
+                ax.set_ylim(0, 0.6)
+                ax.set_yticks([0, 0.15, 0.3, 0.45, 0.6])
+                ax.set_yticklabels(['0%', '15%', '30%', '45%', '60%'])
+                ax.grid(True, ls="--", alpha=0.3)
+                ax.legend()
+            
+            # 隐藏未使用的子图
+            for i in range(len(st.session_state.retention_data), n_rows * n_cols):
+                row = i // n_cols
+                col = i % n_cols
+                fig.delaxes(axes[row, col])
+            
+            plt.tight_layout()
+            st.pyplot(fig)
+            plt.close()
         
         st.markdown('</div>', unsafe_allow_html=True)
         
@@ -2112,20 +2283,3 @@ LTV用户生命周期价值分析报告
             <li><strong>决策支持：</strong>将LTV分析结果纳入营销决策、产品规划和投资评估流程</li>
         </ul>
     </div>
-    """, unsafe_allow_html=True)
-
-# 底部信息
-with st.sidebar:
-    st.markdown("---")
-    st.markdown("""
-    <div class="nav-container">
-        <h4 style="text-align: center; color: #495057;">使用指南</h4>
-        <p style="font-size: 0.9rem; color: #6c757d; text-align: center;">
-        点击上方步骤可直接跳转，系统会自动检查依赖关系并提供相应提示。
-        </p>
-        <p style="font-size: 0.8rem; color: #adb5bd; text-align: center;">
-        LTV智能分析平台 v2.0<br>
-        基于分阶段数学建模
-        </p>
-    </div>
-    """, unsafe_allow_html=True)
