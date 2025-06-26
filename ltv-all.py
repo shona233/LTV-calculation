@@ -31,12 +31,12 @@ st.set_page_config(
     page_icon="📊"
 )
 
-# 帆软风格的CSS样式
+# 蓝色系CSS样式
 st.markdown("""
 <style>
     /* 全局样式 */
     .main {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: linear-gradient(135deg, #1e3c72 0%, #2a5298 50%, #3b82f6 100%);
         min-height: 100vh;
     }
     
@@ -52,7 +52,7 @@ st.markdown("""
         backdrop-filter: blur(10px);
         padding: 2rem;
         border-radius: 16px;
-        box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
+        box-shadow: 0 8px 32px rgba(30, 60, 114, 0.4);
         border: 1px solid rgba(255, 255, 255, 0.18);
         margin-bottom: 2rem;
         text-align: center;
@@ -61,14 +61,14 @@ st.markdown("""
     .main-title {
         font-size: 2.5rem;
         font-weight: 700;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: linear-gradient(135deg, #1e40af 0%, #3b82f6 50%, #60a5fa 100%);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         margin-bottom: 0.5rem;
     }
     
     .main-subtitle {
-        color: #6c757d;
+        color: #475569;
         font-size: 1.1rem;
         font-weight: 400;
     }
@@ -79,7 +79,7 @@ st.markdown("""
         backdrop-filter: blur(10px);
         border-radius: 16px;
         padding: 1.5rem;
-        box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
+        box-shadow: 0 8px 32px rgba(30, 60, 114, 0.3);
         border: 1px solid rgba(255, 255, 255, 0.18);
         margin-bottom: 1.5rem;
         transition: transform 0.3s ease, box-shadow 0.3s ease;
@@ -87,17 +87,17 @@ st.markdown("""
     
     .glass-card:hover {
         transform: translateY(-5px);
-        box-shadow: 0 12px 40px rgba(31, 38, 135, 0.5);
+        box-shadow: 0 12px 40px rgba(30, 60, 114, 0.4);
     }
     
     /* 指标卡片 */
     .metric-card {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: linear-gradient(135deg, #1e40af 0%, #3b82f6 50%, #60a5fa 100%);
         color: white;
         padding: 1.5rem;
         border-radius: 12px;
         text-align: center;
-        box-shadow: 0 4px 20px rgba(102, 126, 234, 0.4);
+        box-shadow: 0 4px 20px rgba(59, 130, 246, 0.4);
         margin-bottom: 1rem;
     }
     
@@ -117,8 +117,8 @@ st.markdown("""
         background: rgba(255, 255, 255, 0.9);
         border-radius: 12px;
         padding: 1.5rem;
-        border-left: 4px solid #667eea;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        border-left: 4px solid #3b82f6;
+        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
         margin-bottom: 1rem;
     }
     
@@ -140,12 +140,12 @@ st.markdown("""
     }
     
     .progress-step.active {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
         color: white;
     }
     
     .progress-step.completed {
-        background: linear-gradient(135deg, #00b09b 0%, #96c93d 100%);
+        background: linear-gradient(135deg, #059669 0%, #10b981 100%);
         color: white;
     }
     
@@ -163,19 +163,20 @@ st.markdown("""
     
     /* 按钮样式 */
     .stButton > button {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: linear-gradient(135deg, #1e40af 0%, #3b82f6 50%, #60a5fa 100%);
         color: white;
         border: none;
         border-radius: 8px;
         padding: 0.5rem 2rem;
         font-weight: 600;
         transition: all 0.3s ease;
-        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4);
     }
     
     .stButton > button:hover {
         transform: translateY(-2px);
-        box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+        box-shadow: 0 6px 20px rgba(59, 130, 246, 0.6);
+        background: linear-gradient(135deg, #1d4ed8 0%, #2563eb 50%, #3b82f6 100%);
     }
     
     /* 侧边栏样式 */
@@ -188,46 +189,46 @@ st.markdown("""
     .dataframe {
         border-radius: 8px;
         overflow: hidden;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.1);
     }
     
     /* 文件上传区域 */
     .uploadedfile {
-        border: 2px dashed #667eea;
+        border: 2px dashed #3b82f6;
         border-radius: 8px;
         padding: 2rem;
         text-align: center;
-        background: rgba(255, 255, 255, 0.5);
+        background: rgba(59, 130, 246, 0.05);
     }
     
     /* 选择框样式 */
     .stSelectbox label, .stMultiselect label, .stFileUploader label {
         font-weight: 600;
-        color: #495057;
+        color: #1e40af;
         margin-bottom: 0.5rem;
     }
     
     /* 标题样式 */
     h1, h2, h3 {
-        color: #2c3e50;
+        color: #1e40af;
         font-weight: 600;
     }
     
     /* 成功/警告/错误消息 */
     .stSuccess {
-        background: linear-gradient(135deg, #00b09b 0%, #96c93d 100%);
+        background: linear-gradient(135deg, #059669 0%, #10b981 100%);
         color: white;
         border-radius: 8px;
     }
     
     .stWarning {
-        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        background: linear-gradient(135deg, #d97706 0%, #f59e0b 100%);
         color: white;
         border-radius: 8px;
     }
     
     .stError {
-        background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+        background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%);
         color: white;
         border-radius: 8px;
     }
