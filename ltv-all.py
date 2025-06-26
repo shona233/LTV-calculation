@@ -892,28 +892,28 @@ plt.style.use('seaborn-v0_8')
 sns.set_palette("husl")
 
 # 页面内容
-if page == "数据上传与汇总":
+if page == "(a) 数据上传与汇总":
     st.markdown('<div class="glass-card">', unsafe_allow_html=True)
-    st.header("📁 数据上传与汇总")
+    st.header("数据上传与汇总")
     st.markdown('</div>', unsafe_allow_html=True)
     
     # 渠道映射配置
-    with st.expander("🔧 渠道映射配置", expanded=False):
+    with st.expander("(b) 渠道映射配置", expanded=False):
         col1, col2 = st.columns([1, 2])
         
         with col1:
             st.markdown('<div class="status-card">', unsafe_allow_html=True)
             st.markdown("### 当前配置状态")
             if st.session_state.channel_mapping:
-                st.success(f"✅ 已配置 {len(st.session_state.channel_mapping)} 个渠道映射")
-                st.info("📋 正在使用默认渠道映射表")
+                st.success(f"已配置 {len(st.session_state.channel_mapping)} 个渠道映射")
+                st.info("正在使用默认渠道映射表")
             else:
-                st.warning("⚠️ 未配置渠道映射")
+                st.warning("未配置渠道映射")
             st.markdown('</div>', unsafe_allow_html=True)
         
         with col2:
             if st.session_state.channel_mapping:
-                st.markdown("### 📋 渠道映射示例")
+                st.markdown("###渠道映射示例")
                 # 按渠道名分组显示
                 mapping_by_channel = {}
                 for pid, channel in st.session_state.channel_mapping.items():
