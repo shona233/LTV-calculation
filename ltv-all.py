@@ -349,8 +349,7 @@ def get_default_target_month():
 # 主标题
 st.markdown("""
 <div class="main-header">
-    <div class="main-title">📊 LTV Analytics Platform</div>
-    <div class="main-subtitle">智能用户生命周期价值分析系统 | Powered by Advanced Analytics</div>
+    <div class="main-title">智能用户生命周期价值分析系统 </div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -371,11 +370,11 @@ if st.session_state.current_step is None:
 
 # 分析步骤定义
 ANALYSIS_STEPS = [
-    {"name": "数据上传与汇总", "icon": "📁", "desc": "上传原始数据文件"},
-    {"name": "留存率计算", "icon": "📈", "desc": "计算用户留存率"},
-    {"name": "LT拟合分析", "icon": "🔄", "desc": "拟合生命周期曲线"},
-    {"name": "ARPU计算", "icon": "💰", "desc": "设置/计算用户价值"},
-    {"name": "LTV结果报告", "icon": "📊", "desc": "生成最终报告"}
+    {"name": "数据上传与汇总", "icon": "01", "desc": "上传原始数据文件"},
+    {"name": "留存率计算", "icon": "02", "desc": "计算用户留存率"},
+    {"name": "LT拟合分析", "icon": "03", "desc": "拟合生命周期曲线"},
+    {"name": "ARPU计算", "icon": "04", "desc": "设置/计算用户价值"},
+    {"name": "LTV结果报告", "icon": "05", "desc": "生成最终报告"}
 ]
 
 # 侧边栏导航
