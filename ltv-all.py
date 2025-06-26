@@ -188,11 +188,6 @@ st.markdown("""
         margin-bottom: 0.2rem;
     }
     
-    .step-desc {
-        font-size: 0.85rem;
-        opacity: 0.8;
-    }
-    
     /* 说明文字样式 */
     .step-explanation {
         background: linear-gradient(135deg, rgba(37, 99, 235, 0.05) 0%, rgba(59, 130, 246, 0.08) 100%);
@@ -213,6 +208,7 @@ st.markdown("""
     .step-explanation ul {
         margin: 0.5rem 0;
         padding-left: 1.5rem;
+        list-style-type: disc;
     }
     
     .step-explanation li {
@@ -438,12 +434,12 @@ if st.session_state.excluded_data is None:
 
 # 分析步骤定义
 ANALYSIS_STEPS = [
-    {"name": "数据上传与汇总", "icon": "01", "desc": "上传原始数据文件"},
-    {"name": "异常数据剔除", "icon": "02", "desc": "剔除异常数据点"},
-    {"name": "留存率计算", "icon": "03", "desc": "计算用户留存率"},
-    {"name": "LT拟合分析", "icon": "04", "desc": "拟合生命周期曲线"},
-    {"name": "ARPU计算", "icon": "05", "desc": "设置/计算用户价值"},
-    {"name": "LTV结果报告", "icon": "06", "desc": "生成最终报告"}
+    {"name": "数据上传与汇总"},
+    {"name": "异常数据剔除"},
+    {"name": "留存率计算"},
+    {"name": "LT拟合分析"},
+    {"name": "ARPU计算"},
+    {"name": "LTV结果报告"}
 ]
 
 # 检查步骤完成状态
@@ -490,28 +486,11 @@ with st.sidebar:
         step_status = get_step_status(i)
         
         # 使用按钮进行导航
-        col1, col2 = st.columns([4, 1])
-        with col1:
-            if st.button(f"{step['icon']} {step['name']}", key=f"nav_{i}", 
-                        use_container_width=True,
-                        type="primary" if step_status == "active" else "secondary"):
-                st.session_state.current_step = i
-                st.rerun()
-        
-        with col2:
-            if step_status == "completed":
-                st.markdown("✅")
-            elif step_status == "active":
-                st.markdown("▶️")
-            elif step_status == "warning":
-                st.markdown("⚠️")
-            else:
-                st.markdown("⏸️")
-        
-        # 添加步骤描述
-        if step_status in ["active", "completed"]:
-            st.markdown(f"<small style='color: #6c757d; margin-left: 1rem;'>{step['desc']}</small>", 
-                       unsafe_allow_html=True)
+        if st.button(f"{i+1}. {step['name']}", key=f"nav_{i}", 
+                    use_container_width=True,
+                    type="primary" if step_status == "active" else "secondary"):
+            st.session_state.current_step = i
+            st.rerun()
     
     st.markdown('</div>', unsafe_allow_html=True)
     
@@ -521,19 +500,19 @@ with st.sidebar:
     
     # 数据状态
     status_items = [
-        ("原始数据", "✅" if st.session_state.merged_data is not None else "❌"),
-        ("清理数据", "✅" if st.session_state.cleaned_data is not None else "❌"),
-        ("留存数据", "✅" if st.session_state.retention_data is not None else "❌"),
-        ("LT结果", "✅" if st.session_state.lt_results is not None else "❌"),
-        ("ARPU数据", "✅" if st.session_state.arpu_data is not None else "❌"),
-        ("LTV结果", "✅" if st.session_state.ltv_results is not None else "❌")
+        ("原始数据", "已完成" if st.session_state.merged_data is not None else "待处理"),
+        ("清理数据", "已完成" if st.session_state.cleaned_data is not None else "待处理"),
+        ("留存数据", "已完成" if st.session_state.retention_data is not None else "待处理"),
+        ("LT结果", "已完成" if st.session_state.lt_results is not None else "待处理"),
+        ("ARPU数据", "已完成" if st.session_state.arpu_data is not None else "待处理"),
+        ("LTV结果", "已完成" if st.session_state.ltv_results is not None else "待处理")
     ]
     
-    for status_name, status_icon in status_items:
+    for status_name, status_text in status_items:
         st.markdown(f"""
         <div style="display: flex; justify-content: space-between; padding: 0.3rem 0; border-bottom: 1px solid #e9ecef;">
             <span style="font-size: 0.9rem;">{status_name}</span>
-            <span>{status_icon}</span>
+            <span style="font-size: 0.8rem; color: {'#059669' if status_text == '已完成' else '#6b7280'};">{status_text}</span>
         </div>
         """, unsafe_allow_html=True)
     
@@ -2142,7 +2121,7 @@ with st.sidebar:
     <div class="nav-container">
         <h4 style="text-align: center; color: #495057;">使用指南</h4>
         <p style="font-size: 0.9rem; color: #6c757d; text-align: center;">
-        点击左侧步骤可直接跳转，系统会自动检查依赖关系并提供相应提示。
+        点击上方步骤可直接跳转，系统会自动检查依赖关系并提供相应提示。
         </p>
         <p style="font-size: 0.8rem; color: #adb5bd; text-align: center;">
         LTV智能分析平台 v2.0<br>
