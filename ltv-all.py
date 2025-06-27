@@ -21,9 +21,33 @@ warnings.filterwarnings('ignore', category=UserWarning, module='openpyxl.styles.
 warnings.filterwarnings('ignore', category=UserWarning,
                         message="Could not infer format, so each element will be parsed individually")
 
-# 解决中文显示问题
-plt.rcParams['font.sans-serif'] = ['SimHei', 'Microsoft YaHei', 'SimSun', 'Arial Unicode MS']
-plt.rcParams['axes.unicode_minus'] = False
+# 解决中文显示问题 - 修复版本
+try:
+    import matplotlib.font_manager as fm
+    # 获取系统可用字体
+    font_list = [f.name for f in fm.fontManager.ttflist]
+    
+    # 优先使用的中文字体列表
+    chinese_fonts = ['SimHei', 'Microsoft YaHei', 'SimSun', 'DejaVu Sans', 'Arial Unicode MS', 'WenQuanYi Micro Hei']
+    
+    selected_font = None
+    for font in chinese_fonts:
+        if font in font_list:
+            selected_font = font
+            break
+    
+    if selected_font:
+        plt.rcParams['font.sans-serif'] = [selected_font]
+    else:
+        # 如果没有找到中文字体，使用默认字体并设置为支持unicode
+        plt.rcParams['font.sans-serif'] = ['DejaVu Sans']
+        
+    plt.rcParams['axes.unicode_minus'] = False
+    
+except Exception as e:
+    st.warning(f"字体设置警告: {e}")
+    plt.rcParams['font.sans-serif'] = ['DejaVu Sans']
+    plt.rcParams['axes.unicode_minus'] = False
 
 # 设置页面配置
 st.set_page_config(
@@ -34,12 +58,12 @@ st.set_page_config(
 )
 
 # ==================== CSS 样式定义 ====================
-# 简洁CSS样式
+# 蓝色系CSS样式
 st.markdown("""
 <style>
     /* 全局样式 */
     .main {
-        background: #f8f9fa;
+        background: #f8fafc;
         min-height: 100vh;
     }
 
@@ -54,8 +78,8 @@ st.markdown("""
         background: white;
         padding: 1.2rem;
         border-radius: 8px;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        border: 1px solid #e9ecef;
+        box-shadow: 0 2px 4px rgba(59, 130, 246, 0.1);
+        border: 1px solid #dbeafe;
         margin-bottom: 1.5rem;
         text-align: center;
     }
@@ -63,12 +87,12 @@ st.markdown("""
     .main-title {
         font-size: 1.8rem;
         font-weight: 700;
-        color: #2c3e50;
+        color: #1e40af;
         margin-bottom: 0.3rem;
     }
 
     .main-subtitle {
-        color: #6c757d;
+        color: #3b82f6;
         font-size: 1.1rem;
         font-weight: 400;
     }
@@ -78,26 +102,26 @@ st.markdown("""
         background: white;
         border-radius: 8px;
         padding: 1rem;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        border: 1px solid #e9ecef;
+        box-shadow: 0 2px 4px rgba(59, 130, 246, 0.1);
+        border: 1px solid #dbeafe;
         margin-bottom: 1rem;
     }
 
     /* 分界线 */
     .section-divider {
         height: 1px;
-        background: #dee2e6;
+        background: #bfdbfe;
         margin: 1rem 0;
     }
 
     /* 指标卡片 */
     .metric-card {
-        background: #f8f9fa;
-        color: #495057;
+        background: #eff6ff;
+        color: #1e40af;
         padding: 1rem;
         border-radius: 8px;
         text-align: center;
-        border: 1px solid #dee2e6;
+        border: 1px solid #bfdbfe;
         margin-bottom: 0.8rem;
     }
 
@@ -105,12 +129,12 @@ st.markdown("""
         font-size: 2rem;
         font-weight: 700;
         margin-bottom: 0.5rem;
-        color: #2c3e50;
+        color: #1e40af;
     }
 
     .metric-label {
         font-size: 0.9rem;
-        color: #6c757d;
+        color: #3b82f6;
     }
 
     /* 状态卡片 */
@@ -118,8 +142,8 @@ st.markdown("""
         background: white;
         border-radius: 8px;
         padding: 1rem;
-        border-left: 4px solid #28a745;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        border-left: 4px solid #3b82f6;
+        box-shadow: 0 1px 3px rgba(59, 130, 246, 0.1);
         margin-bottom: 0.8rem;
     }
 
@@ -129,12 +153,12 @@ st.markdown("""
         border-radius: 8px;
         padding: 1rem;
         margin-bottom: 1rem;
-        border: 1px solid #e9ecef;
+        border: 1px solid #dbeafe;
     }
 
     /* 按钮样式 */
     .stButton > button {
-        background: #28a745;
+        background: #3b82f6;
         color: white;
         border: none;
         border-radius: 6px;
@@ -144,35 +168,35 @@ st.markdown("""
     }
 
     .stButton > button:hover {
-        background: #218838;
+        background: #2563eb;
         transform: translateY(-1px);
     }
 
     /* 选择框样式 */
     .stSelectbox label, .stMultiselect label, .stFileUploader label {
         font-weight: 600;
-        color: #495057;
+        color: #1e40af;
         margin-bottom: 0.5rem;
     }
 
     /* 标题样式 */
     h1, h2, h3, h4 {
-        color: #2c3e50;
+        color: #1e40af;
         font-weight: 600;
         font-size: 1.1rem !important;
     }
 
     /* 说明文字样式 */
     .step-explanation {
-        background: #f8f9fa;
-        border-left: 4px solid #28a745;
+        background: #eff6ff;
+        border-left: 4px solid #3b82f6;
         padding: 1.5rem;
         margin-top: 2rem;
         border-radius: 0 8px 8px 0;
     }
 
     .step-explanation h4 {
-        color: #2c3e50;
+        color: #1e40af;
         margin-bottom: 0.8rem;
         font-size: 1.1rem;
         font-weight: 700;
@@ -186,12 +210,12 @@ st.markdown("""
 
     .step-explanation li {
         margin-bottom: 0.5rem;
-        color: #495057;
+        color: #1e40af;
         line-height: 1.5;
     }
 
     .step-explanation strong {
-        color: #2c3e50;
+        color: #1e40af;
         font-weight: 600;
     }
 
@@ -906,25 +930,27 @@ def calculate_lt_advanced(retention_result, channel_name, lt_years=5, return_cur
 
     return total_lt
 
-# ==================== 可视化函数 - 使用第二段代码的逻辑 ====================
+# ==================== 可视化函数 - 使用第二段代码的逻辑，改为蓝色系 ====================
 def visualize_lt_curves(visualization_data, years=2):
     """
-    创建线性坐标LT曲线图
-    渠道按LT值从低到高排序
+    创建线性坐标LT曲线图，按LT值从低到高排序，使用蓝色系
     """
     # 按LT值从低到高排序渠道
     sorted_channels = sorted(visualization_data.items(), key=lambda x: x[1]['lt'])
 
     # 创建图表
-    fig = plt.figure(figsize=(14, 8))
+    fig = plt.figure(figsize=(7, 4))  # 调整为适合一行四张的大小
     ax = fig.add_subplot(111)
 
-    # 设置颜色循环
-    colors = plt.cm.tab10.colors
+    # 设置蓝色系颜色循环
+    blue_colors = [
+        '#1e3a8a', '#1e40af', '#2563eb', '#3b82f6', '#60a5fa', 
+        '#93c5fd', '#1e293b', '#334155', '#475569', '#64748b'
+    ]
 
     # 为每个渠道绘制曲线
     for idx, (channel_name, data) in enumerate(sorted_channels):
-        color = colors[idx % len(colors)]
+        color = blue_colors[idx % len(blue_colors)]
 
         # 线性坐标图
         ax.plot(
@@ -935,93 +961,74 @@ def visualize_lt_curves(visualization_data, years=2):
             linewidth=2
         )
 
-    # 线性坐标设置 - 修改为 0-60%
+    # 线性坐标设置
     ax.set_ylim(0, 0.6)
     ax.set_yticks([0, 0.15, 0.3, 0.45, 0.6])
     ax.set_yticklabels(['0%', '15%', '30%', '45%', '60%'])
     ax.grid(True, ls="--", alpha=0.5)
     ax.set_xlabel('留存天数')
     ax.set_ylabel('留存率')
-    ax.set_title(f'所有渠道{years}年LT留存曲线比较 (按LT值从低到高排序)')
-    ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
+    ax.set_title(f'{years}年LT留存曲线比较')
+    ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left', fontsize=8)
 
     plt.tight_layout()
-    return fig, colors, sorted_channels  # 返回颜色和排序后的渠道，以便后续使用
+    return fig, blue_colors, sorted_channels
 
 def visualize_log_comparison(visualization_data_2y, visualization_data_5y, colors=None, sorted_channels_2y=None):
     """
-    创建2年和5年对数坐标比较图作为左右子图
-    使用与线性图相同的颜色和排序
+    创建2年和5年对数坐标比较图作为左右子图，使用蓝色系
     """
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 6))
+    fig = plt.figure(figsize=(7, 4))  # 调整为适合一行四张的大小
+    ax = fig.add_subplot(111)
 
     # 如果没有提供排序渠道和颜色，则重新计算
     if sorted_channels_2y is None:
         sorted_channels_2y = sorted(visualization_data_2y.items(), key=lambda x: x[1]['lt'])
     if colors is None:
-        colors = plt.cm.tab10.colors
+        colors = ['#1e3a8a', '#1e40af', '#2563eb', '#3b82f6', '#60a5fa', '#93c5fd', '#1e293b', '#334155', '#475569', '#64748b']
 
-    sorted_channels_5y = sorted(visualization_data_5y.items(), key=lambda x: x[1]['lt'])
-
-    # 绘制2年对数图
+    # 绘制2年和5年数据在同一图上
     for idx, (channel_name, data) in enumerate(sorted_channels_2y):
         color = colors[idx % len(colors)]
-        ax1.plot(
+        ax.plot(
             data["days"],
             data["rates"],
             color=color,
-            linewidth=2
+            linewidth=2,
+            alpha=0.7,
+            label=f"{channel_name}"
         )
 
-    # 绘制5年对数图
-    for idx, (channel_name, data) in enumerate(sorted_channels_5y):
-        color = colors[idx % len(colors)]
-        ax2.plot(
-            data["days"],
-            data["rates"],
-            color=color,
-            linewidth=2
-        )
-
-    # 对数坐标设置 - 2年图
-    ax1.set_yscale('log')
-    ax1.set_ylim(0.001, 0.6)
-    ax1.set_yticks([0.001, 0.01, 0.1, 0.6])
-    ax1.set_yticklabels(['0.1%', '1%', '10%', '60%'])
-    ax1.grid(True, ls="--", alpha=0.5)
-    ax1.set_xlabel('留存天数')
-    ax1.set_ylabel('留存率 (对数坐标)')
-    ax1.set_title('2年LT留存曲线 (对数坐标)')
-
-    # 对数坐标设置 - 5年图
-    ax2.set_yscale('log')
-    ax2.set_ylim(0.001, 0.6)
-    ax2.set_yticks([0.001, 0.01, 0.1, 0.6])
-    ax2.set_yticklabels(['0.1%', '1%', '10%', '60%'])
-    ax2.grid(True, ls="--", alpha=0.5)
-    ax2.set_xlabel('留存天数')
-    ax2.set_title('5年LT留存曲线 (对数坐标)')
+    # 对数坐标设置
+    ax.set_yscale('log')
+    ax.set_ylim(0.001, 0.6)
+    ax.set_yticks([0.001, 0.01, 0.1, 0.6])
+    ax.set_yticklabels(['0.1%', '1%', '10%', '60%'])
+    ax.grid(True, ls="--", alpha=0.5)
+    ax.set_xlabel('留存天数')
+    ax.set_ylabel('留存率 (对数坐标)')
+    ax.set_title('LT留存曲线 (对数坐标)')
+    ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left', fontsize=8)
 
     plt.tight_layout()
     return fig
 
 def visualize_fitting_comparison(original_data, visualization_data):
-    """可视化拟合效果比较（实际数据vs拟合曲线）- 显示所有渠道"""
+    """可视化拟合效果比较（实际数据vs拟合曲线）- 显示所有渠道，使用蓝色系"""
     # 按LT值从低到高排序渠道
     channels = sorted(visualization_data.keys(), key=lambda x: visualization_data[x]['lt'])
 
-    # 计算需要多少行
-    n_channels = len(channels)
-    n_cols = 3
-    n_rows = (n_channels + n_cols - 1) // n_cols  # 向上取整
+    # 创建图表
+    fig = plt.figure(figsize=(7, 4))  # 调整为适合一行四张的大小
+    ax = fig.add_subplot(111)
 
-    fig, axes = plt.subplots(n_rows, n_cols, figsize=(15, 5*n_rows), squeeze=False)
+    blue_colors = [
+        '#1e3a8a', '#1e40af', '#2563eb', '#3b82f6', '#60a5fa', 
+        '#93c5fd', '#1e293b', '#334155', '#475569', '#64748b'
+    ]
 
     for i, channel_name in enumerate(channels):
-        row = i // n_cols
-        col = i % n_cols
-        ax = axes[row, col]
-
+        color = blue_colors[i % len(blue_colors)]
         data = visualization_data[channel_name]
 
         # 绘制原始数据点
@@ -1029,10 +1036,10 @@ def visualize_fitting_comparison(original_data, visualization_data):
             ax.scatter(
                 original_data[channel_name]["days"],
                 original_data[channel_name]["rates"],
-                color='red',
-                s=50,
-                alpha=0.7,
-                label='实际数据'
+                color=color,
+                s=30,
+                alpha=0.8,
+                label=f'{channel_name} 实际'
             )
 
         # 绘制拟合曲线（限制在0-100天范围内更清晰展示拟合效果）
@@ -1044,25 +1051,21 @@ def visualize_fitting_comparison(original_data, visualization_data):
         ax.plot(
             fit_days[:idx_100],
             fit_rates[:idx_100],
-            color='blue',
+            color=color,
             linewidth=2,
-            label='拟合曲线'
+            alpha=0.7,
+            linestyle='--',
+            label=f'{channel_name} 拟合'
         )
 
-        ax.set_title(f'{channel_name} (LT={data["lt"]:.2f})')
-        ax.set_xlabel('留存天数')
-        ax.set_ylabel('留存率')
-        ax.set_ylim(0, 0.6)
-        ax.set_yticks([0, 0.15, 0.3, 0.45, 0.6])
-        ax.set_yticklabels(['0%', '15%', '30%', '45%', '60%'])
-        ax.grid(True, ls="--", alpha=0.3)
-        ax.legend()
-
-    # 隐藏未使用的子图
-    for i in range(len(channels), n_rows * n_cols):
-        row = i // n_cols
-        col = i % n_cols
-        fig.delaxes(axes[row, col])
+    ax.set_title('拟合效果比较')
+    ax.set_xlabel('留存天数')
+    ax.set_ylabel('留存率')
+    ax.set_ylim(0, 0.6)
+    ax.set_yticks([0, 0.15, 0.3, 0.45, 0.6])
+    ax.set_yticklabels(['0%', '15%', '30%', '45%', '60%'])
+    ax.grid(True, ls="--", alpha=0.3)
+    ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left', fontsize=8)
 
     plt.tight_layout()
     return fig
@@ -1127,7 +1130,7 @@ def get_step_status(step_index):
 # 侧边栏导航
 with st.sidebar:
     st.markdown('<div class="nav-container">', unsafe_allow_html=True)
-    st.markdown('<h4 style="text-align: center; margin-bottom: 1rem; color: #495057;">分析流程</h4>',
+    st.markdown('<h4 style="text-align: center; margin-bottom: 1rem; color: #1e40af;">分析流程</h4>',
                 unsafe_allow_html=True)
 
     for i, step in enumerate(ANALYSIS_STEPS):
@@ -1351,22 +1354,17 @@ elif current_page == "留存率计算":
 
                     st.success("留存率计算完成！")
 
+                    # 显示简单统计信息，不显示图表
                     for result in retention_results:
                         with st.expander(f"{result['data_source']} - 留存率详情"):
                             days = result['days']
                             rates = result['rates']
-
+                            
                             if len(days) > 0:
-                                fig, ax = plt.subplots(figsize=(10, 6))
-                                ax.scatter(days, rates, color='orange', s=80, alpha=0.8)
-                                ax.plot(days, rates, '--', color='green', linewidth=2)
-                                ax.set_xlabel('留存天数')
-                                ax.set_ylabel('留存率')
-                                ax.set_title(f'{result["data_source"]} 留存率曲线')
-                                ax.grid(True, alpha=0.3)
-                                plt.tight_layout()
-                                st.pyplot(fig)
-                                plt.close()
+                                st.write(f"数据天数范围: {min(days)} - {max(days)} 天")
+                                st.write(f"平均留存率: {np.mean(rates):.4f}")
+                                st.write(f"最高留存率: {max(rates):.4f}")
+                                st.write(f"最低留存率: {min(rates):.4f}")
             else:
                 st.error("请选择至少一个数据来源")
 
@@ -1387,7 +1385,8 @@ elif current_page == "LT拟合分析":
         if st.button("开始LT拟合分析", type="primary", use_container_width=True):
             with st.spinner("正在进行拟合计算..."):
                 lt_results = []
-                visualization_data = {}
+                visualization_data_2y = {}
+                visualization_data_5y = {}
                 original_data = {}
                 
                 # 关键时间点列表
@@ -1395,8 +1394,14 @@ elif current_page == "LT拟合分析":
 
                 for retention_result in retention_data:
                     channel_name = retention_result['data_source']
+                    
+                    # 计算5年LT
                     lt_result = calculate_lt_advanced(retention_result, channel_name, lt_years, 
                                                     return_curve_data=True, key_days=key_days)
+
+                    # 计算2年LT
+                    lt_result_2y = calculate_lt_advanced(retention_result, channel_name, 2, 
+                                                       return_curve_data=True, key_days=key_days)
 
                     lt_results.append({
                         'data_source': channel_name,
@@ -1407,12 +1412,20 @@ elif current_page == "LT拟合分析":
                         'model_used': lt_result['model_used']
                     })
 
-                    visualization_data[channel_name] = {
+                    # 保存可视化数据
+                    visualization_data_5y[channel_name] = {
                         "days": lt_result['curve_days'],
                         "rates": lt_result['curve_rates'],
                         "lt": lt_result['lt_value']
                     }
+                    
+                    visualization_data_2y[channel_name] = {
+                        "days": lt_result_2y['curve_days'],
+                        "rates": lt_result_2y['curve_rates'],
+                        "lt": lt_result_2y['lt_value']
+                    }
 
+                    # 保存原始数据
                     original_data[channel_name] = {
                         "days": retention_result['days'],
                         "rates": retention_result['rates']
@@ -1436,40 +1449,34 @@ elif current_page == "LT拟合分析":
                     ])
                     st.dataframe(results_df, use_container_width=True)
 
-                # 显示LT值对比柱状图
-                if lt_results:
-                    sorted_results = sorted(lt_results, key=lambda x: x['lt_value'])
-                    sources = [r['data_source'] for r in sorted_results]
-                    lt_values = [r['lt_value'] for r in sorted_results]
-
-                    fig, ax = plt.subplots(figsize=(12, 8))
-                    colors = plt.cm.viridis(np.linspace(0.2, 0.8, len(sources)))
-                    bars = ax.bar(sources, lt_values, color=colors, alpha=0.8)
-
-                    for bar, value in zip(bars, lt_values):
-                        height = bar.get_height()
-                        ax.text(bar.get_x() + bar.get_width() / 2., height + height * 0.01,
-                                f'{value:.1f}', ha='center', va='bottom', fontweight='bold')
-
-                    ax.set_xlabel('数据来源')
-                    ax.set_ylabel('LT值 (天)')
-                    ax.set_title(f'各渠道{lt_years}年LT值对比')
-                    ax.tick_params(axis='x', rotation=45)
-                    plt.tight_layout()
-                    st.pyplot(fig)
-                    plt.close()
-
-                # LT曲线比较
-                if visualization_data:
-                    fig_curves, _, _ = visualize_lt_curves(visualization_data, years=lt_years)
-                    st.pyplot(fig_curves)
-                    plt.close()
-
-                # 拟合效果比较
-                if visualization_data and original_data:
-                    fig_fitting = visualize_fitting_comparison(original_data, visualization_data)
-                    st.pyplot(fig_fitting)
-                    plt.close()
+                # 一行四张图表展示
+                if visualization_data_2y and visualization_data_5y and original_data:
+                    st.subheader("拟合分析图表")
+                    
+                    # 创建四个图表
+                    fig1 = visualize_fitting_comparison(original_data, visualization_data_2y)
+                    fig2, _, _ = visualize_lt_curves(visualization_data_2y, years=2)
+                    fig3, _, _ = visualize_lt_curves(visualization_data_5y, years=5)
+                    fig4 = visualize_log_comparison(visualization_data_2y, visualization_data_5y)
+                    
+                    # 一行四列布局
+                    col1, col2, col3, col4 = st.columns(4)
+                    
+                    with col1:
+                        st.pyplot(fig1, use_container_width=True)
+                        plt.close(fig1)
+                    
+                    with col2:
+                        st.pyplot(fig2, use_container_width=True)
+                        plt.close(fig2)
+                    
+                    with col3:
+                        st.pyplot(fig3, use_container_width=True)
+                        plt.close(fig3)
+                    
+                    with col4:
+                        st.pyplot(fig4, use_container_width=True)
+                        plt.close(fig4)
 
         st.markdown('</div>', unsafe_allow_html=True)
 
@@ -1556,11 +1563,8 @@ elif current_page == "LTV结果报告":
     else:
         lt_results = st.session_state.lt_results
         arpu_data = st.session_state.arpu_data
-        retention_data = st.session_state.retention_data
 
         ltv_results = []
-        ltv_2y_results = []
-        ltv_5y_results = []
 
         for lt_result in lt_results:
             source = lt_result['data_source']
@@ -1573,9 +1577,7 @@ elif current_page == "LTV结果报告":
                 arpu_value = 0
                 st.warning(f"渠道 '{source}' 未找到ARPU数据")
 
-            lt_value_2y = lt_value * 0.6
             ltv_value = lt_value * arpu_value
-            ltv_value_2y = lt_value_2y * arpu_value
 
             ltv_results.append({
                 'data_source': source,
@@ -1585,9 +1587,6 @@ elif current_page == "LTV结果报告":
                 'fit_success': lt_result['fit_success'],
                 'model_used': lt_result.get('model_used', 'unknown')
             })
-
-            ltv_2y_results.append({'data_source': source, 'ltv_2y': ltv_value_2y})
-            ltv_5y_results.append({'data_source': source, 'ltv_5y': ltv_value})
 
         st.session_state.ltv_results = ltv_results
 
@@ -1611,105 +1610,6 @@ elif current_page == "LTV结果报告":
 
         st.dataframe(display_df, use_container_width=True)
         st.markdown('</div>', unsafe_allow_html=True)
-
-        # 2年和5年LTV排名对比
-        st.markdown('<div class="glass-card">', unsafe_allow_html=True)
-        st.subheader("各渠道2年5年LTV排名对比")
-
-        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 8))
-
-        # 2年LTV排名
-        ltv_2y_df = pd.DataFrame(ltv_2y_results).sort_values('ltv_2y', ascending=True)
-        colors_2y = plt.cm.Set1(np.linspace(0, 1, len(ltv_2y_df)))
-        bars1 = ax1.barh(ltv_2y_df['data_source'], ltv_2y_df['ltv_2y'], color=colors_2y, alpha=0.8)
-
-        for bar, value in zip(bars1, ltv_2y_df['ltv_2y']):
-            width = bar.get_width()
-            ax1.text(width + width * 0.01, bar.get_y() + bar.get_height() / 2,
-                     f'{value:.1f}', ha='left', va='center', fontweight='bold')
-
-        ax1.set_xlabel('2年LTV值')
-        ax1.set_ylabel('数据来源')
-        ax1.set_title('各渠道2年LTV排名')
-        if retention_data:
-            # 准备可视化数据
-            visualization_data_2y = {}
-            visualization_data_5y = {}
-            original_data = {}
-
-            for retention_result in retention_data:
-                channel_name = retention_result['data_source']
-                
-                # 计算2年LT和曲线数据
-                lt_result_2y = calculate_lt_advanced(
-                    retention_result, channel_name, lt_years=2, 
-                    return_curve_data=True, key_days=[1, 7, 30, 60, 90]
-                )
-                
-                # 计算5年LT和曲线数据
-                lt_result_5y = calculate_lt_advanced(
-                    retention_result, channel_name, lt_years=5, 
-                    return_curve_data=True, key_days=[1, 7, 30, 60, 90]
-                )
-
-                # 保存可视化数据
-                visualization_data_2y[channel_name] = {
-                    "days": lt_result_2y['curve_days'],
-                    "rates": lt_result_2y['curve_rates'],
-                    "lt": lt_result_2y['lt_value']
-                }
-
-                visualization_data_5y[channel_name] = {
-                    "days": lt_result_5y['curve_days'],
-                    "rates": lt_result_5y['curve_rates'],
-                    "lt": lt_result_5y['lt_value']
-                }
-
-                # 保存原始数据
-                original_data[channel_name] = {
-                    "days": retention_result['days'],
-                    "rates": retention_result['rates']
-                }
-
-            # 1. 拟合效果比较图
-            st.markdown('<div class="glass-card">', unsafe_allow_html=True)
-            st.subheader("拟合效果比较图")
-            if visualization_data_2y and original_data:
-                fig_fitting = visualize_fitting_comparison(original_data, visualization_data_2y)
-                st.pyplot(fig_fitting)
-                plt.close()
-            st.markdown('</div>', unsafe_allow_html=True)
-
-            # 2. 2年LT曲线
-            st.markdown('<div class="glass-card">', unsafe_allow_html=True)
-            st.subheader("2年LT留存曲线比较")
-            if visualization_data_2y:
-                fig_lt_2y, colors_2y, sorted_channels_2y = visualize_lt_curves(visualization_data_2y, years=2)
-                st.pyplot(fig_lt_2y)
-                plt.close()
-            st.markdown('</div>', unsafe_allow_html=True)
-
-            # 3. 5年LT曲线
-            st.markdown('<div class="glass-card">', unsafe_allow_html=True)
-            st.subheader("5年LT留存曲线比较")
-            if visualization_data_5y:
-                fig_lt_5y, colors_5y, sorted_channels_5y = visualize_lt_curves(visualization_data_5y, years=5)
-                st.pyplot(fig_lt_5y)
-                plt.close()
-            st.markdown('</div>', unsafe_allow_html=True)
-
-            # 4. 对数坐标比较图
-            st.markdown('<div class="glass-card">', unsafe_allow_html=True)
-            st.subheader("对数坐标比较图")
-            if visualization_data_2y and visualization_data_5y:
-                fig_log_comparison = visualize_log_comparison(
-                    visualization_data_2y, visualization_data_5y, 
-                    colors_2y if 'colors_2y' in locals() else None, 
-                    sorted_channels_2y if 'sorted_channels_2y' in locals() else None
-                )
-                st.pyplot(fig_log_comparison)
-                plt.close()
-            st.markdown('</div>', unsafe_allow_html=True)
 
         # 数据导出
         st.markdown('<div class="glass-card">', unsafe_allow_html=True)
@@ -1767,11 +1667,11 @@ with st.sidebar:
     st.markdown("---")
     st.markdown("""
     <div class="nav-container">
-        <h4 style="text-align: center; color: #495057;">使用指南</h4>
-        <p style="font-size: 0.9rem; color: #6c757d; text-align: center;">
+        <h4 style="text-align: center; color: #1e40af;">使用指南</h4>
+        <p style="font-size: 0.9rem; color: #3b82f6; text-align: center;">
         点击上方步骤可直接跳转，系统会自动检查依赖关系并提供相应提示。
         </p>
-        <p style="font-size: 0.8rem; color: #adb5bd; text-align: center;">
+        <p style="font-size: 0.8rem; color: #6b7280; text-align: center;">
         LTV智能分析平台 v2.0<br>
         基于分阶段数学建模
         </p>
