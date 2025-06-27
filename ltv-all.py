@@ -51,26 +51,23 @@ def setup_chinese_font():
                 break
         
         if selected_font:
-            # 设置matplotlib中文字体 - 参考第二段代码的设置方式
+            # 设置matplotlib中文字体
             plt.rcParams['font.sans-serif'] = [selected_font, 'Microsoft YaHei', 'SimSun', 'Arial Unicode MS']
             plt.rcParams['axes.unicode_minus'] = False  # 解决负号显示问题
-            st.success(f"已设置中文字体: {selected_font}")
+            plt.rcParams['font.size'] = 10
+            return True
         else:
             # 如果没有找到中文字体，使用默认设置
             plt.rcParams['font.sans-serif'] = ['SimHei', 'Microsoft YaHei', 'SimSun', 'Arial Unicode MS']
             plt.rcParams['axes.unicode_minus'] = False
-            st.warning("使用默认中文字体设置")
-        
-        # 设置字体大小
-        plt.rcParams['font.size'] = 10
-        
-        return True
+            plt.rcParams['font.size'] = 10
+            return False
         
     except Exception as e:
-        st.warning(f"字体设置失败: {e}")
-        # 使用第二段代码的设置方式作为备用
+        # 使用默认设置作为备用
         plt.rcParams['font.sans-serif'] = ['SimHei', 'Microsoft YaHei', 'SimSun', 'Arial Unicode MS']
         plt.rcParams['axes.unicode_minus'] = False
+        plt.rcParams['font.size'] = 10
         return False
 
 # 初始化字体设置
@@ -85,7 +82,7 @@ st.set_page_config(
 )
 
 # ==================== CSS 样式定义 ====================
-# 商业蓝色系配色样式
+# 商业蓝色系配色样式（修改交互颜色为黄色）
 st.markdown("""
 <style>
     /* 全局样式 */
@@ -187,6 +184,27 @@ st.markdown("""
         box-shadow: 0 4px 20px rgba(30, 64, 175, 0.3);
     }
 
+    /* 步骤详情样式 */
+    .step-details {
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 8px;
+        padding: 0.8rem;
+        margin-top: 0.5rem;
+        font-size: 0.85rem;
+        color: rgba(255,255,255,0.8);
+    }
+
+    .step-details ul {
+        margin: 0.3rem 0;
+        padding-left: 1rem;
+        list-style-type: disc;
+    }
+
+    .step-details li {
+        margin-bottom: 0.2rem;
+        line-height: 1.4;
+    }
+
     /* 按钮样式 */
     .stButton > button {
         background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
@@ -204,11 +222,29 @@ st.markdown("""
         box-shadow: 0 6px 20px rgba(30, 64, 175, 0.4);
     }
 
-    /* 选择框样式 */
+    /* 选择框样式 - 修改为黄色交互 */
     .stSelectbox label, .stMultiselect label, .stFileUploader label {
         font-weight: 600;
         color: #1e40af;
         margin-bottom: 0.5rem;
+    }
+
+    .stSelectbox > div > div > div {
+        border-color: #f59e0b !important;
+    }
+
+    .stSelectbox > div > div > div:focus-within {
+        border-color: #f59e0b !important;
+        box-shadow: 0 0 0 1px #f59e0b !important;
+    }
+
+    .stMultiSelect > div > div > div {
+        border-color: #f59e0b !important;
+    }
+
+    .stMultiSelect > div > div > div:focus-within {
+        border-color: #f59e0b !important;
+        box-shadow: 0 0 0 1px #f59e0b !important;
     }
 
     /* 标题样式 */
@@ -342,6 +378,13 @@ st.markdown("""
         line-height: 1.4;
     }
 
+    /* 警告样式 - 修改为黄色 */
+    .stAlert > div {
+        background-color: #fef3c7 !important;
+        border-color: #f59e0b !important;
+        color: #92400e !important;
+    }
+
     /* 隐藏默认的Streamlit元素 */
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
@@ -350,36 +393,37 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ==================== 默认配置数据 ====================
-# 默认渠道映射数据
+# 修改默认渠道映射数据 - 改为名称对应多个渠道号
 DEFAULT_CHANNEL_MAPPING = {
-    '9000': '总体',
-    '500345': '新媒体', '500346': '新媒体', '500447': '新媒体', '500449': '新媒体',
-    '500450': '新媒体', '500531': '新媒体', '500542': '新媒体',
-    '5007XS': '应用宝', '500349': '应用宝', '500350': '应用宝',
-    '500285': '鼎乐-盛世6', '500286': '鼎乐-盛世7',
-    '5108': '酷派', '5528': '酷派',
-    '500275': '新美-北京2', '500274': '新美-北京1',
-    '500316': 'A_深圳蛋丁2',
-    '500297': '荣耀', '5057': '华为', '5237': 'vivo', '5599': '小米', '5115': 'OPPO',
-    '500471': '网易', '500480': '网易', '500481': '网易', '500482': '网易',
-    '500337': '华为非商店-品众', '500338': '华为非商店-品众', '500343': '华为非商店-品众', 
-    '500445': '华为非商店-品众', '500383': '华为非商店-品众', '500444': '华为非商店-品众', '500441': '华为非商店-品众',
-    '5072': '魅族',
-    '500287': 'OPPO非商店', '500288': 'OPPO非商店',
-    '5187': 'vivo非商店',
-    '500398': '百度sem--百度时代安卓', '500400': '百度sem--百度时代安卓', '500404': '百度sem--百度时代安卓',
-    '500402': '百度sem--百度时代ios', '500403': '百度sem--百度时代ios', '500405': '百度sem--百度时代ios',
-    '500377': '百青藤-安卓', '500379': '百青藤-安卓', '500435': '百青藤-安卓', '500436': '百青藤-安卓', 
-    '500490': '百青藤-安卓', '500491': '百青藤-安卓', '500434': '百青藤-安卓', '500492': '百青藤-安卓',
-    '500437': '百青藤-ios',
-    '500170': '小米非商店',
-    '500532': '华为非商店-星火', '500533': '华为非商店-星火', '500534': '华为非商店-星火', '500537': '华为非商店-星火',
-    '500538': '华为非商店-星火', '500539': '华为非商店-星火', '500540': '华为非商店-星火', '500541': '华为非商店-星火',
-    '500504': '微博-蜜橘', '500505': '微博-蜜橘',
-    '500367': '微博-央广', '500368': '微博-央广', '500369': '微博-央广',
-    '500498': '广点通', '500497': '广点通', '500500': '广点通', 
-    '500501': '广点通', '500496': '广点通', '500499': '广点通',
-    '500514': '网易易效', '500515': '网易易效', '500516': '网易易效'
+    '总体': ['9000'],
+    '新媒体': ['500345', '500346', '500447', '500449', '500450', '500531', '500542'],
+    '应用宝': ['5007XS', '500349', '500350'],
+    '鼎乐-盛世6': ['500285'],
+    '鼎乐-盛世7': ['500286'],
+    '酷派': ['5108', '5528'],
+    '新美-北京2': ['500275'],
+    '新美-北京1': ['500274'],
+    'A_深圳蛋丁2': ['500316'],
+    '荣耀': ['500297'],
+    '华为': ['5057'],
+    'vivo': ['5237'],
+    '小米': ['5599'],
+    'OPPO': ['5115'],
+    '网易': ['500471', '500480', '500481', '500482'],
+    '华为非商店-品众': ['500337', '500338', '500343', '500445', '500383', '500444', '500441'],
+    '魅族': ['5072'],
+    'OPPO非商店': ['500287', '500288'],
+    'vivo非商店': ['5187'],
+    '百度sem--百度时代安卓': ['500398', '500400', '500404'],
+    '百度sem--百度时代ios': ['500402', '500403', '500405'],
+    '百青藤-安卓': ['500377', '500379', '500435', '500436', '500490', '500491', '500434', '500492'],
+    '百青藤-ios': ['500437'],
+    '小米非商店': ['500170'],
+    '华为非商店-星火': ['500532', '500533', '500534', '500537', '500538', '500539', '500540', '500541'],
+    '微博-蜜橘': ['500504', '500505'],
+    '微博-央广': ['500367', '500368', '500369'],
+    '广点通': ['500498', '500497', '500500', '500501', '500496', '500499'],
+    '网易易效': ['500514', '500515', '500516']
 }
 
 # ==================== 日期处理函数 ====================
@@ -499,13 +543,13 @@ def standardize_output_columns(df):
 # ==================== 渠道映射处理函数 ====================
 def parse_channel_mapping_from_excel(channel_file):
     """
-    从上传的Excel文件解析渠道映射
+    从上传的Excel文件解析渠道映射，返回渠道名称到渠道号列表的映射
     """
     try:
         # 读取Excel文件
         df = pd.read_excel(channel_file)
         
-        pid_to_channel = {}
+        channel_to_pids = {}
         
         # 遍历每一行
         for _, row in df.iterrows():
@@ -515,23 +559,38 @@ def parse_channel_mapping_from_excel(channel_file):
                 continue
                 
             # 从第二列开始是渠道号
+            pids = []
             for col_idx in range(1, len(row)):
                 pid = row.iloc[col_idx]
                 if pd.isna(pid) or str(pid).strip() in ['', 'nan', '　', ' ']:
                     continue
-                pid_str = str(pid).strip()
+                # 确保渠道号是字符串格式，去除小数
+                pid_str = str(int(float(pid))) if isinstance(pid, (int, float)) else str(pid).strip()
                 if pid_str:
-                    pid_to_channel[pid_str] = channel_name
+                    pids.append(pid_str)
+            
+            if pids:
+                channel_to_pids[channel_name] = pids
                     
-        return pid_to_channel
+        return channel_to_pids
     except Exception as e:
         st.error(f"解析渠道映射文件失败：{str(e)}")
         return {}
 
+def convert_mapping_for_lookup(channel_to_pids):
+    """
+    将渠道名称到渠道号列表的映射转换为渠道号到渠道名称的映射
+    """
+    pid_to_channel = {}
+    for channel_name, pids in channel_to_pids.items():
+        for pid in pids:
+            pid_to_channel[str(pid)] = channel_name
+    return pid_to_channel
+
 # ==================== 文件整合核心函数 ====================
 def integrate_excel_files_streamlit(uploaded_files, target_month=None, channel_mapping=None):
     """
-    整合上传的Excel文件，支持新格式表和传统格式表
+    整合上传的Excel文件，支持新格式表和传统格式表，优化读取速度
     """
     if target_month is None:
         target_month = get_default_target_month()
@@ -539,6 +598,7 @@ def integrate_excel_files_streamlit(uploaded_files, target_month=None, channel_m
     all_data = pd.DataFrame()
     processed_count = 0
     mapping_warnings = []
+    file_previews = []  # 存储每个文件的预览数据
 
     for uploaded_file in uploaded_files:
         source_name = os.path.splitext(uploaded_file.name)[0]
@@ -552,23 +612,33 @@ def integrate_excel_files_streamlit(uploaded_files, target_month=None, channel_m
                 mapping_warnings.append(f"文件 '{source_name}' 未在渠道映射表中找到对应项")
 
         try:
-            # 读取Excel文件
-            xls = pd.ExcelFile(uploaded_file)
-            sheet_names = xls.sheet_names
+            # 优化文件读取 - 只读取需要的列和行
+            try:
+                # 先读取文件信息
+                xls = pd.ExcelFile(uploaded_file)
+                sheet_names = xls.sheet_names
 
-            # 查找目标工作表
-            ocpx_sheet = None
-            for sheet in sheet_names:
-                if "ocpx监测留存数" in sheet:
-                    ocpx_sheet = sheet
-                    break
+                # 查找目标工作表
+                ocpx_sheet = None
+                for sheet in sheet_names:
+                    if "ocpx监测留存数" in sheet:
+                        ocpx_sheet = sheet
+                        break
 
-            if ocpx_sheet:
-                file_data = pd.read_excel(uploaded_file, sheet_name=ocpx_sheet)
-            else:
+                if ocpx_sheet:
+                    file_data = pd.read_excel(uploaded_file, sheet_name=ocpx_sheet, nrows=1000)  # 限制读取行数
+                else:
+                    file_data = pd.read_excel(uploaded_file, sheet_name=0, nrows=1000)  # 限制读取行数
+            except Exception:
+                # 如果快速读取失败，使用常规方法
                 file_data = pd.read_excel(uploaded_file, sheet_name=0)
 
             if file_data is not None and not file_data.empty:
+                # 添加文件预览数据（取前2行）
+                preview_data = file_data.head(2).copy()
+                preview_data.insert(0, '文件名', uploaded_file.name)
+                file_previews.append(preview_data)
+                
                 file_data_copy = file_data.copy()
 
                 # ========== 检测文件格式类型 ==========
@@ -837,9 +907,9 @@ def integrate_excel_files_streamlit(uploaded_files, target_month=None, channel_m
 
         # 标准化输出列结构
         standardized_df = standardize_output_columns(all_data)
-        return standardized_df, processed_count, mapping_warnings
+        return standardized_df, processed_count, mapping_warnings, file_previews
     else:
-        return None, 0, mapping_warnings
+        return None, 0, mapping_warnings, file_previews
 
 # ==================== 数学建模函数（参考第二段代码）====================
 # 定义数学函数
@@ -851,40 +921,55 @@ def exponential_function(x, c, d):
     """指数函数：y = c * exp(d * x)"""
     return c * np.exp(d * x)
 
-# ==================== 留存率计算函数 ====================
-# 留存率计算
-def calculate_retention_rates_advanced(df):
+# ==================== 留存率计算函数 - 新的计算方法 ====================
+def calculate_retention_rates_new_method(df):
+    """
+    新的留存率计算方法：对新增求均值，对1-30列也求均值，然后用1-30分别除以新增的平均值
+    """
     retention_results = []
     data_sources = df['数据来源'].unique()
 
     for source in data_sources:
         source_data = df[df['数据来源'] == source].copy()
-        all_days = []
-        all_rates = []
-
+        
+        # 计算新增用户数的平均值
+        new_users_values = []
         for _, row in source_data.iterrows():
             new_users = safe_convert_to_numeric(row.get('回传新增数', 0))
-            if pd.isna(new_users) or new_users <= 0:
-                continue
-
-            for day in range(1, 31):
-                day_col = str(day)
+            if not pd.isna(new_users) and new_users > 0:
+                new_users_values.append(new_users)
+        
+        if not new_users_values:
+            continue
+            
+        avg_new_users = np.mean(new_users_values)
+        
+        # 计算各天留存数的平均值，然后计算留存率
+        days = []
+        rates = []
+        
+        for day in range(1, 31):
+            day_col = str(day)
+            day_values = []
+            
+            for _, row in source_data.iterrows():
                 if day_col in row and not pd.isna(row[day_col]):
                     retain_count = safe_convert_to_numeric(row[day_col])
-                    if retain_count > 0:
-                        retention_rate = retain_count / new_users
-                        if 0 < retention_rate <= 1.5:
-                            all_days.append(day)
-                            all_rates.append(retention_rate)
+                    if retain_count >= 0:  # 允许0值
+                        day_values.append(retain_count)
+            
+            if day_values:
+                avg_retain_count = np.mean(day_values)
+                retention_rate = avg_retain_count / avg_new_users
+                if 0 < retention_rate <= 1.0:  # 修改范围：0 < 留存率 ≤ 100%
+                    days.append(day)
+                    rates.append(retention_rate)
 
-        if all_days:
-            df_temp = pd.DataFrame({'day': all_days, 'rate': all_rates})
-            df_avg = df_temp.groupby('day')['rate'].mean().reset_index()
-
+        if days:
             retention_data = {
                 'data_source': source,
-                'days': df_avg['day'].values,
-                'rates': df_avg['rate'].values
+                'days': np.array(days),
+                'rates': np.array(rates)
             }
             retention_results.append(retention_data)
 
@@ -1050,34 +1135,29 @@ def calculate_lt_advanced(retention_result, channel_name, lt_years=5, return_cur
 
     return total_lt
 
-# ==================== 高质量可视化函数（参考第二段代码风格）====================
-def create_professional_charts(visualization_data_2y, visualization_data_5y, original_data):
+# ==================== 高质量可视化函数（修改为单渠道正方形图表）====================
+def create_single_channel_charts(visualization_data_5y, original_data):
     """
-    创建专业的可视化图表，参考第二段代码风格
+    创建单渠道的5年LT拟合曲线图表（正方形）
     """
-    # 确保中文字体设置 - 使用第二段代码的方式
-    plt.rcParams['font.sans-serif'] = ['SimHei', 'Microsoft YaHei', 'SimSun', 'Arial Unicode MS']
-    plt.rcParams['axes.unicode_minus'] = False
+    # 确保中文字体设置
+    setup_chinese_font()
     
-    # 颜色配置 - 使用第二段代码的配色
+    # 颜色配置
     colors = plt.cm.tab10.colors
     
-    # 按LT值从低到高排序渠道 - 参考第二段代码
-    sorted_channels = sorted(visualization_data_2y.items(), key=lambda x: x[1]['lt'])
+    # 按LT值从低到高排序渠道
+    sorted_channels = sorted(visualization_data_5y.items(), key=lambda x: x[1]['lt'])
     
     chart_figures = []
     
-    # ========== 创建单渠道图表 (参考第二段代码的visualize_fitting_comparison函数风格) ==========
-    for idx, (channel_name, data_2y) in enumerate(sorted_channels):
-        if channel_name not in visualization_data_5y:
-            continue
-            
-        data_5y = visualization_data_5y[channel_name]
+    # 创建单渠道图表
+    for idx, (channel_name, data_5y) in enumerate(sorted_channels):
         color = colors[idx % len(colors)]
         
-        # 创建100天图表
-        fig_100d = plt.figure(figsize=(6, 4))
-        ax = fig_100d.add_subplot(111)
+        # 创建正方形图表
+        fig = plt.figure(figsize=(6, 6))  # 正方形尺寸
+        ax = fig.add_subplot(111)
         
         # 绘制实际数据点
         if channel_name in original_data:
@@ -1091,29 +1171,26 @@ def create_professional_charts(visualization_data_2y, visualization_data_5y, ori
                 zorder=3
             )
         
-        # 绘制拟合曲线（只显示100天内的数据）
-        days_100 = data_2y["days"][data_2y["days"] <= 100]
-        rates_100 = data_2y["rates"][:len(days_100)]
-        
+        # 绘制5年拟合曲线
         ax.plot(
-            days_100,
-            rates_100,
+            data_5y["days"],
+            data_5y["rates"],
             color='blue',
             linewidth=2,
-            label='拟合曲线',
+            label='5年LT拟合曲线',
             zorder=2
         )
         
-        # 设置图表样式 - 参考第二段代码
-        ax.set_xlim(0, 100)
+        # 设置图表样式
+        ax.set_xlim(0, 1825)  # 5年
         ax.set_ylim(0, 0.6)
-        ax.set_xlabel('留存天数', fontsize=10)
-        ax.set_ylabel('留存率', fontsize=10)
-        ax.set_title(f'{channel_name} (LT={data_2y["lt"]:.2f})', fontsize=11, fontweight='bold')
+        ax.set_xlabel('留存天数', fontsize=12)
+        ax.set_ylabel('留存率', fontsize=12)
+        ax.set_title(f'{channel_name} - 5年LT: {data_5y["lt"]:.2f}', fontsize=14, fontweight='bold')
         ax.grid(True, linestyle='--', alpha=0.3)
-        ax.legend(fontsize=8)
+        ax.legend(fontsize=10)
         
-        # 设置Y轴刻度为百分比 - 参考第二段代码
+        # 设置Y轴刻度为百分比
         y_ticks = [0, 0.15, 0.3, 0.45, 0.6]
         y_labels = ['0%', '15%', '30%', '45%', '60%']
         ax.set_yticks(y_ticks)
@@ -1123,101 +1200,90 @@ def create_professional_charts(visualization_data_2y, visualization_data_5y, ori
         
         chart_figures.append({
             'channel': channel_name,
-            'fig_100d': fig_100d,
-            'lt_value': data_2y["lt"]
+            'figure': fig,
+            'lt_value': data_5y["lt"]
         })
     
-    # ========== 创建综合对比图表 (参考第二段代码的visualize_lt_curves函数风格) ==========
-    # 2年综合图表
-    fig_2y_combined = plt.figure(figsize=(14, 8))
-    ax_2y = fig_2y_combined.add_subplot(111)
-    
-    for idx, (channel_name, data) in enumerate(sorted_channels):
-        if channel_name not in visualization_data_2y:
-            continue
-            
-        color = colors[idx % len(colors)]
-        data_2y = visualization_data_2y[channel_name]
+    return chart_figures
+
+# ==================== ARPU处理函数 ====================
+def process_arpu_data(df, start_month, end_month, channel_mapping):
+    """
+    处理ARPU数据：根据月份筛选，根据渠道映射匹配，计算ARPU
+    """
+    try:
+        # 确保有必要的列
+        required_cols = ['pid', 'instl_user_cnt', 'ad_all_rven_1d_m']
+        missing_cols = [col for col in required_cols if col not in df.columns]
+        if missing_cols:
+            return None, f"缺少必要的列: {missing_cols}"
         
-        # 绘制2年拟合曲线
-        ax_2y.plot(
-            data_2y["days"],
-            data_2y["rates"],
-            color=color,
-            linewidth=2,
-            label=f'{channel_name} (LT={data_2y["lt"]:.2f})'
-        )
-    
-    # 设置图表样式 - 参考第二段代码
-    ax_2y.set_xlim(0, 730)  # 2年
-    ax_2y.set_ylim(0, 0.6)
-    ax_2y.set_xlabel('留存天数', fontsize=12)
-    ax_2y.set_ylabel('留存率', fontsize=12)
-    ax_2y.set_title('各渠道2年LT留存曲线拟合对比 (按LT值从低到高排序)', fontsize=14, fontweight='bold')
-    ax_2y.grid(True, linestyle='--', alpha=0.5)
-    
-    # 设置Y轴刻度为百分比 - 参考第二段代码
-    y_ticks = [0, 0.15, 0.3, 0.45, 0.6]
-    y_labels = ['0%', '15%', '30%', '45%', '60%']
-    ax_2y.set_yticks(y_ticks)
-    ax_2y.set_yticklabels(y_labels)
-    
-    # 设置图例
-    ax_2y.legend(bbox_to_anchor=(1.05, 1), loc='upper left', fontsize=9)
-    plt.tight_layout()
-    
-    # 5年综合图表
-    fig_5y_combined = plt.figure(figsize=(14, 8))
-    ax_5y = fig_5y_combined.add_subplot(111)
-    
-    for idx, (channel_name, data) in enumerate(sorted_channels):
-        if channel_name not in visualization_data_5y:
-            continue
+        # 添加月份列（如果有日期列）
+        date_columns = [col for col in df.columns if '日期' in str(col) or 'date' in str(col).lower()]
+        if date_columns:
+            date_col = date_columns[0]
+            df['month'] = pd.to_datetime(df[date_col], errors='coerce').dt.strftime('%Y-%m')
             
-        color = colors[idx % len(colors)]
-        data_5y = visualization_data_5y[channel_name]
+            # 筛选月份范围
+            filtered_df = df[(df['month'] >= start_month) & (df['month'] <= end_month)].copy()
+        else:
+            # 如果没有日期列，使用全部数据
+            filtered_df = df.copy()
         
-        # 绘制5年拟合曲线
-        ax_5y.plot(
-            data_5y["days"],
-            data_5y["rates"],
-            color=color,
-            linewidth=2,
-            label=f'{channel_name} (LT={data_5y["lt"]:.2f})'
-        )
-    
-    # 设置图表样式 - 参考第二段代码
-    ax_5y.set_xlim(0, 1825)  # 5年
-    ax_5y.set_ylim(0, 0.6)
-    ax_5y.set_xlabel('留存天数', fontsize=12)
-    ax_5y.set_ylabel('留存率', fontsize=12)
-    ax_5y.set_title('各渠道5年LT留存曲线拟合对比 (按LT值从低到高排序)', fontsize=14, fontweight='bold')
-    ax_5y.grid(True, linestyle='--', alpha=0.5)
-    
-    # 设置Y轴刻度为百分比
-    ax_5y.set_yticks(y_ticks)
-    ax_5y.set_yticklabels(y_labels)
-    
-    # 设置图例
-    ax_5y.legend(bbox_to_anchor=(1.05, 1), loc='upper left', fontsize=9)
-    plt.tight_layout()
-    
-    return chart_figures, fig_2y_combined, fig_5y_combined
+        if filtered_df.empty:
+            return None, "筛选月份后无数据"
+        
+        # 将pid转换为字符串
+        filtered_df['pid'] = filtered_df['pid'].astype(str)
+        
+        # 根据渠道映射匹配渠道名称
+        pid_to_channel = convert_mapping_for_lookup(channel_mapping)
+        
+        # 添加渠道名称列
+        filtered_df['channel_name'] = filtered_df['pid'].map(pid_to_channel)
+        
+        # 只保留有渠道映射的数据
+        mapped_df = filtered_df[filtered_df['channel_name'].notna()].copy()
+        
+        if mapped_df.empty:
+            return None, "根据渠道映射筛选后无数据"
+        
+        # 确保数值列为数值类型
+        mapped_df['instl_user_cnt'] = pd.to_numeric(mapped_df['instl_user_cnt'], errors='coerce').fillna(0)
+        mapped_df['ad_all_rven_1d_m'] = pd.to_numeric(mapped_df['ad_all_rven_1d_m'], errors='coerce').fillna(0)
+        
+        # 按渠道名称聚合
+        result_df = mapped_df.groupby('channel_name').agg({
+            'instl_user_cnt': 'sum',
+            'ad_all_rven_1d_m': 'sum'
+        }).reset_index()
+        
+        # 计算ARPU
+        result_df['arpu_value'] = result_df['ad_all_rven_1d_m'] / result_df['instl_user_cnt']
+        result_df['arpu_value'] = result_df['arpu_value'].fillna(0)
+        
+        # 重命名列
+        result_df = result_df.rename(columns={'channel_name': 'data_source'})
+        
+        return result_df, None
+        
+    except Exception as e:
+        return None, f"处理ARPU数据时出错: {str(e)}"
 
 # ==================== 页面初始化 ====================
 # 主标题
 st.markdown("""
 <div class="main-header">
     <div class="main-title">用户生命周期价值分析系统</div>
-    <div class="main-subtitle">基于分阶段数学建模的LTV预测</div>
+    <div class="main-subtitle">基于分阶段数学建模的LTV预测 v2.0</div>
 </div>
 """, unsafe_allow_html=True)
 
 # 初始化session state
 session_keys = [
     'channel_mapping', 'merged_data', 'cleaned_data', 'retention_data',
-    'lt_results', 'arpu_data', 'ltv_results', 'current_step', 'excluded_data',
-    'excluded_dates_info'  # 新增：记录具体剔除的日期信息
+    'lt_results_2y', 'lt_results_5y', 'arpu_data', 'ltv_results', 'current_step', 'excluded_data',
+    'excluded_dates_info', 'file_previews', 'show_exclusion_panel'
 ]
 for key in session_keys:
     if key not in st.session_state:
@@ -1232,39 +1298,39 @@ if st.session_state.excluded_data is None:
     st.session_state.excluded_data = []
 if st.session_state.excluded_dates_info is None:
     st.session_state.excluded_dates_info = []
+if st.session_state.show_exclusion_panel is None:
+    st.session_state.show_exclusion_panel = False
 
 # ==================== 分析步骤定义 ====================
-# 分析步骤定义
+# 修改分析步骤定义为3步
 ANALYSIS_STEPS = [
-    {"name": "数据上传与汇总"},
-    {"name": "异常数据剔除"},
-    {"name": "留存率计算"},
-    {"name": "LT拟合分析"},
-    {"name": "ARPU计算"},
-    {"name": "LTV结果报告"}
+    {
+        "name": "LT模型构建",
+        "sub_steps": ["数据上传汇总", "异常剔除", "留存率计算", "LT拟合分析"]
+    },
+    {
+        "name": "ARPU计算",
+        "sub_steps": []
+    },
+    {
+        "name": "LTV结果报告",
+        "sub_steps": []
+    }
 ]
 
 # ==================== 步骤状态检查函数 ====================
-# 检查步骤完成状态
 def get_step_status(step_index):
     if step_index == st.session_state.current_step:
         return "active"
-    if step_index == 0 and st.session_state.merged_data is not None:
+    if step_index == 0 and st.session_state.lt_results_5y is not None:
         return "completed"
-    elif step_index == 1 and st.session_state.cleaned_data is not None:
+    elif step_index == 1 and st.session_state.arpu_data is not None:
         return "completed"
-    elif step_index == 2 and st.session_state.retention_data is not None:
-        return "completed"
-    elif step_index == 3 and st.session_state.lt_results is not None:
-        return "completed"
-    elif step_index == 4 and st.session_state.arpu_data is not None:
-        return "completed"
-    elif step_index == 5 and st.session_state.ltv_results is not None:
+    elif step_index == 2 and st.session_state.ltv_results is not None:
         return "completed"
     return "normal"
 
 # ==================== 侧边栏导航 ====================
-# 侧边栏导航
 with st.sidebar:
     st.markdown('<div class="nav-container">', unsafe_allow_html=True)
     st.markdown('<h4 style="text-align: center; margin-bottom: 1rem; color: white;">分析流程</h4>',
@@ -1276,8 +1342,32 @@ with st.sidebar:
                      type="primary" if get_step_status(i) == "active" else "secondary"):
             st.session_state.current_step = i
             st.rerun()
+        
+        # 显示子步骤（仅对第一步）
+        if i == 0 and step['sub_steps']:
+            st.markdown('<div class="step-details">', unsafe_allow_html=True)
+            st.markdown('<ul>', unsafe_allow_html=True)
+            for sub_step in step['sub_steps']:
+                st.markdown(f'<li>{sub_step}</li>', unsafe_allow_html=True)
+            st.markdown('</ul>', unsafe_allow_html=True)
+            st.markdown('</div>', unsafe_allow_html=True)
 
     st.markdown('</div>', unsafe_allow_html=True)
+    
+    # 使用指南
+    st.markdown("---")
+    st.markdown("""
+    <div class="nav-container">
+        <h4 style="text-align: center; color: white;">使用指南</h4>
+        <p style="font-size: 0.9rem; color: rgba(255,255,255,0.9); text-align: center;">
+        点击上方步骤可直接跳转，系统会提供相应的操作指导。
+        </p>
+        <p style="font-size: 0.8rem; color: rgba(255,255,255,0.7); text-align: center;">
+        LTV智能分析平台 v2.0<br>
+        基于分阶段数学建模
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
 
 # ==================== 辅助函数 ====================
 def show_dependency_tip(required_step):
@@ -1290,24 +1380,27 @@ def show_dependency_tip(required_step):
     """, unsafe_allow_html=True)
 
 # ==================== 页面路由 ====================
-# 获取当前页面
 current_page = ANALYSIS_STEPS[st.session_state.current_step]["name"]
 
 # ==================== 页面内容 ====================
 
-if current_page == "数据上传与汇总":
+if current_page == "LT模型构建":
     # 原理解释
     st.markdown("""
     <div class="principle-box">
-        <div class="principle-title">📚 数据处理与LT建模原理</div>
+        <div class="principle-title">📚 LT模型构建原理</div>
         <div class="principle-content">
-        集成多源Excel留存数据，支持HUE/ocpx双格式解析，经异常清洗、留存计算、LT拟合后生成生命周期模型。
+        LT模型构建包含四个核心步骤：数据上传汇总、异常剔除、留存率计算、LT拟合分析。系统集成多源Excel留存数据，支持HUE/ocpx双格式解析，经异常清洗后计算标准化留存率，最终通过三阶段数学建模生成精确的生命周期模型。
         </div>
     </div>
     """, unsafe_allow_html=True)
     
+    # 步骤1：数据上传汇总
     st.markdown('<div class="glass-card">', unsafe_allow_html=True)
-    st.subheader("渠道映射文件设置")
+    st.subheader("步骤1：数据上传汇总")
+    
+    # 渠道映射文件设置
+    st.markdown("### 渠道映射配置")
     
     # 文件格式说明
     st.markdown("""
@@ -1315,7 +1408,8 @@ if current_page == "数据上传与汇总":
         <div class="step-tip-title">📋 渠道映射文件格式要求</div>
         <div class="step-tip-content">
         • Excel第一列：渠道名称<br>
-        • 后续列：渠道号(一个渠道可对应多个渠道号)
+        • 后续列：渠道号(一个渠道可对应多个渠道号)<br>
+        • 渠道号支持整数和字符串格式
         </div>
     </div>
     """, unsafe_allow_html=True)
@@ -1332,14 +1426,17 @@ if current_page == "数据上传与汇总":
             custom_mapping = parse_channel_mapping_from_excel(channel_mapping_file)
             if custom_mapping and isinstance(custom_mapping, dict) and len(custom_mapping) > 0:
                 st.session_state.channel_mapping = custom_mapping
-                st.success(f"渠道映射文件加载成功！共包含 {len(custom_mapping)} 个映射关系")
+                st.success(f"渠道映射文件加载成功！共包含 {len(custom_mapping)} 个渠道映射")
                 
-                # 显示映射预览
-                with st.expander("查看渠道映射详情"):
-                    mapping_df = pd.DataFrame([
-                        {'渠道号': pid, '渠道名称': channel}
-                        for pid, channel in sorted(custom_mapping.items())
-                    ])
+                # 显示映射预览 - 默认展开
+                with st.expander("查看渠道映射详情", expanded=True):
+                    mapping_display_data = []
+                    for channel, pids in custom_mapping.items():
+                        mapping_display_data.append({
+                            '渠道名称': channel,
+                            '渠道号': ', '.join(pids)
+                        })
+                    mapping_df = pd.DataFrame(mapping_display_data)
                     st.dataframe(mapping_df, use_container_width=True)
             else:
                 st.error("渠道映射文件解析失败，将使用默认映射")
@@ -1350,16 +1447,16 @@ if current_page == "数据上传与汇总":
         
         # 显示默认映射
         with st.expander("查看默认渠道映射"):
-            default_mapping_df = pd.DataFrame([
-                {'渠道号': pid, '渠道名称': channel}
-                for pid, channel in sorted(DEFAULT_CHANNEL_MAPPING.items())
-            ])
+            default_mapping_display = []
+            for channel, pids in DEFAULT_CHANNEL_MAPPING.items():
+                default_mapping_display.append({
+                    '渠道名称': channel,
+                    '渠道号': ', '.join(pids)
+                })
+            default_mapping_df = pd.DataFrame(default_mapping_display)
             st.dataframe(default_mapping_df, use_container_width=True)
     
-    st.markdown('</div>', unsafe_allow_html=True)
-    
-    st.markdown('<div class="glass-card">', unsafe_allow_html=True)
-    st.subheader("数据文件处理")
+    st.markdown("### 数据文件上传")
 
     # 数据文件格式说明
     st.markdown("""
@@ -1395,12 +1492,16 @@ if current_page == "数据上传与汇总":
         if st.button("开始处理数据", type="primary", use_container_width=True):
             with st.spinner("正在处理数据文件..."):
                 try:
-                    merged_data, processed_count, mapping_warnings = integrate_excel_files_streamlit(
-                        uploaded_files, target_month, st.session_state.channel_mapping
+                    # 转换渠道映射格式
+                    pid_to_channel_mapping = convert_mapping_for_lookup(st.session_state.channel_mapping)
+                    
+                    merged_data, processed_count, mapping_warnings, file_previews = integrate_excel_files_streamlit(
+                        uploaded_files, target_month, pid_to_channel_mapping
                     )
 
                     if merged_data is not None and not merged_data.empty:
                         st.session_state.merged_data = merged_data
+                        st.session_state.file_previews = file_previews
                         st.success(f"数据处理完成！成功处理 {processed_count} 个文件")
 
                         col1, col2, col3 = st.columns(3)
@@ -1419,8 +1520,13 @@ if current_page == "数据上传与汇总":
                             for warning in mapping_warnings:
                                 st.text(f"• {warning}")
 
-                        st.subheader("数据预览")
-                        st.dataframe(merged_data.head(10), use_container_width=True)
+                        # 显示每个文件的预览数据
+                        st.subheader("各文件数据预览")
+                        if file_previews:
+                            for preview in file_previews:
+                                with st.expander(f"文件：{preview['文件名'].iloc[0]}"):
+                                    st.dataframe(preview, use_container_width=True)
+                        
                     else:
                         st.error("未找到有效数据")
                 except Exception as e:
@@ -1429,116 +1535,120 @@ if current_page == "数据上传与汇总":
         st.info("请选择Excel文件开始数据处理")
 
     st.markdown('</div>', unsafe_allow_html=True)
-
-elif current_page == "异常数据剔除":
-    # 依赖性提示
-    if st.session_state.merged_data is None:
-        show_dependency_tip("数据上传与汇总")
     
-    
+    # 步骤2：异常数据剔除（可选）
     if st.session_state.merged_data is not None:
-        merged_data = st.session_state.merged_data
-
         st.markdown('<div class="glass-card">', unsafe_allow_html=True)
-        st.subheader("异常数据剔除配置")
-        st.info("注意：所有剔除条件必须同时满足才会被剔除（且关系）")
+        st.subheader("步骤2：异常数据剔除（可选）")
+        
+        if not st.session_state.show_exclusion_panel:
+            if st.button("需要剔除异常数据", type="secondary", use_container_width=True):
+                st.session_state.show_exclusion_panel = True
+                st.rerun()
+        else:
+            merged_data = st.session_state.merged_data
+            
+            st.info("注意：所有剔除条件必须同时满足才会被剔除（且关系）")
 
-        col1, col2 = st.columns(2)
+            col1, col2 = st.columns(2)
 
-        with col1:
-            st.markdown("### 按数据来源剔除")
-            all_sources = merged_data['数据来源'].unique().tolist()
-            excluded_sources = st.multiselect("选择要剔除的数据来源", options=all_sources)
+            with col1:
+                st.markdown("### 按数据来源剔除")
+                all_sources = merged_data['数据来源'].unique().tolist()
+                excluded_sources = st.multiselect("选择要剔除的数据来源", options=all_sources)
 
-        with col2:
-            st.markdown("### 按日期剔除")
-            if 'date' in merged_data.columns:
-                all_dates = sorted(merged_data['date'].unique().tolist())
-                excluded_dates = st.multiselect("选择要剔除的日期", options=all_dates)
-            else:
-                st.info("数据中无日期字段")
-                excluded_dates = []
-
-        try:
-            exclusion_mask = pd.Series([True] * len(merged_data), index=merged_data.index)
-
-            if excluded_sources:
-                source_mask = merged_data['数据来源'].isin(excluded_sources)
-                exclusion_mask &= source_mask
-
-            if 'date' in merged_data.columns and excluded_dates:
-                date_mask = merged_data['date'].isin(excluded_dates)
-                exclusion_mask &= date_mask
-
-            if not excluded_sources and not excluded_dates:
-                exclusion_mask = pd.Series([False] * len(merged_data), index=merged_data.index)
-
-            to_exclude = merged_data[exclusion_mask]
-            to_keep = merged_data[~exclusion_mask]
-
-        except Exception as e:
-            st.error(f"计算剔除条件时出错: {str(e)}")
-            to_exclude = pd.DataFrame()
-            to_keep = merged_data.copy()
-
-        col1, col2 = st.columns(2)
-        with col1:
-            st.markdown(f"### 将被剔除的数据 ({len(to_exclude)} 条)")
-            if len(to_exclude) > 0:
-                st.dataframe(to_exclude.head(5), use_container_width=True)
-
-        with col2:
-            st.markdown(f"### 保留的数据 ({len(to_keep)} 条)")
-            if len(to_keep) > 0:
-                st.dataframe(to_keep.head(5), use_container_width=True)
-
-        if st.button("确认剔除异常数据", type="primary", use_container_width=True):
-            try:
-                if len(to_exclude) > 0:
-                    # 记录具体剔除的日期信息
-                    excluded_dates_info = []
-                    for _, row in to_exclude.iterrows():
-                        source = row.get('数据来源', 'Unknown')
-                        date = row.get('date', 'Unknown')
-                        excluded_dates_info.append(f"{source}-{date}")
-                    
-                    st.session_state.excluded_data = excluded_dates_info
-                    st.session_state.excluded_dates_info = excluded_dates
-                    st.session_state.cleaned_data = to_keep.copy()
-                    st.success(f"成功剔除 {len(to_exclude)} 条异常数据")
+            with col2:
+                st.markdown("### 按日期剔除")
+                if 'date' in merged_data.columns:
+                    all_dates = sorted(merged_data['date'].unique().tolist())
+                    excluded_dates = st.multiselect("选择要剔除的日期", options=all_dates)
                 else:
+                    st.info("数据中无日期字段")
+                    excluded_dates = []
+
+            try:
+                exclusion_mask = pd.Series([True] * len(merged_data), index=merged_data.index)
+
+                if excluded_sources:
+                    source_mask = merged_data['数据来源'].isin(excluded_sources)
+                    exclusion_mask &= source_mask
+
+                if 'date' in merged_data.columns and excluded_dates:
+                    date_mask = merged_data['date'].isin(excluded_dates)
+                    exclusion_mask &= date_mask
+
+                if not excluded_sources and not excluded_dates:
+                    exclusion_mask = pd.Series([False] * len(merged_data), index=merged_data.index)
+
+                to_exclude = merged_data[exclusion_mask]
+                to_keep = merged_data[~exclusion_mask]
+
+            except Exception as e:
+                st.error(f"计算剔除条件时出错: {str(e)}")
+                to_exclude = pd.DataFrame()
+                to_keep = merged_data.copy()
+
+            col1, col2 = st.columns(2)
+            with col1:
+                st.markdown(f"### 将被剔除的数据 ({len(to_exclude)} 条)")
+                if len(to_exclude) > 0:
+                    st.dataframe(to_exclude.head(5), use_container_width=True)
+
+            with col2:
+                st.markdown(f"### 保留的数据 ({len(to_keep)} 条)")
+                if len(to_keep) > 0:
+                    st.dataframe(to_keep.head(5), use_container_width=True)
+
+            col1, col2 = st.columns(2)
+            with col1:
+                if st.button("确认剔除异常数据", type="primary", use_container_width=True):
+                    try:
+                        if len(to_exclude) > 0:
+                            # 记录具体剔除的日期信息
+                            excluded_dates_info = []
+                            for _, row in to_exclude.iterrows():
+                                source = row.get('数据来源', 'Unknown')
+                                date = row.get('date', 'Unknown')
+                                excluded_dates_info.append(f"{source}-{date}")
+                            
+                            st.session_state.excluded_data = excluded_dates_info
+                            st.session_state.excluded_dates_info = excluded_dates
+                            st.session_state.cleaned_data = to_keep.copy()
+                            st.success(f"成功剔除 {len(to_exclude)} 条异常数据")
+                        else:
+                            st.session_state.cleaned_data = merged_data.copy()
+                            st.session_state.excluded_dates_info = []
+                            st.info("未发现需要剔除的异常数据")
+                        st.session_state.show_exclusion_panel = False
+                    except Exception as e:
+                        st.error(f"剔除数据时出错: {str(e)}")
+            
+            with col2:
+                if st.button("跳过异常剔除", type="secondary", use_container_width=True):
                     st.session_state.cleaned_data = merged_data.copy()
                     st.session_state.excluded_dates_info = []
-                    st.info("未发现需要剔除的异常数据")
-            except Exception as e:
-                st.error(f"剔除数据时出错: {str(e)}")
+                    st.session_state.show_exclusion_panel = False
+                    st.info("跳过异常数据剔除，使用原始数据")
 
         st.markdown('</div>', unsafe_allow_html=True)
-    else:
+    
+    # 步骤3：留存率计算
+    working_data = st.session_state.cleaned_data if st.session_state.cleaned_data is not None else st.session_state.merged_data
+    
+    if working_data is not None:
         st.markdown('<div class="glass-card">', unsafe_allow_html=True)
-        st.info("暂无数据可供分析。您可以继续配置剔除规则，或先完成数据上传。")
-        st.markdown('</div>', unsafe_allow_html=True)
-
-elif current_page == "留存率计算":
-    # 依赖性提示
-    if st.session_state.cleaned_data is None and st.session_state.merged_data is None:
-        show_dependency_tip("数据上传与汇总")
-    
-    # 原理解释
-    st.markdown("""
-    <div class="principle-box">
-        <div class="principle-title">📚 步骤原理</div>
-        <div class="principle-content">
-        留存率计算是LTV建模的核心步骤。系统通过计算每天留存用户数与新增用户数的比值，得出1-30天的日留存率。对于每个渠道，系统会汇总所有有效记录的留存数据，并计算平均留存率。留存率数据质量直接影响后续LT拟合的准确性。
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
-    
-    if st.session_state.cleaned_data is not None:
-        working_data = st.session_state.cleaned_data
-        data_source_info = "使用清理后的数据"
+        st.subheader("步骤3：留存率计算")
         
-        # 显示剔除信息 - 显示具体剔除的日期
+        # 数据来源信息
+        data_source_info = "使用清理后的数据" if st.session_state.cleaned_data is not None else "使用原始数据（未经剔除处理）"
+        st.markdown(f"""
+        <div class="data-source-info">
+            <div class="data-source-info-title">📊 数据来源</div>
+            <div class="data-source-info-content">{data_source_info}</div>
+        </div>
+        """, unsafe_allow_html=True)
+
+        # 显示剔除信息
         if st.session_state.excluded_dates_info and len(st.session_state.excluded_dates_info) > 0:
             excluded_dates_str = ", ".join(st.session_state.excluded_dates_info)
             st.markdown(f"""
@@ -1549,44 +1659,15 @@ elif current_page == "留存率计算":
                 </div>
             </div>
             """, unsafe_allow_html=True)
-        elif st.session_state.excluded_data and len(st.session_state.excluded_data) > 0:
-            # 兼容之前的格式
-            st.markdown(f"""
-            <div class="exclusion-info">
-                <div class="exclusion-info-title">⚠️ 数据剔除信息</div>
-                <div class="exclusion-info-content">
-                已剔除 {len(st.session_state.excluded_data)} 条异常数据
-                </div>
-            </div>
-            """, unsafe_allow_html=True)
-            
-    elif st.session_state.merged_data is not None:
-        working_data = st.session_state.merged_data
-        data_source_info = "使用原始数据（未经剔除处理）"
-    else:
-        working_data = None
-        data_source_info = "无可用数据"
-
-    if working_data is not None:
-        st.markdown('<div class="glass-card">', unsafe_allow_html=True)
-        st.subheader("留存率计算配置")
-        
-        # 数据来源信息
-        st.markdown(f"""
-        <div class="data-source-info">
-            <div class="data-source-info-title">📊 数据来源</div>
-            <div class="data-source-info-content">{data_source_info}</div>
-        </div>
-        """, unsafe_allow_html=True)
 
         # 数据质量要求说明
         st.markdown("""
         <div class="step-tip">
-            <div class="step-tip-title">📋 数据质量要求</div>
+            <div class="step-tip-title">📋 数据质量要求与计算方法</div>
             <div class="step-tip-content">
             • 新增用户数必须大于0<br>
             • 留存率范围：0 < 留存率 ≤ 100% <br>
-            • 系统自动汇总多条记录并计算平均留存率<br>
+            • 计算方法：对新增用户数求均值，对1-30天各列求均值，然后用各天留存数均值除以新增用户数均值<br>
             • 支持1-30天留存数据的非连续输入
             </div>
         </div>
@@ -1599,63 +1680,60 @@ elif current_page == "留存率计算":
             if selected_sources:
                 with st.spinner("正在计算留存率..."):
                     filtered_data = working_data[working_data['数据来源'].isin(selected_sources)]
-                    retention_results = calculate_retention_rates_advanced(filtered_data)
+                    retention_results = calculate_retention_rates_new_method(filtered_data)
                     st.session_state.retention_data = retention_results
 
                     st.success("留存率计算完成！")
 
-                    # 显示简单统计信息，不显示图表
-                    for result in retention_results:
-                        with st.expander(f"{result['data_source']} - 留存率详情"):
+                    # 创建留存率表格展示
+                    if retention_results:
+                        st.subheader("留存率计算结果")
+                        
+                        # 创建30天留存率表格
+                        days_range = list(range(1, 31))
+                        retention_table = pd.DataFrame({'天数': days_range})
+                        
+                        for result in retention_results:
+                            channel_name = result['data_source']
                             days = result['days']
                             rates = result['rates']
                             
-                            if len(days) > 0:
-                                st.write(f"数据天数范围: {min(days)} - {max(days)} 天")
-                                st.write(f"数据点数量: {len(days)} 个")
-                                st.write(f"平均留存率: {np.mean(rates):.4f}")
-                                st.write(f"最高留存率: {max(rates):.4f}")
-                                st.write(f"最低留存率: {min(rates):.4f}")
-                                
-                                # 显示具体的天数和留存率数据
-                                retention_df = pd.DataFrame({
-                                    '天数': days,
-                                    '留存率': [f"{rate:.4f}" for rate in rates]
-                                })
-                                st.dataframe(retention_df, use_container_width=True)
+                            # 创建完整的留存率数组
+                            full_rates = [None] * 30
+                            for day, rate in zip(days, rates):
+                                if 1 <= day <= 30:
+                                    full_rates[day-1] = f"{rate:.4f}"
+                            
+                            retention_table[channel_name] = full_rates
+                        
+                        # 显示留存率表格（默认展开，显示10行）
+                        with st.expander("留存率详细数据表", expanded=True):
+                            st.dataframe(retention_table.head(10), use_container_width=True, height=400)
+                            if len(retention_table) > 10:
+                                st.info("表格显示前10行，可滚动查看更多数据")
             else:
                 st.error("请选择至少一个数据来源")
 
         st.markdown('</div>', unsafe_allow_html=True)
-    else:
-        st.markdown('<div class="glass-card">', unsafe_allow_html=True)
-        st.info("暂无数据可供分析。您可以继续配置留存率计算，或先完成数据上传。")
-        st.markdown('</div>', unsafe_allow_html=True)
-
-elif current_page == "LT拟合分析":
-    # 依赖性提示
-    if st.session_state.retention_data is None:
-        show_dependency_tip("留存率计算")
     
-    # 原理解释
-    st.markdown("""
-    <div class="principle-box">
-        <div class="principle-title">📚 步骤原理</div>
-        <div class="principle-content">
-        LT拟合分析通过三个阶段模拟用户流失规律：<br>
-        <strong>第一阶段(1-30天)：</strong>使用幂函数拟合前30天的真实留存数据，补全缺失的留存率<br>
-        <strong>第二阶段(31-X天)：</strong>延续幂函数趋势，预测中期留存变化<br>
-        <strong>第三阶段(Y-N年)：</strong>切换到指数函数，模拟长期用户的缓慢流失过程<br>
-        不同渠道采用不同的阶段划分规则，确保拟合结果符合各渠道的用户行为特征。
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
-    
+    # 步骤4：LT拟合分析
     if st.session_state.retention_data is not None:
-        retention_data = st.session_state.retention_data
-
         st.markdown('<div class="glass-card">', unsafe_allow_html=True)
-        st.subheader("分阶段拟合参数配置")
+        st.subheader("步骤4：LT拟合分析")
+        
+        # 原理解释
+        st.markdown("""
+        <div class="principle-box">
+            <div class="principle-title">📚 拟合分析原理</div>
+            <div class="principle-content">
+            LT拟合分析通过三个阶段模拟用户流失规律：<br>
+            <strong>第一阶段(1-30天)：</strong>使用幂函数拟合前30天的真实留存数据，补全缺失的留存率<br>
+            <strong>第二阶段(31-X天)：</strong>延续幂函数趋势，预测中期留存变化<br>
+            <strong>第三阶段(Y-N年)：</strong>切换到指数函数，模拟长期用户的缓慢流失过程<br>
+            不同渠道采用不同的阶段划分规则，确保拟合结果符合各渠道的用户行为特征。
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
 
         # 渠道规则说明
         st.markdown("""
@@ -1672,13 +1750,12 @@ elif current_page == "LT拟合分析":
         </div>
         """, unsafe_allow_html=True)
 
-        lt_years = st.number_input("LT计算年限", min_value=1, max_value=10, value=5)
-        st.info("系统将采用三阶段分层建模")
-
         if st.button("开始LT拟合分析", type="primary", use_container_width=True):
             with st.spinner("正在进行拟合计算..."):
-                lt_results = []
-                visualization_data_2y = {}
+                retention_data = st.session_state.retention_data
+                
+                lt_results_2y = []
+                lt_results_5y = []
                 visualization_data_5y = {}
                 original_data = {}
                 
@@ -1689,33 +1766,36 @@ elif current_page == "LT拟合分析":
                     channel_name = retention_result['data_source']
                     
                     # 计算5年LT
-                    lt_result = calculate_lt_advanced(retention_result, channel_name, lt_years, 
-                                                    return_curve_data=True, key_days=key_days)
+                    lt_result_5y = calculate_lt_advanced(retention_result, channel_name, 5, 
+                                                        return_curve_data=True, key_days=key_days)
 
                     # 计算2年LT
                     lt_result_2y = calculate_lt_advanced(retention_result, channel_name, 2, 
                                                        return_curve_data=True, key_days=key_days)
 
-                    lt_results.append({
+                    lt_results_5y.append({
                         'data_source': channel_name,
-                        'lt_value': lt_result['lt_value'],
-                        'fit_success': lt_result['success'],
-                        'fit_params': lt_result['fit_params'],
-                        'power_r2': lt_result['power_r2'],
-                        'model_used': lt_result['model_used']
+                        'lt_value': lt_result_5y['lt_value'],
+                        'fit_success': lt_result_5y['success'],
+                        'fit_params': lt_result_5y['fit_params'],
+                        'power_r2': lt_result_5y['power_r2'],
+                        'model_used': lt_result_5y['model_used']
+                    })
+                    
+                    lt_results_2y.append({
+                        'data_source': channel_name,
+                        'lt_value': lt_result_2y['lt_value'],
+                        'fit_success': lt_result_2y['success'],
+                        'fit_params': lt_result_2y['fit_params'],
+                        'power_r2': lt_result_2y['power_r2'],
+                        'model_used': lt_result_2y['model_used']
                     })
 
                     # 保存可视化数据
                     visualization_data_5y[channel_name] = {
-                        "days": lt_result['curve_days'],
-                        "rates": lt_result['curve_rates'],
-                        "lt": lt_result['lt_value']
-                    }
-                    
-                    visualization_data_2y[channel_name] = {
-                        "days": lt_result_2y['curve_days'],
-                        "rates": lt_result_2y['curve_rates'],
-                        "lt": lt_result_2y['lt_value']
+                        "days": lt_result_5y['curve_days'],
+                        "rates": lt_result_5y['curve_rates'],
+                        "lt": lt_result_5y['lt_value']
                     }
 
                     # 保存原始数据
@@ -1724,47 +1804,31 @@ elif current_page == "LT拟合分析":
                         "rates": retention_result['rates']
                     }
 
-                st.session_state.lt_results = lt_results
+                st.session_state.lt_results_5y = lt_results_5y
+                st.session_state.lt_results_2y = lt_results_2y
                 st.success("LT拟合分析完成！")
 
                 # 显示LT值表格
-                if lt_results:
+                if lt_results_5y:
                     st.subheader("LT分析结果")
                     results_df = pd.DataFrame([
                         {
                             '渠道名称': r['data_source'],
-                            f'{lt_years}年LT': round(r['lt_value'], 2),
+                            '5年LT': round(r['lt_value'], 2),
                             '拟合状态': '成功' if r['fit_success'] else '失败',
                             'R²得分': round(r['power_r2'], 3),
                             '使用模型': r['model_used']
                         }
-                        for r in lt_results
+                        for r in lt_results_5y
                     ])
                     st.dataframe(results_df, use_container_width=True)
 
-                # 创建专业的可视化图表
-                if visualization_data_2y and visualization_data_5y and original_data:
-                    st.subheader("LT拟合分析图表")
+                # 创建单渠道拟合图表
+                if visualization_data_5y and original_data:
+                    st.subheader("各渠道5年LT拟合分析图表")
                     
                     with st.spinner("正在生成专业图表..."):
-                        chart_figures, fig_2y_combined, fig_5y_combined = create_professional_charts(
-                            visualization_data_2y, visualization_data_5y, original_data
-                        )
-                    
-                    # 显示综合对比图表
-                    st.markdown("### 各渠道拟合曲线综合对比")
-                    
-                    col1, col2 = st.columns(2)
-                    
-                    with col1:
-                        st.markdown("#### 2年LT对比")
-                        st.pyplot(fig_2y_combined, use_container_width=True)
-                        plt.close(fig_2y_combined)
-                    
-                    with col2:
-                        st.markdown("#### 5年LT对比")
-                        st.pyplot(fig_5y_combined, use_container_width=True)
-                        plt.close(fig_5y_combined)
+                        chart_figures = create_single_channel_charts(visualization_data_5y, original_data)
                     
                     # 显示单渠道图表（按LT值排序）
                     st.markdown("### 各渠道单独分析图表（按LT值从低到高排序）")
@@ -1776,26 +1840,22 @@ elif current_page == "LT拟合分析":
                             if i + j < len(chart_figures):
                                 chart_data = chart_figures[i + j]
                                 with col:
-                                    st.pyplot(chart_data['fig_100d'], use_container_width=True)
-                                    plt.close(chart_data['fig_100d'])
+                                    st.pyplot(chart_data['figure'], use_container_width=True)
+                                    plt.close(chart_data['figure'])
 
-        st.markdown('</div>', unsafe_allow_html=True)
-    else:
-        st.markdown('<div class="glass-card">', unsafe_allow_html=True)
-        st.info("暂无留存率数据可供分析。您可以继续配置拟合参数，或先完成留存率计算。")
         st.markdown('</div>', unsafe_allow_html=True)
 
 elif current_page == "ARPU计算":
     # 依赖性提示
-    if st.session_state.lt_results is None:
-        show_dependency_tip("LT拟合分析")
+    if st.session_state.lt_results_5y is None:
+        show_dependency_tip("LT模型构建")
     
     # 原理解释
     st.markdown("""
     <div class="principle-box">
-        <div class="principle-title">📚 步骤原理</div>
+        <div class="principle-title">📚 ARPU计算原理</div>
         <div class="principle-content">
-        ARPU（Average Revenue Per User）是计算LTV的关键参数。系统支持两种ARPU输入方式：Excel文件上传和手动设置。ARPU数据将与LT值相乘得到最终的LTV。确保ARPU数据的准确性对于LTV分析至关重要。
+        ARPU（Average Revenue Per User）是计算LTV的关键参数。系统支持Excel文件上传和手动设置两种方式。对于Excel文件，系统会根据pid列匹配渠道，按月份筛选数据，然后计算ARPU = ad_all_rven_1d_m求和 / instl_user_cnt求和。
         </div>
     </div>
     """, unsafe_allow_html=True)
@@ -1809,10 +1869,9 @@ elif current_page == "ARPU计算":
         <div class="step-tip-title">📋 ARPU文件格式要求</div>
         <div class="step-tip-content">
         • Excel格式(.xlsx/.xls)<br>
-        • 包含数据来源列（渠道名称）<br>
-        • 包含ARPU值列（数值型）<br>
-        • 系统会自动按渠道分组并计算平均ARPU<br>
-        • 支持一个渠道多条记录
+        • 必需列：pid、instl_user_cnt、ad_all_rven_1d_m<br>
+        • 可选：日期列（用于月份筛选）<br>
+        • 系统会根据渠道映射匹配pid，并按渠道聚合计算ARPU
         </div>
     </div>
     """, unsafe_allow_html=True)
@@ -1821,38 +1880,48 @@ elif current_page == "ARPU计算":
 
     if arpu_file:
         try:
-            arpu_df = pd.read_excel(arpu_file)
+            with st.spinner("正在读取ARPU文件..."):
+                arpu_df = pd.read_excel(arpu_file)
             st.success("ARPU文件上传成功！")
             st.dataframe(arpu_df.head(10), use_container_width=True)
 
-            col1, col2 = st.columns(2)
-            with col1:
-                source_col = st.selectbox("数据来源列", options=arpu_df.columns)
-                arpu_col = st.selectbox("ARPU值列", options=arpu_df.columns)
+            # 检查必需列
+            required_cols = ['pid', 'instl_user_cnt', 'ad_all_rven_1d_m']
+            missing_cols = [col for col in required_cols if col not in arpu_df.columns]
+            
+            if missing_cols:
+                st.error(f"文件缺少必需的列: {missing_cols}")
+            else:
+                # 月份筛选
+                st.markdown("### 月份筛选")
+                col1, col2 = st.columns(2)
+                
+                with col1:
+                    start_month = st.text_input("开始月份 (YYYY-MM)", value="2024-04")
+                with col2:
+                    end_month = st.text_input("结束月份 (YYYY-MM)", value="2024-04")
 
-            with col2:
-                if arpu_col in arpu_df.columns:
-                    arpu_values = pd.to_numeric(arpu_df[arpu_col], errors='coerce')
-                    st.metric("平均ARPU", f"{arpu_values.mean():.2f}")
-                    st.metric("有效记录数", f"{arpu_values.notna().sum():,}")
+                if st.button("处理并计算ARPU", type="primary", use_container_width=True):
+                    try:
+                        with st.spinner("正在处理ARPU数据..."):
+                            result_df, error_msg = process_arpu_data(
+                                arpu_df, start_month, end_month, st.session_state.channel_mapping
+                            )
+                        
+                        if result_df is not None:
+                            st.session_state.arpu_data = result_df
+                            st.success("ARPU数据处理完成！")
+                            
+                            # 显示ARPU结果
+                            display_df = result_df[['data_source', 'instl_user_cnt', 'ad_all_rven_1d_m', 'arpu_value']].copy()
+                            display_df.columns = ['渠道名称', '安装用户数', '总收入', 'ARPU']
+                            display_df['ARPU'] = display_df['ARPU'].round(4)
+                            st.dataframe(display_df, use_container_width=True)
+                        else:
+                            st.error(f"ARPU数据处理失败：{error_msg}")
 
-            if st.button("处理并保存ARPU数据", type="primary", use_container_width=True):
-                try:
-                    processed_arpu = arpu_df.copy()
-                    processed_arpu['data_source'] = processed_arpu[source_col].astype(str).str.strip()
-                    processed_arpu['arpu_value'] = pd.to_numeric(processed_arpu[arpu_col], errors='coerce')
-
-                    valid_data = processed_arpu[
-                        processed_arpu['arpu_value'].notna() & (processed_arpu['arpu_value'] > 0)]
-                    arpu_summary = valid_data.groupby('data_source')['arpu_value'].agg(['mean', 'count']).reset_index()
-                    arpu_summary.columns = ['data_source', 'arpu_value', 'record_count']
-
-                    st.session_state.arpu_data = arpu_summary
-                    st.success("ARPU数据处理完成！")
-                    st.dataframe(arpu_summary, use_container_width=True)
-
-                except Exception as e:
-                    st.error(f"ARPU数据处理失败：{str(e)}")
+                    except Exception as e:
+                        st.error(f"ARPU数据处理失败：{str(e)}")
 
         except Exception as e:
             st.error(f"文件读取失败：{str(e)}")
@@ -1860,70 +1929,78 @@ elif current_page == "ARPU计算":
     else:
         st.info("请上传ARPU数据文件，或使用手动设置功能")
 
-        if st.session_state.lt_results:
-            st.subheader("手动设置ARPU值")
-            
-            # 手动设置说明
-            st.markdown("""
-            <div class="step-tip">
-                <div class="step-tip-title">📋 手动设置说明</div>
-                <div class="step-tip-content">
-                为每个渠道设置对应的ARPU值，建议基于历史数据或业务预期进行设置。
+        # 手动设置ARPU
+        if st.session_state.lt_results_5y:
+            # 添加按钮控制手动输入面板
+            if st.button("手动设置ARPU值", type="secondary", use_container_width=True):
+                st.markdown("### 手动设置ARPU值")
+                
+                # 手动设置说明
+                st.markdown("""
+                <div class="step-tip">
+                    <div class="step-tip-title">📋 手动设置说明</div>
+                    <div class="step-tip-content">
+                    为每个渠道设置对应的ARPU值，建议基于历史数据或业务预期进行设置。
+                    </div>
                 </div>
-            </div>
-            """, unsafe_allow_html=True)
-            
-            arpu_inputs = {}
+                """, unsafe_allow_html=True)
+                
+                arpu_inputs = {}
 
-            col1, col2 = st.columns(2)
-            for i, result in enumerate(st.session_state.lt_results):
-                source = result['data_source']
-                with col1 if i % 2 == 0 else col2:
-                    arpu_value = st.number_input(
-                        f"{source}", min_value=0.0, value=10.0, step=0.01,
-                        format="%.2f", key=f"arpu_{source}"
-                    )
-                    arpu_inputs[source] = arpu_value
+                col1, col2 = st.columns(2)
+                for i, result in enumerate(st.session_state.lt_results_5y):
+                    source = result['data_source']
+                    with col1 if i % 2 == 0 else col2:
+                        arpu_value = st.number_input(
+                            f"{source}", min_value=0.0, value=0.04, step=0.001,
+                            format="%.4f", key=f"arpu_{source}"
+                        )
+                        arpu_inputs[source] = arpu_value
 
-            if st.button("保存手动ARPU设置", type="primary", use_container_width=True):
-                arpu_df = pd.DataFrame([
-                    {'data_source': source, 'arpu_value': value, 'record_count': 1}
-                    for source, value in arpu_inputs.items()
-                ])
-                st.session_state.arpu_data = arpu_df
-                st.success("ARPU设置已保存！")
-                st.dataframe(arpu_df, use_container_width=True)
+                if st.button("保存手动ARPU设置", type="primary", use_container_width=True):
+                    arpu_df = pd.DataFrame([
+                        {'data_source': source, 'arpu_value': value, 'instl_user_cnt': 1, 'ad_all_rven_1d_m': value}
+                        for source, value in arpu_inputs.items()
+                    ])
+                    st.session_state.arpu_data = arpu_df
+                    st.success("ARPU设置已保存！")
+                    st.dataframe(arpu_df[['data_source', 'arpu_value']].rename(columns={
+                        'data_source': '渠道名称', 'arpu_value': 'ARPU'
+                    }), use_container_width=True)
         else:
-            st.info("请先完成LT拟合分析以获取渠道列表")
+            st.info("请先完成LT模型构建以获取渠道列表")
 
     st.markdown('</div>', unsafe_allow_html=True)
 
 elif current_page == "LTV结果报告":
     # 依赖性提示
-    if st.session_state.lt_results is None:
-        show_dependency_tip("LT拟合分析")
+    if st.session_state.lt_results_5y is None:
+        show_dependency_tip("LT模型构建")
     elif st.session_state.arpu_data is None:
         show_dependency_tip("ARPU计算")
     
     # 原理解释
     st.markdown("""
     <div class="principle-box">
-        <div class="principle-title">📚 步骤原理</div>
+        <div class="principle-title">📚 LTV结果报告原理</div>
         <div class="principle-content">
-        LTV结果报告是整个分析流程的最终输出。系统通过LTV = LT × ARPU的公式计算每个渠道的用户生命周期价值，并生成详细的分析报告。报告包含各渠道的LT值、ARPU、LTV计算结果以及拟合质量评估，为渠道投放决策提供数据支持。
+        LTV结果报告是整个分析流程的最终输出。系统通过LTV = LT × ARPU的公式计算每个渠道的用户生命周期价值，同时计算2年和5年两种时间周期的LTV，并生成详细的分析报告，为渠道投放决策提供数据支持。
         </div>
     </div>
     """, unsafe_allow_html=True)
     
-    if st.session_state.lt_results is not None and st.session_state.arpu_data is not None:
-        lt_results = st.session_state.lt_results
+    if st.session_state.lt_results_5y is not None and st.session_state.arpu_data is not None:
+        lt_results_5y = st.session_state.lt_results_5y
+        lt_results_2y = st.session_state.lt_results_2y if st.session_state.lt_results_2y else []
         arpu_data = st.session_state.arpu_data
 
-        ltv_results = []
+        # 计算5年LTV结果
+        ltv_results_5y = []
+        ltv_results_2y = []
 
-        for lt_result in lt_results:
+        for lt_result in lt_results_5y:
             source = lt_result['data_source']
-            lt_value = lt_result['lt_value']
+            lt_value_5y = lt_result['lt_value']
 
             arpu_row = arpu_data[arpu_data['data_source'] == source]
             if not arpu_row.empty:
@@ -1932,18 +2009,41 @@ elif current_page == "LTV结果报告":
                 arpu_value = 0
                 st.warning(f"渠道 '{source}' 未找到ARPU数据")
 
-            ltv_value = lt_value * arpu_value
+            ltv_value_5y = lt_value_5y * arpu_value
 
-            ltv_results.append({
+            ltv_results_5y.append({
                 'data_source': source,
-                'lt_value': lt_value,
+                'lt_value': lt_value_5y,
                 'arpu_value': arpu_value,
-                'ltv_value': ltv_value,
+                'ltv_value': ltv_value_5y,
+                'fit_success': lt_result['fit_success'],
+                'model_used': lt_result.get('model_used', 'unknown'),
+                'fit_params': lt_result.get('fit_params', {})
+            })
+
+        # 计算2年LTV结果
+        for lt_result in lt_results_2y:
+            source = lt_result['data_source']
+            lt_value_2y = lt_result['lt_value']
+
+            arpu_row = arpu_data[arpu_data['data_source'] == source]
+            if not arpu_row.empty:
+                arpu_value = arpu_row.iloc[0]['arpu_value']
+            else:
+                arpu_value = 0
+
+            ltv_value_2y = lt_value_2y * arpu_value
+
+            ltv_results_2y.append({
+                'data_source': source,
+                'lt_value': lt_value_2y,
+                'arpu_value': arpu_value,
+                'ltv_value': ltv_value_2y,
                 'fit_success': lt_result['fit_success'],
                 'model_used': lt_result.get('model_used', 'unknown')
             })
 
-        st.session_state.ltv_results = ltv_results
+        st.session_state.ltv_results = ltv_results_5y
 
         st.markdown('<div class="glass-card">', unsafe_allow_html=True)
         st.subheader("LTV综合计算结果")
@@ -1961,23 +2061,44 @@ elif current_page == "LTV结果报告":
         </div>
         """, unsafe_allow_html=True)
 
-        ltv_df = pd.DataFrame(ltv_results)
-        display_df = ltv_df.rename(columns={
-            'data_source': '渠道名称',
-            'lt_value': 'LT',
-            'arpu_value': 'ARPU',
-            'ltv_value': 'LTV',
-            'fit_success': '拟合状态',
-            'model_used': '使用模型'
-        })
+        # 创建按要求格式的表格
+        if ltv_results_5y and ltv_results_2y:
+            # 合并5年和2年数据
+            combined_data = []
+            for result_5y in ltv_results_5y:
+                # 查找对应的2年数据
+                result_2y = next((r for r in ltv_results_2y if r['data_source'] == result_5y['data_source']), None)
+                
+                if result_2y:
+                    # 获取拟合参数
+                    fit_params = result_5y.get('fit_params', {})
+                    power_params = fit_params.get('power', {})
+                    exp_params = fit_params.get('exponential', {})
+                    
+                    # 格式化函数表达式
+                    power_func = f"y = {power_params.get('a', 0):.4f} * x^{power_params.get('b', 0):.4f}" if power_params else "N/A"
+                    exp_func = f"y = {exp_params.get('c', 0):.4f} * exp({exp_params.get('d', 0):.4f} * x)" if exp_params else "N/A"
+                    
+                    combined_data.append({
+                        '备注': '',  # 空备注列
+                        '渠道名称': result_5y['data_source'],
+                        '5年LT': round(result_5y['lt_value'], 0),
+                        '5年ARPU': round(result_5y['arpu_value'], 4),
+                        '5年LTV': round(result_5y['ltv_value'], 1),
+                        '2年LT': round(result_2y['lt_value'], 0),
+                        '2年ARPU': round(result_2y['arpu_value'], 4),
+                        '2年LTV': round(result_2y['ltv_value'], 1),
+                        '第一段函数(幂函数)': power_func,
+                        '第三段函数(指数函数)': exp_func,
+                        '使用模型': result_5y['model_used']
+                    })
 
-        # 数值格式化
-        display_df['LT'] = display_df['LT'].round(2)
-        display_df['ARPU'] = display_df['ARPU'].round(2)
-        display_df['LTV'] = display_df['LTV'].round(2)
-        display_df['拟合状态'] = display_df['拟合状态'].map({True: '成功', False: '失败'})
+            display_df = pd.DataFrame(combined_data)
+            
+            # 显示完整结果表格
+            st.subheader("5年双段LTV vs 2年双段LTV 对比结果")
+            st.dataframe(display_df, use_container_width=True)
 
-        st.dataframe(display_df, use_container_width=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
         # 数据导出
@@ -1987,18 +2108,19 @@ elif current_page == "LTV结果报告":
         col1, col2 = st.columns(2)
 
         with col1:
-            # 创建标准格式的CSV导出数据（按用户要求的列顺序：渠道名称 LT ARPU LTV）
-            export_df = display_df[['渠道名称', 'LT', 'ARPU', 'LTV']].copy()
-            
-            # 修复CSV导出的中文编码问题
-            csv_data = export_df.to_csv(index=False, encoding='utf-8-sig')
-            st.download_button(
-                label="下载LTV分析结果 (CSV)",
-                data=csv_data.encode('utf-8-sig'),
-                file_name=f"LTV_Analysis_Results_{datetime.datetime.now().strftime('%Y%m%d_%H%M')}.csv",
-                mime="text/csv",
-                use_container_width=True
-            )
+            # 创建标准格式的CSV导出数据
+            if 'display_df' in locals():
+                export_df = display_df[['渠道名称', '5年LT', '5年ARPU', '5年LTV', '2年LT', '2年ARPU', '2年LTV']].copy()
+                
+                # 修复CSV导出的中文编码问题
+                csv_data = export_df.to_csv(index=False, encoding='utf-8-sig')
+                st.download_button(
+                    label="下载LTV分析结果 (CSV)",
+                    data=csv_data.encode('utf-8-sig'),
+                    file_name=f"LTV_Analysis_Results_{datetime.datetime.now().strftime('%Y%m%d_%H%M')}.csv",
+                    mime="text/csv",
+                    use_container_width=True
+                )
 
         with col2:
             # 生成详细数据来源信息
@@ -2011,7 +2133,8 @@ elif current_page == "LTV结果报告":
             else:
                 data_source_desc = "使用原始数据"
             
-            report_text = f"""
+            if 'display_df' in locals():
+                report_text = f"""
 LTV用户生命周期价值分析报告
 ===========================================
 生成时间: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
@@ -2023,15 +2146,16 @@ LTV用户生命周期价值分析报告
 核心指标汇总
 -----------
 • 参与分析的渠道数量: {len(display_df)}
-• 平均LTV: {display_df['LTV'].mean():.2f}
-• 最高LTV: {display_df['LTV'].max():.2f}
-• 最低LTV: {display_df['LTV'].min():.2f}
-• 平均LT值: {display_df['LT'].mean():.2f} 天
-• 平均ARPU: {display_df['ARPU'].mean():.2f}
+• 5年平均LTV: {display_df['5年LTV'].mean():.2f}
+• 5年最高LTV: {display_df['5年LTV'].max():.2f}
+• 5年最低LTV: {display_df['5年LTV'].min():.2f}
+• 2年平均LTV: {display_df['2年LTV'].mean():.2f}
+• 2年最高LTV: {display_df['2年LTV'].max():.2f}
+• 2年最低LTV: {display_df['2年LTV'].min():.2f}
 
 详细结果
 -----------
-{export_df.to_string(index=False)}
+{export_df.to_string(index=False) if 'export_df' in locals() else ''}
 
 数据来源说明
 -----------
@@ -2042,37 +2166,21 @@ LTV用户生命周期价值分析报告
 • LT拟合: 三阶段分层建模（幂函数+指数函数）
 • LTV公式: LTV = LT × ARPU
 • 渠道规则: 按华为、小米、oppo、vivo、iPhone分类设定不同拟合参数
+• 新的留存率计算方法: 对新增用户数和各天留存数分别求均值后计算留存率
 
 报告生成: LTV智能分析平台 v2.0
 """
 
-            st.download_button(
-                label="下载详细分析报告 (TXT)",
-                data=report_text.encode('utf-8'),
-                file_name=f"LTV_Detailed_Report_{datetime.datetime.now().strftime('%Y%m%d_%H%M')}.txt",
-                mime="text/plain",
-                use_container_width=True
-            )
+                st.download_button(
+                    label="下载详细分析报告 (TXT)",
+                    data=report_text.encode('utf-8'),
+                    file_name=f"LTV_Detailed_Report_{datetime.datetime.now().strftime('%Y%m%d_%H%M')}.txt",
+                    mime="text/plain",
+                    use_container_width=True
+                )
 
         st.markdown('</div>', unsafe_allow_html=True)
     else:
         st.markdown('<div class="glass-card">', unsafe_allow_html=True)
-        st.info("请先完成LT拟合分析和ARPU计算以生成LTV报告。")
+        st.info("请先完成LT模型构建和ARPU计算以生成LTV报告。")
         st.markdown('</div>', unsafe_allow_html=True)
-
-# ==================== 底部信息 ====================
-# 底部信息
-with st.sidebar:
-    st.markdown("---")
-    st.markdown("""
-    <div class="nav-container">
-        <h4 style="text-align: center; color: white;">使用指南</h4>
-        <p style="font-size: 0.9rem; color: rgba(255,255,255,0.9); text-align: center;">
-        点击上方步骤可直接跳转，系统会提供相应的操作指导。
-        </p>
-        <p style="font-size: 0.8rem; color: rgba(255,255,255,0.7); text-align: center;">
-        LTV智能分析平台 v2.0<br>
-        基于分阶段数学建模
-        </p>
-    </div>
-    """, unsafe_allow_html=True)
