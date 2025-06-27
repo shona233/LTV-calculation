@@ -1299,9 +1299,9 @@ if current_page == "数据上传与汇总":
     # 原理解释
     st.markdown("""
     <div class="principle-box">
-        <div class="principle-title">📚 步骤原理</div>
+        <div class="principle-title">📚 数据处理与LT建模原理</div>
         <div class="principle-content">
-        数据上传与汇总是LTV分析的基础步骤。系统将整合多个Excel文件中的用户留存数据，通过渠道映射将原始数据源映射为业务渠道名称。支持新格式表（含stat_date和new_retain_X列）和传统格式表（含留存天数和数字列）两种数据结构。
+        集成多源Excel留存数据，支持HUE/ocpx双格式解析，经异常清洗、留存计算、LT拟合后生成生命周期模型。
         </div>
     </div>
     """, unsafe_allow_html=True)
@@ -1315,7 +1315,7 @@ if current_page == "数据上传与汇总":
         <div class="step-tip-title">📋 渠道映射文件格式要求</div>
         <div class="step-tip-content">
         • Excel第一列：渠道名称<br>
-        • 后续列：对应的渠道号(一个渠道可对应多个渠道号)
+        • 后续列：渠道号(一个渠道可对应多个渠道号)
         </div>
     </div>
     """, unsafe_allow_html=True)
