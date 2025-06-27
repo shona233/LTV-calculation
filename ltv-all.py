@@ -281,13 +281,29 @@ def standardize_output_columns(df):
             # 创建数据来源_date列
             data_source = df['数据来源'] if '数据来源' in df.columns else ''
             date_col = df['date'] if 'date' in df.columns else (df['stat_date'] if 'stat_date' in df.columns else '')
-            result_df[col_name] = data_source.astype(str) + date_col.astype(str)
+            if isinstance(data_source, str):
+                data_source_str = data_source
+            else:
+                data_source_str = data_source.astype(str)
+            if isinstance(date_col, str):
+                date_col_str = date_col
+            else:
+                date_col_str = date_col.astype(str)
+            result_df[col_name] = data_source_str + date_col_str
         elif col_name == '数据来源_日期':
             # 创建数据来源_日期列
             data_source = df['数据来源'] if '数据来源' in df.columns else ''
             date_col = df['日期'] if '日期' in df.columns else (
                 df['date'] if 'date' in df.columns else (df['stat_date'] if 'stat_date' in df.columns else ''))
-            result_df[col_name] = data_source.astype(str) + date_col.astype(str)
+            if isinstance(data_source, str):
+                data_source_str = data_source
+            else:
+                data_source_str = data_source.astype(str)
+            if isinstance(date_col, str):
+                date_col_str = date_col
+            else:
+                date_col_str = date_col.astype(str)
+            result_df[col_name] = data_source_str + date_col_str
         else:
             # 其他列直接复制，如果不存在则填空
             result_df[col_name] = df[col_name] if col_name in df.columns else ''
