@@ -51,15 +51,15 @@ def setup_chinese_font():
                 break
         
         if selected_font:
-            plt.rcParams['font.sans-serif'] = [selected_font] + ['DejaVu Sans']
+            # 设置matplotlib中文字体 - 参考第二段代码的设置方式
+            plt.rcParams['font.sans-serif'] = [selected_font, 'Microsoft YaHei', 'SimSun', 'Arial Unicode MS']
+            plt.rcParams['axes.unicode_minus'] = False  # 解决负号显示问题
             st.success(f"已设置中文字体: {selected_font}")
         else:
-            # 如果没有找到中文字体，尝试其他方法
-            plt.rcParams['font.sans-serif'] = ['DejaVu Sans', 'Arial', 'Liberation Sans', 'Bitstream Vera Sans']
-            st.warning("未找到中文字体，使用默认字体")
-        
-        # 解决负号显示问题
-        plt.rcParams['axes.unicode_minus'] = False
+            # 如果没有找到中文字体，使用默认设置
+            plt.rcParams['font.sans-serif'] = ['SimHei', 'Microsoft YaHei', 'SimSun', 'Arial Unicode MS']
+            plt.rcParams['axes.unicode_minus'] = False
+            st.warning("使用默认中文字体设置")
         
         # 设置字体大小
         plt.rcParams['font.size'] = 10
@@ -68,7 +68,8 @@ def setup_chinese_font():
         
     except Exception as e:
         st.warning(f"字体设置失败: {e}")
-        plt.rcParams['font.sans-serif'] = ['DejaVu Sans']
+        # 使用第二段代码的设置方式作为备用
+        plt.rcParams['font.sans-serif'] = ['SimHei', 'Microsoft YaHei', 'SimSun', 'Arial Unicode MS']
         plt.rcParams['axes.unicode_minus'] = False
         return False
 
@@ -313,6 +314,29 @@ st.markdown("""
     }
 
     .exclusion-info-content {
+        color: #374151;
+        font-size: 0.85rem;
+        line-height: 1.4;
+    }
+
+    /* 数据来源提示样式 */
+    .data-source-info {
+        background: #f0fdf4;
+        border: 1px solid #bbf7d0;
+        border-radius: 8px;
+        padding: 1rem;
+        margin: 1rem 0;
+        border-left: 4px solid #22c55e;
+    }
+
+    .data-source-info-title {
+        color: #16a34a;
+        font-weight: 600;
+        font-size: 0.95rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .data-source-info-content {
         color: #374151;
         font-size: 0.85rem;
         line-height: 1.4;
@@ -817,7 +841,7 @@ def integrate_excel_files_streamlit(uploaded_files, target_month=None, channel_m
     else:
         return None, 0, mapping_warnings
 
-# ==================== 数学建模函数 ====================
+# ==================== 数学建模函数（参考第二段代码）====================
 # 定义数学函数
 def power_function(x, a, b):
     """幂函数：y = a * x^b"""
@@ -866,7 +890,7 @@ def calculate_retention_rates_advanced(df):
 
     return retention_results
 
-# ==================== 计算指定天数的累积LT值函数 ====================
+# ==================== 计算指定天数的累积LT值函数（参考第二段代码）====================
 def calculate_cumulative_lt(days_array, rates_array, target_days):
     """计算指定天数的累积LT值"""
     result = {}
@@ -878,13 +902,13 @@ def calculate_cumulative_lt(days_array, rates_array, target_days):
             result[day] = cumulative_lt
     return result
 
-# ==================== LT拟合分析函数 - 完全参考您提供的代码逻辑 ====================
+# ==================== LT拟合分析函数 - 完全参考第二段代码逻辑 ====================
 def calculate_lt_advanced(retention_result, channel_name, lt_years=5, return_curve_data=False, key_days=None):
     """
     按渠道规则计算 LT，允许 1-30 天数据不连续。
-    完全参考提供的代码逻辑
+    完全参考第二段代码逻辑
     """
-    # 渠道规则 - 与提供代码完全一致
+    # 渠道规则 - 与第二段代码完全一致
     CHANNEL_RULES = {
         "华为": {"stage_2": [30, 120], "stage_3_base": [120, 220]},
         "小米": {"stage_2": [30, 190], "stage_3_base": [190, 290]},
@@ -894,7 +918,7 @@ def calculate_lt_advanced(retention_result, channel_name, lt_years=5, return_cur
         "其他": {"stage_2": [30, 100], "stage_3_base": [100, 200]}
     }
 
-    # 渠道规则匹配 - 与提供代码完全一致
+    # 渠道规则匹配 - 与第二段代码完全一致
     if re.search(r'\d+月华为$', channel_name):
         rules = CHANNEL_RULES["华为"]
     elif re.search(r'\d+月小米$', channel_name):
@@ -920,7 +944,7 @@ def calculate_lt_advanced(retention_result, channel_name, lt_years=5, return_cur
     # 存储拟合参数，用于后续分析
     fit_params = {}
 
-    # ----- 第一阶段 - 与提供代码完全一致 -----
+    # ----- 第一阶段 - 与第二段代码完全一致 -----
     try:
         # 用已有数据对 1-30 天的留存率进行拟合
         popt_power, _ = curve_fit(power_function, days, rates)
@@ -937,7 +961,7 @@ def calculate_lt_advanced(retention_result, channel_name, lt_years=5, return_cur
         lt1_to_30 = 0.0
         a, b = 1.0, -1.0  # 默认参数
 
-    # ----- 第二阶段 - 与提供代码完全一致 -----
+    # ----- 第二阶段 - 与第二段代码完全一致 -----
     try:
         days_stage_2 = np.arange(stage_2_start, stage_2_end + 1)
         rates_stage_2 = power_function(days_stage_2, a, b)
@@ -946,7 +970,7 @@ def calculate_lt_advanced(retention_result, channel_name, lt_years=5, return_cur
         lt_stage_2 = 0.0
         rates_stage_2 = np.array([])
 
-    # ----- 第三阶段 - 与提供代码完全一致 -----
+    # ----- 第三阶段 - 与第二段代码完全一致 -----
     try:
         days_stage_3_base = np.arange(stage_3_base_start, stage_3_base_end + 1)
         rates_stage_3_base = power_function(days_stage_3_base, a, b)
@@ -971,7 +995,7 @@ def calculate_lt_advanced(retention_result, channel_name, lt_years=5, return_cur
         rates_stage_3 = power_function(days_stage_3, a, b) if 'a' in locals() else np.zeros(len(days_stage_3))
         lt_stage_3 = np.sum(rates_stage_3)
 
-    # ----- 总 LT 计算 - 与提供代码完全一致 -----
+    # ----- 总 LT 计算 - 与第二段代码完全一致 -----
     total_lt = 1.0 + lt1_to_30 + lt_stage_2 + lt_stage_3
 
     # 计算R²用于评估拟合质量
@@ -982,7 +1006,7 @@ def calculate_lt_advanced(retention_result, channel_name, lt_years=5, return_cur
         r2_score = 0.0
 
     if return_curve_data:
-        # 返回不包含第0天的曲线数据用于可视化 - 与提供代码完全一致
+        # 返回不包含第0天的曲线数据用于可视化 - 与第二段代码完全一致
         all_days = np.concatenate([
             days_full,      # 第1-30天
             days_stage_2,   # 第二阶段
@@ -1026,29 +1050,24 @@ def calculate_lt_advanced(retention_result, channel_name, lt_years=5, return_cur
 
     return total_lt
 
-# ==================== 高质量可视化函数 ====================
+# ==================== 高质量可视化函数（参考第二段代码风格）====================
 def create_professional_charts(visualization_data_2y, visualization_data_5y, original_data):
     """
-    创建专业的可视化图表，参考用户提供的图片风格
+    创建专业的可视化图表，参考第二段代码风格
     """
-    # 确保中文字体设置
-    plt.rcParams['font.sans-serif'] = ['SimHei', 'Microsoft YaHei', 'Arial Unicode MS', 'DejaVu Sans']
+    # 确保中文字体设置 - 使用第二段代码的方式
+    plt.rcParams['font.sans-serif'] = ['SimHei', 'Microsoft YaHei', 'SimSun', 'Arial Unicode MS']
     plt.rcParams['axes.unicode_minus'] = False
     
-    # 颜色配置 - 使用专业配色
-    colors = [
-        '#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd',
-        '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf',
-        '#aec7e8', '#ffbb78', '#98df8a', '#ff9896', '#c5b0d5',
-        '#c49c94', '#f7b6d3', '#c7c7c7', '#dbdb8d', '#9edae5'
-    ]
+    # 颜色配置 - 使用第二段代码的配色
+    colors = plt.cm.tab10.colors
     
-    # 按LT值从低到高排序渠道
+    # 按LT值从低到高排序渠道 - 参考第二段代码
     sorted_channels = sorted(visualization_data_2y.items(), key=lambda x: x[1]['lt'])
     
     chart_figures = []
     
-    # ========== 创建单渠道图表 (类似图1风格) ==========
+    # ========== 创建单渠道图表 (参考第二段代码的visualize_fitting_comparison函数风格) ==========
     for idx, (channel_name, data_2y) in enumerate(sorted_channels):
         if channel_name not in visualization_data_5y:
             continue
@@ -1056,7 +1075,7 @@ def create_professional_charts(visualization_data_2y, visualization_data_5y, ori
         data_5y = visualization_data_5y[channel_name]
         color = colors[idx % len(colors)]
         
-        # 创建100天图表（类似图1）
+        # 创建100天图表
         fig_100d = plt.figure(figsize=(6, 4))
         ax = fig_100d.add_subplot(111)
         
@@ -1066,8 +1085,8 @@ def create_professional_charts(visualization_data_2y, visualization_data_5y, ori
                 original_data[channel_name]["days"],
                 original_data[channel_name]["rates"],
                 color='red',
-                s=30,
-                alpha=0.8,
+                s=50,
+                alpha=0.7,
                 label='实际数据',
                 zorder=3
             )
@@ -1079,13 +1098,13 @@ def create_professional_charts(visualization_data_2y, visualization_data_5y, ori
         ax.plot(
             days_100,
             rates_100,
-            color=color,
+            color='blue',
             linewidth=2,
-            label=f'拟合曲线 (LT={data_2y["lt"]:.2f})',
+            label='拟合曲线',
             zorder=2
         )
         
-        # 设置图表样式
+        # 设置图表样式 - 参考第二段代码
         ax.set_xlim(0, 100)
         ax.set_ylim(0, 0.6)
         ax.set_xlabel('留存天数', fontsize=10)
@@ -1094,7 +1113,7 @@ def create_professional_charts(visualization_data_2y, visualization_data_5y, ori
         ax.grid(True, linestyle='--', alpha=0.3)
         ax.legend(fontsize=8)
         
-        # 设置Y轴刻度为百分比
+        # 设置Y轴刻度为百分比 - 参考第二段代码
         y_ticks = [0, 0.15, 0.3, 0.45, 0.6]
         y_labels = ['0%', '15%', '30%', '45%', '60%']
         ax.set_yticks(y_ticks)
@@ -1108,12 +1127,11 @@ def create_professional_charts(visualization_data_2y, visualization_data_5y, ori
             'lt_value': data_2y["lt"]
         })
     
-    # ========== 创建综合对比图表 (类似图2风格) ==========
+    # ========== 创建综合对比图表 (参考第二段代码的visualize_lt_curves函数风格) ==========
     # 2年综合图表
-    fig_2y_combined = plt.figure(figsize=(12, 8))
+    fig_2y_combined = plt.figure(figsize=(14, 8))
     ax_2y = fig_2y_combined.add_subplot(111)
     
-    legend_items = []
     for idx, (channel_name, data) in enumerate(sorted_channels):
         if channel_name not in visualization_data_2y:
             continue
@@ -1126,21 +1144,19 @@ def create_professional_charts(visualization_data_2y, visualization_data_5y, ori
             data_2y["days"],
             data_2y["rates"],
             color=color,
-            linewidth=1.5,
-            alpha=0.8,
+            linewidth=2,
             label=f'{channel_name} (LT={data_2y["lt"]:.2f})'
         )
-        
-        legend_items.append(f'{channel_name} (LT={data_2y["lt"]:.2f})')
     
+    # 设置图表样式 - 参考第二段代码
     ax_2y.set_xlim(0, 730)  # 2年
     ax_2y.set_ylim(0, 0.6)
     ax_2y.set_xlabel('留存天数', fontsize=12)
     ax_2y.set_ylabel('留存率', fontsize=12)
     ax_2y.set_title('各渠道2年LT留存曲线拟合对比 (按LT值从低到高排序)', fontsize=14, fontweight='bold')
-    ax_2y.grid(True, linestyle='--', alpha=0.3)
+    ax_2y.grid(True, linestyle='--', alpha=0.5)
     
-    # 设置Y轴刻度为百分比
+    # 设置Y轴刻度为百分比 - 参考第二段代码
     y_ticks = [0, 0.15, 0.3, 0.45, 0.6]
     y_labels = ['0%', '15%', '30%', '45%', '60%']
     ax_2y.set_yticks(y_ticks)
@@ -1151,7 +1167,7 @@ def create_professional_charts(visualization_data_2y, visualization_data_5y, ori
     plt.tight_layout()
     
     # 5年综合图表
-    fig_5y_combined = plt.figure(figsize=(12, 8))
+    fig_5y_combined = plt.figure(figsize=(14, 8))
     ax_5y = fig_5y_combined.add_subplot(111)
     
     for idx, (channel_name, data) in enumerate(sorted_channels):
@@ -1166,17 +1182,17 @@ def create_professional_charts(visualization_data_2y, visualization_data_5y, ori
             data_5y["days"],
             data_5y["rates"],
             color=color,
-            linewidth=1.5,
-            alpha=0.8,
+            linewidth=2,
             label=f'{channel_name} (LT={data_5y["lt"]:.2f})'
         )
     
+    # 设置图表样式 - 参考第二段代码
     ax_5y.set_xlim(0, 1825)  # 5年
     ax_5y.set_ylim(0, 0.6)
     ax_5y.set_xlabel('留存天数', fontsize=12)
     ax_5y.set_ylabel('留存率', fontsize=12)
     ax_5y.set_title('各渠道5年LT留存曲线拟合对比 (按LT值从低到高排序)', fontsize=14, fontweight='bold')
-    ax_5y.grid(True, linestyle='--', alpha=0.3)
+    ax_5y.grid(True, linestyle='--', alpha=0.5)
     
     # 设置Y轴刻度为百分比
     ax_5y.set_yticks(y_ticks)
@@ -1200,7 +1216,8 @@ st.markdown("""
 # 初始化session state
 session_keys = [
     'channel_mapping', 'merged_data', 'cleaned_data', 'retention_data',
-    'lt_results', 'arpu_data', 'ltv_results', 'current_step', 'excluded_data'
+    'lt_results', 'arpu_data', 'ltv_results', 'current_step', 'excluded_data',
+    'excluded_dates_info'  # 新增：记录具体剔除的日期信息
 ]
 for key in session_keys:
     if key not in st.session_state:
@@ -1213,6 +1230,8 @@ if st.session_state.current_step is None:
     st.session_state.current_step = 0
 if st.session_state.excluded_data is None:
     st.session_state.excluded_data = []
+if st.session_state.excluded_dates_info is None:
+    st.session_state.excluded_dates_info = []
 
 # ==================== 分析步骤定义 ====================
 # 分析步骤定义
@@ -1487,13 +1506,20 @@ elif current_page == "异常数据剔除":
         if st.button("确认剔除异常数据", type="primary", use_container_width=True):
             try:
                 if len(to_exclude) > 0:
-                    excluded_records = [f"{row.get('数据来源', 'Unknown')} - {row.get('date', 'Unknown')}"
-                                        for _, row in to_exclude.iterrows()]
-                    st.session_state.excluded_data = excluded_records
+                    # 记录具体剔除的日期信息
+                    excluded_dates_info = []
+                    for _, row in to_exclude.iterrows():
+                        source = row.get('数据来源', 'Unknown')
+                        date = row.get('date', 'Unknown')
+                        excluded_dates_info.append(f"{source}-{date}")
+                    
+                    st.session_state.excluded_data = excluded_dates_info
+                    st.session_state.excluded_dates_info = excluded_dates
                     st.session_state.cleaned_data = to_keep.copy()
                     st.success(f"成功剔除 {len(to_exclude)} 条异常数据")
                 else:
                     st.session_state.cleaned_data = merged_data.copy()
+                    st.session_state.excluded_dates_info = []
                     st.info("未发现需要剔除的异常数据")
             except Exception as e:
                 st.error(f"剔除数据时出错: {str(e)}")
@@ -1523,15 +1549,24 @@ elif current_page == "留存率计算":
         working_data = st.session_state.cleaned_data
         data_source_info = "使用清理后的数据"
         
-        # 显示剔除信息
-        if st.session_state.excluded_data and len(st.session_state.excluded_data) > 0:
+        # 显示剔除信息 - 显示具体剔除的日期
+        if st.session_state.excluded_dates_info and len(st.session_state.excluded_dates_info) > 0:
+            excluded_dates_str = ", ".join(st.session_state.excluded_dates_info)
             st.markdown(f"""
             <div class="exclusion-info">
                 <div class="exclusion-info-title">⚠️ 数据剔除信息</div>
                 <div class="exclusion-info-content">
-                已剔除 {len(st.session_state.excluded_data)} 条异常数据：<br>
-                {', '.join(st.session_state.excluded_data[:10])}
-                {' ...' if len(st.session_state.excluded_data) > 10 else ''}
+                已剔除以下日期的数据：{excluded_dates_str}
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+        elif st.session_state.excluded_data and len(st.session_state.excluded_data) > 0:
+            # 兼容之前的格式
+            st.markdown(f"""
+            <div class="exclusion-info">
+                <div class="exclusion-info-title">⚠️ 数据剔除信息</div>
+                <div class="exclusion-info-content">
+                已剔除 {len(st.session_state.excluded_data)} 条异常数据
                 </div>
             </div>
             """, unsafe_allow_html=True)
@@ -1546,7 +1581,14 @@ elif current_page == "留存率计算":
     if working_data is not None:
         st.markdown('<div class="glass-card">', unsafe_allow_html=True)
         st.subheader("留存率计算配置")
-        st.info(data_source_info)
+        
+        # 数据来源信息
+        st.markdown(f"""
+        <div class="data-source-info">
+            <div class="data-source-info-title">📊 数据来源</div>
+            <div class="data-source-info-content">{data_source_info}</div>
+        </div>
+        """, unsafe_allow_html=True)
 
         # 数据质量要求说明
         st.markdown("""
@@ -1956,7 +1998,7 @@ elif current_page == "LTV结果报告":
         col1, col2 = st.columns(2)
 
         with col1:
-            # 创建标准格式的CSV导出数据（按用户要求的列顺序）
+            # 创建标准格式的CSV导出数据（按用户要求的列顺序：渠道名称 LT ARPU LTV）
             export_df = display_df[['渠道名称', 'LT', 'ARPU', 'LTV']].copy()
             
             # 修复CSV导出的中文编码问题
@@ -1970,6 +2012,16 @@ elif current_page == "LTV结果报告":
             )
 
         with col2:
+            # 生成详细数据来源信息
+            data_source_desc = ""
+            if st.session_state.excluded_dates_info and len(st.session_state.excluded_dates_info) > 0:
+                excluded_dates_str = ", ".join(st.session_state.excluded_dates_info)
+                data_source_desc = f"已剔除以下日期数据：{excluded_dates_str}"
+            elif st.session_state.cleaned_data is not None:
+                data_source_desc = "使用清理后数据"
+            else:
+                data_source_desc = "使用原始数据"
+            
             report_text = f"""
 LTV用户生命周期价值分析报告
 ===========================================
@@ -1992,11 +2044,15 @@ LTV用户生命周期价值分析报告
 -----------
 {export_df.to_string(index=False)}
 
+数据来源说明
+-----------
+{data_source_desc}
+
 计算方法
 -----------
 • LT拟合: 三阶段分层建模（幂函数+指数函数）
 • LTV公式: LTV = LT × ARPU
-• 数据处理: {"使用清理后数据" if st.session_state.cleaned_data is not None else "使用原始数据"}
+• 渠道规则: 按华为、小米、oppo、vivo、iPhone分类设定不同拟合参数
 
 报告生成: LTV智能分析平台 v2.0
 """
