@@ -1642,10 +1642,10 @@ elif current_page == "LT拟合分析":
     <div class="principle-box">
         <div class="principle-title">📚 步骤原理</div>
         <div class="principle-content">
-        LT拟合分析采用三阶段分层建模方法：<br>
-        <strong>第一阶段(1-30天)：</strong>使用幂函数拟合实际留存数据，生成完整的1-30天留存率<br>
-        <strong>第二阶段(31-X天)：</strong>根据渠道类型延长幂函数预测范围<br>
-        <strong>第三阶段(Y-N年)：</strong>使用指数函数建模长期留存衰减趋势<br>
+        LT拟合分析通过三个阶段模拟用户流失规律：<br>
+        <strong>第一阶段(1-30天)：</strong>使用幂函数拟合前30天的真实留存数据，补全缺失的留存率<br>
+        <strong>第二阶段(31-X天)：</strong>延续幂函数趋势，预测中期留存变化<br>
+        <strong>第三阶段(Y-N年)：</strong>切换到指数函数，模拟长期用户的缓慢流失过程<br>
         不同渠道采用不同的阶段划分规则，确保拟合结果符合各渠道的用户行为特征。
         </div>
     </div>
