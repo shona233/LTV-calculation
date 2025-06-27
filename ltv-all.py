@@ -34,12 +34,12 @@ st.set_page_config(
 )
 
 # ==================== CSS 样式定义 ====================
-# 蓝色系CSS样式
+# 简洁CSS样式
 st.markdown("""
 <style>
     /* 全局样式 */
     .main {
-        background: linear-gradient(135deg, #0f172a 0%, #1e293b 30%, #334155 100%);
+        background: #f8f9fa;
         min-height: 100vh;
     }
 
@@ -51,12 +51,11 @@ st.markdown("""
 
     /* 主标题区域 */
     .main-header {
-        background: rgba(255, 255, 255, 0.95);
-        backdrop-filter: blur(10px);
+        background: white;
         padding: 1.2rem;
-        border-radius: 12px;
-        box-shadow: 0 4px 20px rgba(15, 23, 42, 0.3);
-        border: 1px solid rgba(255, 255, 255, 0.18);
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        border: 1px solid #e9ecef;
         margin-bottom: 1.5rem;
         text-align: center;
     }
@@ -64,51 +63,41 @@ st.markdown("""
     .main-title {
         font-size: 1.8rem;
         font-weight: 700;
-        background: linear-gradient(135deg, #1e293b 0%, #475569 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
+        color: #2c3e50;
         margin-bottom: 0.3rem;
     }
 
     .main-subtitle {
-        color: #64748b;
+        color: #6c757d;
         font-size: 1.1rem;
         font-weight: 400;
     }
 
     /* 卡片样式 */
     .glass-card {
-        background: rgba(255, 255, 255, 0.95);
-        backdrop-filter: blur(10px);
-        border-radius: 12px;
+        background: white;
+        border-radius: 8px;
         padding: 1rem;
-        box-shadow: 0 4px 20px rgba(15, 23, 42, 0.2);
-        border: 1px solid rgba(255, 255, 255, 0.18);
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        border: 1px solid #e9ecef;
         margin-bottom: 1rem;
-        transition: transform 0.3s ease, box-shadow 0.3s ease;
-    }
-
-    .glass-card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 8px 30px rgba(15, 23, 42, 0.3);
     }
 
     /* 分界线 */
     .section-divider {
-        height: 2px;
-        background: linear-gradient(90deg, transparent 0%, rgba(30, 41, 59, 0.3) 50%, transparent 100%);
+        height: 1px;
+        background: #dee2e6;
         margin: 1rem 0;
-        border-radius: 1px;
     }
 
     /* 指标卡片 */
     .metric-card {
-        background: linear-gradient(135deg, #1e40af 0%, #2563eb 50%, #3b82f6 100%);
-        color: white;
+        background: #f8f9fa;
+        color: #495057;
         padding: 1rem;
         border-radius: 8px;
         text-align: center;
-        box-shadow: 0 2px 12px rgba(37, 99, 235, 0.3);
+        border: 1px solid #dee2e6;
         margin-bottom: 0.8rem;
     }
 
@@ -116,75 +105,74 @@ st.markdown("""
         font-size: 2rem;
         font-weight: 700;
         margin-bottom: 0.5rem;
+        color: #2c3e50;
     }
 
     .metric-label {
         font-size: 0.9rem;
-        opacity: 0.9;
+        color: #6c757d;
     }
 
     /* 状态卡片 */
     .status-card {
-        background: rgba(255, 255, 255, 0.9);
+        background: white;
         border-radius: 8px;
         padding: 1rem;
-        border-left: 4px solid #2563eb;
-        box-shadow: 0 2px 8px rgba(37, 99, 235, 0.1);
+        border-left: 4px solid #28a745;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
         margin-bottom: 0.8rem;
     }
 
     /* 导航步骤样式 */
     .nav-container {
-        background: rgba(255, 255, 255, 0.9);
-        border-radius: 12px;
+        background: white;
+        border-radius: 8px;
         padding: 1rem;
         margin-bottom: 1rem;
+        border: 1px solid #e9ecef;
     }
 
     /* 按钮样式 */
     .stButton > button {
-        background: linear-gradient(135deg, #1e40af 0%, #2563eb 100%);
+        background: #28a745;
         color: white;
         border: none;
-        border-radius: 8px;
+        border-radius: 6px;
         padding: 0.5rem 2rem;
         font-weight: 600;
         transition: all 0.3s ease;
-        box-shadow: 0 4px 15px rgba(37, 99, 235, 0.3);
     }
 
     .stButton > button:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 6px 20px rgba(37, 99, 235, 0.5);
-        background: linear-gradient(135deg, #1d4ed8 0%, #2563eb 100%);
+        background: #218838;
+        transform: translateY(-1px);
     }
 
     /* 选择框样式 */
     .stSelectbox label, .stMultiselect label, .stFileUploader label {
         font-weight: 600;
-        color: #1e293b;
+        color: #495057;
         margin-bottom: 0.5rem;
     }
 
-    /* 标题样式 - 统一小标题大小 */
+    /* 标题样式 */
     h1, h2, h3, h4 {
-        color: #1e293b;
+        color: #2c3e50;
         font-weight: 600;
         font-size: 1.1rem !important;
     }
 
     /* 说明文字样式 */
     .step-explanation {
-        background: linear-gradient(135deg, rgba(37, 99, 235, 0.05) 0%, rgba(59, 130, 246, 0.08) 100%);
-        border-left: 4px solid #2563eb;
+        background: #f8f9fa;
+        border-left: 4px solid #28a745;
         padding: 1.5rem;
         margin-top: 2rem;
-        border-radius: 0 12px 12px 0;
-        box-shadow: 0 2px 10px rgba(37, 99, 235, 0.1);
+        border-radius: 0 8px 8px 0;
     }
 
     .step-explanation h4 {
-        color: #1e40af;
+        color: #2c3e50;
         margin-bottom: 0.8rem;
         font-size: 1.1rem;
         font-weight: 700;
@@ -198,12 +186,12 @@ st.markdown("""
 
     .step-explanation li {
         margin-bottom: 0.5rem;
-        color: #374151;
+        color: #495057;
         line-height: 1.5;
     }
 
     .step-explanation strong {
-        color: #1e40af;
+        color: #2c3e50;
         font-weight: 600;
     }
 
@@ -247,7 +235,6 @@ DEFAULT_CHANNEL_MAPPING = {
     '500514': '网易易效', '500515': '网易易效', '500516': '网易易效'
 }
 
-
 # ==================== 日期处理函数 ====================
 # 计算默认目标月份（2个月前）
 def get_default_target_month():
@@ -259,7 +246,6 @@ def get_default_target_month():
         target_year = today.year
         target_month = today.month - 2
     return f"{target_year}-{target_month:02d}"
-
 
 # ==================== 数据类型转换函数 ====================
 def safe_convert_to_numeric(value):
@@ -277,7 +263,6 @@ def safe_convert_to_numeric(value):
         return pd.to_numeric(value, errors='coerce')
     except:
         return 0
-
 
 # ==================== 数据结构标准化函数 ====================
 def standardize_output_columns(df):
@@ -364,7 +349,6 @@ def standardize_output_columns(df):
     print(f"已标准化输出列结构，共 {len(result_df.columns)} 列，按指定顺序排列")
     return result_df
 
-
 # ==================== 渠道映射处理函数 ====================
 def parse_channel_mapping_from_excel(channel_file):
     """
@@ -396,7 +380,6 @@ def parse_channel_mapping_from_excel(channel_file):
     except Exception as e:
         st.error(f"解析渠道映射文件失败：{str(e)}")
         return {}
-
 
 # ==================== 文件整合核心函数 ====================
 def integrate_excel_files_streamlit(uploaded_files, target_month=None, channel_mapping=None):
@@ -711,91 +694,15 @@ def integrate_excel_files_streamlit(uploaded_files, target_month=None, channel_m
     else:
         return None, 0, mapping_warnings
 
-
-# ==================== 页面初始化 ====================
-# 主标题
-st.markdown("""
-<div class="main-header">
-    <div class="main-title">用户生命周期价值分析系统</div>
-    <div class="main-subtitle">基于分阶段数学建模的LTV预测</div>
-</div>
-""", unsafe_allow_html=True)
-
-# 初始化session state
-session_keys = [
-    'channel_mapping', 'merged_data', 'cleaned_data', 'retention_data',
-    'lt_results', 'arpu_data', 'ltv_results', 'current_step', 'excluded_data'
-]
-for key in session_keys:
-    if key not in st.session_state:
-        st.session_state[key] = None
-
-# 设置默认值
-if st.session_state.channel_mapping is None:
-    st.session_state.channel_mapping = DEFAULT_CHANNEL_MAPPING
-if st.session_state.current_step is None:
-    st.session_state.current_step = 0
-if st.session_state.excluded_data is None:
-    st.session_state.excluded_data = []
-
-# ==================== 分析步骤定义 ====================
-# 分析步骤定义
-ANALYSIS_STEPS = [
-    {"name": "数据上传与汇总"},
-    {"name": "异常数据剔除"},
-    {"name": "留存率计算"},
-    {"name": "LT拟合分析"},
-    {"name": "ARPU计算"},
-    {"name": "LTV结果报告"}
-]
-
-
-# ==================== 步骤状态检查函数 ====================
-# 检查步骤完成状态
-def get_step_status(step_index):
-    if step_index == st.session_state.current_step:
-        return "active"
-    if step_index == 0 and st.session_state.merged_data is not None:
-        return "completed"
-    elif step_index == 1 and st.session_state.cleaned_data is not None:
-        return "completed"
-    elif step_index == 2 and st.session_state.retention_data is not None:
-        return "completed"
-    elif step_index == 3 and st.session_state.lt_results is not None:
-        return "completed"
-    elif step_index == 4 and st.session_state.arpu_data is not None:
-        return "completed"
-    elif step_index == 5 and st.session_state.ltv_results is not None:
-        return "completed"
-    return "normal"
-
-
-# ==================== 侧边栏导航 ====================
-# 侧边栏导航
-with st.sidebar:
-    st.markdown('<div class="nav-container">', unsafe_allow_html=True)
-    st.markdown('<h4 style="text-align: center; margin-bottom: 1rem; color: #495057;">分析流程</h4>',
-                unsafe_allow_html=True)
-
-    for i, step in enumerate(ANALYSIS_STEPS):
-        if st.button(f"{i + 1}. {step['name']}", key=f"nav_{i}",
-                     use_container_width=True,
-                     type="primary" if get_step_status(i) == "active" else "secondary"):
-            st.session_state.current_step = i
-            st.rerun()
-
-    st.markdown('</div>', unsafe_allow_html=True)
-
-
 # ==================== 数学建模函数 ====================
 # 定义数学函数
 def power_function(x, a, b):
+    """幂函数：y = a * x^b"""
     return a * np.power(x, b)
 
-
 def exponential_function(x, c, d):
+    """指数函数：y = c * exp(d * x)"""
     return c * np.exp(d * x)
-
 
 # ==================== 留存率计算函数 ====================
 # 留存率计算
@@ -836,10 +743,29 @@ def calculate_retention_rates_advanced(df):
 
     return retention_results
 
+# ==================== 计算指定天数的累积LT值函数 ====================
+def calculate_cumulative_lt(days_array, rates_array, target_days):
+    """计算指定天数的累积LT值"""
+    result = {}
+    for day in target_days:
+        idx = np.searchsorted(days_array, day, side='right')
+        if idx > 0:
+            # 计算到指定天数的累积LT值（包括第0天的1.0）
+            cumulative_lt = 1.0 + np.sum(rates_array[1:idx])
+            result[day] = cumulative_lt
+    return result
 
 # ==================== LT拟合分析函数 ====================
-# LT拟合分析
-def calculate_lt_advanced(retention_data, channel_name, lt_years=5):
+# LT拟合分析 - 使用第二段代码的逻辑
+def calculate_lt_advanced(retention_result, channel_name, lt_years=5, return_curve_data=False, key_days=None):
+    """
+    按渠道规则计算 LT，允许 1-30 天数据不连续。
+    参数:
+        lt_years: 计算几年的LT，默认5年
+        return_curve_data: 是否返回曲线数据用于可视化
+        key_days: 关键时间点列表，用于计算这些时间点的累积LT值
+    """
+    # 渠道规则
     CHANNEL_RULES = {
         "华为": {"stage_2": [30, 120], "stage_3_base": [120, 220]},
         "小米": {"stage_2": [30, 190], "stage_3_base": [190, 290]},
@@ -864,61 +790,108 @@ def calculate_lt_advanced(retention_data, channel_name, lt_years=5):
 
     stage_2_start, stage_2_end = rules["stage_2"]
     stage_3_base_start, stage_3_base_end = rules["stage_3_base"]
+
+    # 计算最大天数（根据指定年数）
     max_days = lt_years * 365
 
-    days = retention_data['days']
-    rates = retention_data['rates']
+    days = retention_result["days"]
+    rates = retention_result["rates"]
+
+    # 存储拟合参数，用于后续分析
     fit_params = {}
 
+    # ----- 第一阶段 -----
     try:
+        # 用已有数据对 1-30 天的留存率进行拟合
         popt_power, _ = curve_fit(power_function, days, rates)
         a, b = popt_power
         fit_params["power"] = {"a": a, "b": b}
 
-        days_full = np.arange(1, 31)
+        # 用拟合函数生成完整的 1-30 天留存率
+        days_full = np.arange(1, 31)  # 连续的 1-30 天
         rates_full = power_function(days_full, a, b)
-        lt1_to_30 = np.sum(rates_full)
 
+        # 第一阶段的 LT 累加值
+        lt1_to_30 = np.sum(rates_full)
+    except Exception as e:
+        lt1_to_30 = 0.0
+        a, b = 1.0, -1.0  # 默认参数
+
+    # ----- 第二阶段 -----
+    try:
         days_stage_2 = np.arange(stage_2_start, stage_2_end + 1)
         rates_stage_2 = power_function(days_stage_2, a, b)
         lt_stage_2 = np.sum(rates_stage_2)
+    except Exception as e:
+        lt_stage_2 = 0.0
+        rates_stage_2 = np.array([])
 
-        try:
-            days_stage_3_base = np.arange(stage_3_base_start, stage_3_base_end + 1)
-            rates_stage_3_base = power_function(days_stage_3_base, a, b)
+    # ----- 第三阶段 -----
+    try:
+        days_stage_3_base = np.arange(stage_3_base_start, stage_3_base_end + 1)
+        rates_stage_3_base = power_function(days_stage_3_base, a, b)
 
-            initial_c = rates_stage_3_base[0]
-            initial_d = -0.001
-            popt_exp, _ = curve_fit(
-                exponential_function,
-                days_stage_3_base,
-                rates_stage_3_base,
-                p0=[initial_c, initial_d],
-                bounds=([0, -np.inf], [np.inf, 0])
-            )
-            c, d = popt_exp
-            fit_params["exponential"] = {"c": c, "d": d}
+        # 指数拟合
+        initial_c = rates_stage_3_base[0]
+        initial_d = -0.001
+        popt_exp, _ = curve_fit(
+            exponential_function,
+            days_stage_3_base,
+            rates_stage_3_base,
+            p0=[initial_c, initial_d],
+            bounds=([0, -np.inf], [np.inf, 0])  # 限制 d < 0
+        )
+        c, d = popt_exp
+        fit_params["exponential"] = {"c": c, "d": d}
+        days_stage_3 = np.arange(stage_3_base_start, max_days + 1)
+        rates_stage_3 = exponential_function(days_stage_3, c, d)
+        lt_stage_3 = np.sum(rates_stage_3)
+    except Exception as e:
+        days_stage_3 = np.arange(stage_3_base_start, max_days + 1)
+        rates_stage_3 = power_function(days_stage_3, a, b) if 'a' in locals() else np.zeros(len(days_stage_3))
+        lt_stage_3 = np.sum(rates_stage_3)
 
-            days_stage_3 = np.arange(stage_3_base_start, max_days + 1)
-            rates_stage_3 = exponential_function(days_stage_3, c, d)
-            lt_stage_3 = np.sum(rates_stage_3)
+    # ----- 总 LT 计算 -----
+    total_lt = 1.0 + lt1_to_30 + lt_stage_2 + lt_stage_3
 
-        except:
-            days_stage_3 = np.arange(stage_3_base_start, max_days + 1)
-            rates_stage_3 = power_function(days_stage_3, a, b)
-            lt_stage_3 = np.sum(rates_stage_3)
-
-        total_lt = 1.0 + lt1_to_30 + lt_stage_2 + lt_stage_3
-
+    # 计算R²用于评估拟合质量
+    try:
         predicted_rates = power_function(days, a, b)
         r2_score = 1 - np.sum((rates - predicted_rates) ** 2) / np.sum((rates - np.mean(rates)) ** 2)
+    except:
+        r2_score = 0.0
 
-        all_days = np.concatenate([days_full, days_stage_2, days_stage_3])
-        all_rates = np.concatenate([rates_full, rates_stage_2, rates_stage_3])
+    if return_curve_data:
+        # 返回不包含第0天的曲线数据用于可视化
+        all_days = np.concatenate([
+            days_full,      # 第1-30天
+            days_stage_2,   # 第二阶段
+            days_stage_3    # 第三阶段
+        ])
+        
+        if 'rates_stage_2' not in locals():
+            rates_stage_2 = power_function(days_stage_2, a, b)
+        
+        all_rates = np.concatenate([
+            rates_full,                # 第1-30天
+            rates_stage_2,             # 第二阶段
+            rates_stage_3              # 第三阶段
+        ])
 
+        # 按天数排序
         sort_idx = np.argsort(all_days)
         all_days = all_days[sort_idx]
         all_rates = all_rates[sort_idx]
+
+        # 只返回到指定年数的数据
+        max_idx = np.searchsorted(all_days, lt_years * 365, side='right')
+        all_days = all_days[:max_idx]
+        all_rates = all_rates[:max_idx]
+
+        # 计算关键时间点的累积LT值
+        key_days_lt = {}
+        if key_days:
+            key_days_lt = calculate_cumulative_lt(all_days, all_rates, key_days)
 
         return {
             'lt_value': total_lt,
@@ -927,34 +900,42 @@ def calculate_lt_advanced(retention_data, channel_name, lt_years=5):
             'success': True,
             'model_used': 'power+exponential',
             'curve_days': all_days,
-            'curve_rates': all_rates
+            'curve_rates': all_rates,
+            'key_days_lt': key_days_lt
         }
 
-    except Exception as e:
-        return {
-            'lt_value': 30.0,
-            'fit_params': {},
-            'power_r2': 0.0,
-            'success': False,
-            'model_used': 'default',
-            'curve_days': np.array([]),
-            'curve_rates': np.array([])
-        }
+    return total_lt
 
-
-# ==================== 可视化函数 ====================
-# 可视化函数
+# ==================== 可视化函数 - 使用第二段代码的逻辑 ====================
 def visualize_lt_curves(visualization_data, years=2):
+    """
+    创建线性坐标LT曲线图
+    渠道按LT值从低到高排序
+    """
+    # 按LT值从低到高排序渠道
     sorted_channels = sorted(visualization_data.items(), key=lambda x: x[1]['lt'])
-    fig, ax = plt.subplots(figsize=(14, 8))
-    colors = plt.cm.Set1.colors
 
+    # 创建图表
+    fig = plt.figure(figsize=(14, 8))
+    ax = fig.add_subplot(111)
+
+    # 设置颜色循环
+    colors = plt.cm.tab10.colors
+
+    # 为每个渠道绘制曲线
     for idx, (channel_name, data) in enumerate(sorted_channels):
         color = colors[idx % len(colors)]
-        ax.plot(data["days"], data["rates"],
-                label=f"{channel_name} (LT={data['lt']:.2f})",
-                color=color, linewidth=2)
 
+        # 线性坐标图
+        ax.plot(
+            data["days"],
+            data["rates"],
+            label=f"{channel_name} (LT={data['lt']:.2f})",
+            color=color,
+            linewidth=2
+        )
+
+    # 线性坐标设置 - 修改为 0-60%
     ax.set_ylim(0, 0.6)
     ax.set_yticks([0, 0.15, 0.3, 0.45, 0.6])
     ax.set_yticklabels(['0%', '15%', '30%', '45%', '60%'])
@@ -963,33 +944,110 @@ def visualize_lt_curves(visualization_data, years=2):
     ax.set_ylabel('留存率')
     ax.set_title(f'所有渠道{years}年LT留存曲线比较 (按LT值从低到高排序)')
     ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
-    plt.tight_layout()
-    return fig, colors, sorted_channels
 
+    plt.tight_layout()
+    return fig, colors, sorted_channels  # 返回颜色和排序后的渠道，以便后续使用
+
+def visualize_log_comparison(visualization_data_2y, visualization_data_5y, colors=None, sorted_channels_2y=None):
+    """
+    创建2年和5年对数坐标比较图作为左右子图
+    使用与线性图相同的颜色和排序
+    """
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 6))
+
+    # 如果没有提供排序渠道和颜色，则重新计算
+    if sorted_channels_2y is None:
+        sorted_channels_2y = sorted(visualization_data_2y.items(), key=lambda x: x[1]['lt'])
+    if colors is None:
+        colors = plt.cm.tab10.colors
+
+    sorted_channels_5y = sorted(visualization_data_5y.items(), key=lambda x: x[1]['lt'])
+
+    # 绘制2年对数图
+    for idx, (channel_name, data) in enumerate(sorted_channels_2y):
+        color = colors[idx % len(colors)]
+        ax1.plot(
+            data["days"],
+            data["rates"],
+            color=color,
+            linewidth=2
+        )
+
+    # 绘制5年对数图
+    for idx, (channel_name, data) in enumerate(sorted_channels_5y):
+        color = colors[idx % len(colors)]
+        ax2.plot(
+            data["days"],
+            data["rates"],
+            color=color,
+            linewidth=2
+        )
+
+    # 对数坐标设置 - 2年图
+    ax1.set_yscale('log')
+    ax1.set_ylim(0.001, 0.6)
+    ax1.set_yticks([0.001, 0.01, 0.1, 0.6])
+    ax1.set_yticklabels(['0.1%', '1%', '10%', '60%'])
+    ax1.grid(True, ls="--", alpha=0.5)
+    ax1.set_xlabel('留存天数')
+    ax1.set_ylabel('留存率 (对数坐标)')
+    ax1.set_title('2年LT留存曲线 (对数坐标)')
+
+    # 对数坐标设置 - 5年图
+    ax2.set_yscale('log')
+    ax2.set_ylim(0.001, 0.6)
+    ax2.set_yticks([0.001, 0.01, 0.1, 0.6])
+    ax2.set_yticklabels(['0.1%', '1%', '10%', '60%'])
+    ax2.grid(True, ls="--", alpha=0.5)
+    ax2.set_xlabel('留存天数')
+    ax2.set_title('5年LT留存曲线 (对数坐标)')
+
+    plt.tight_layout()
+    return fig
 
 def visualize_fitting_comparison(original_data, visualization_data):
+    """可视化拟合效果比较（实际数据vs拟合曲线）- 显示所有渠道"""
+    # 按LT值从低到高排序渠道
     channels = sorted(visualization_data.keys(), key=lambda x: visualization_data[x]['lt'])
+
+    # 计算需要多少行
     n_channels = len(channels)
     n_cols = 3
-    n_rows = (n_channels + n_cols - 1) // n_cols
+    n_rows = (n_channels + n_cols - 1) // n_cols  # 向上取整
 
-    fig, axes = plt.subplots(n_rows, n_cols, figsize=(15, 5 * n_rows), squeeze=False)
+    fig, axes = plt.subplots(n_rows, n_cols, figsize=(15, 5*n_rows), squeeze=False)
 
     for i, channel_name in enumerate(channels):
         row = i // n_cols
         col = i % n_cols
         ax = axes[row, col]
+
         data = visualization_data[channel_name]
 
+        # 绘制原始数据点
         if channel_name in original_data:
-            ax.scatter(original_data[channel_name]["days"], original_data[channel_name]["rates"],
-                       color='red', s=50, alpha=0.7, label='实际数据')
+            ax.scatter(
+                original_data[channel_name]["days"],
+                original_data[channel_name]["rates"],
+                color='red',
+                s=50,
+                alpha=0.7,
+                label='实际数据'
+            )
 
+        # 绘制拟合曲线（限制在0-100天范围内更清晰展示拟合效果）
         fit_days = data["days"]
         fit_rates = data["rates"]
+
+        # 限制显示范围到100天以内
         idx_100 = np.searchsorted(fit_days, 100, side='right')
-        ax.plot(fit_days[:idx_100], fit_rates[:idx_100],
-                color='blue', linewidth=2, label='拟合曲线')
+        ax.plot(
+            fit_days[:idx_100],
+            fit_rates[:idx_100],
+            color='blue',
+            linewidth=2,
+            label='拟合曲线'
+        )
 
         ax.set_title(f'{channel_name} (LT={data["lt"]:.2f})')
         ax.set_xlabel('留存天数')
@@ -1000,6 +1058,7 @@ def visualize_fitting_comparison(original_data, visualization_data):
         ax.grid(True, ls="--", alpha=0.3)
         ax.legend()
 
+    # 隐藏未使用的子图
     for i in range(len(channels), n_rows * n_cols):
         row = i // n_cols
         col = i % n_cols
@@ -1008,12 +1067,82 @@ def visualize_fitting_comparison(original_data, visualization_data):
     plt.tight_layout()
     return fig
 
+# ==================== 页面初始化 ====================
+# 主标题
+st.markdown("""
+<div class="main-header">
+    <div class="main-title">用户生命周期价值分析系统</div>
+    <div class="main-subtitle">基于分阶段数学建模的LTV预测</div>
+</div>
+""", unsafe_allow_html=True)
+
+# 初始化session state
+session_keys = [
+    'channel_mapping', 'merged_data', 'cleaned_data', 'retention_data',
+    'lt_results', 'arpu_data', 'ltv_results', 'current_step', 'excluded_data'
+]
+for key in session_keys:
+    if key not in st.session_state:
+        st.session_state[key] = None
+
+# 设置默认值
+if st.session_state.channel_mapping is None:
+    st.session_state.channel_mapping = DEFAULT_CHANNEL_MAPPING
+if st.session_state.current_step is None:
+    st.session_state.current_step = 0
+if st.session_state.excluded_data is None:
+    st.session_state.excluded_data = []
+
+# ==================== 分析步骤定义 ====================
+# 分析步骤定义
+ANALYSIS_STEPS = [
+    {"name": "数据上传与汇总"},
+    {"name": "异常数据剔除"},
+    {"name": "留存率计算"},
+    {"name": "LT拟合分析"},
+    {"name": "ARPU计算"},
+    {"name": "LTV结果报告"}
+]
+
+# ==================== 步骤状态检查函数 ====================
+# 检查步骤完成状态
+def get_step_status(step_index):
+    if step_index == st.session_state.current_step:
+        return "active"
+    if step_index == 0 and st.session_state.merged_data is not None:
+        return "completed"
+    elif step_index == 1 and st.session_state.cleaned_data is not None:
+        return "completed"
+    elif step_index == 2 and st.session_state.retention_data is not None:
+        return "completed"
+    elif step_index == 3 and st.session_state.lt_results is not None:
+        return "completed"
+    elif step_index == 4 and st.session_state.arpu_data is not None:
+        return "completed"
+    elif step_index == 5 and st.session_state.ltv_results is not None:
+        return "completed"
+    return "normal"
+
+# ==================== 侧边栏导航 ====================
+# 侧边栏导航
+with st.sidebar:
+    st.markdown('<div class="nav-container">', unsafe_allow_html=True)
+    st.markdown('<h4 style="text-align: center; margin-bottom: 1rem; color: #495057;">分析流程</h4>',
+                unsafe_allow_html=True)
+
+    for i, step in enumerate(ANALYSIS_STEPS):
+        if st.button(f"{i + 1}. {step['name']}", key=f"nav_{i}",
+                     use_container_width=True,
+                     type="primary" if get_step_status(i) == "active" else "secondary"):
+            st.session_state.current_step = i
+            st.rerun()
+
+    st.markdown('</div>', unsafe_allow_html=True)
 
 # ==================== 辅助函数 ====================
 def show_dependency_warning(required_step):
     st.warning(f"⚠️ 此步骤需要先完成「{required_step}」")
     st.info("您可以点击左侧导航直接跳转到对应步骤，或者继续查看当前步骤的功能介绍。")
-
 
 # ==================== 页面路由 ====================
 # 获取当前页面
@@ -1035,7 +1164,7 @@ if current_page == "数据上传与汇总":
     if channel_mapping_file:
         try:
             custom_mapping = parse_channel_mapping_from_excel(channel_mapping_file)
-            if custom_mapping:
+            if custom_mapping and isinstance(custom_mapping, dict) and len(custom_mapping) > 0:
                 st.session_state.channel_mapping = custom_mapping
                 st.success(f"渠道映射文件加载成功！共包含 {len(custom_mapping)} 个映射关系")
                 
@@ -1260,10 +1389,14 @@ elif current_page == "LT拟合分析":
                 lt_results = []
                 visualization_data = {}
                 original_data = {}
+                
+                # 关键时间点列表
+                key_days = [1, 7, 30, 60, 90, 100, 150, 200, 300]
 
                 for retention_result in retention_data:
                     channel_name = retention_result['data_source']
-                    lt_result = calculate_lt_advanced(retention_result, channel_name, lt_years)
+                    lt_result = calculate_lt_advanced(retention_result, channel_name, lt_years, 
+                                                    return_curve_data=True, key_days=key_days)
 
                     lt_results.append({
                         'data_source': channel_name,
@@ -1288,7 +1421,22 @@ elif current_page == "LT拟合分析":
                 st.session_state.lt_results = lt_results
                 st.success("LT拟合分析完成！")
 
-                # 显示LT值对比
+                # 显示LT值表格
+                if lt_results:
+                    st.subheader("LT分析结果")
+                    results_df = pd.DataFrame([
+                        {
+                            '渠道名称': r['data_source'],
+                            f'{lt_years}年LT': round(r['lt_value'], 2),
+                            '拟合状态': '成功' if r['fit_success'] else '失败',
+                            'R²得分': round(r['power_r2'], 3),
+                            '使用模型': r['model_used']
+                        }
+                        for r in lt_results
+                    ])
+                    st.dataframe(results_df, use_container_width=True)
+
+                # 显示LT值对比柱状图
                 if lt_results:
                     sorted_results = sorted(lt_results, key=lambda x: x['lt_value'])
                     sources = [r['data_source'] for r in sorted_results]
@@ -1408,6 +1556,7 @@ elif current_page == "LTV结果报告":
     else:
         lt_results = st.session_state.lt_results
         arpu_data = st.session_state.arpu_data
+        retention_data = st.session_state.retention_data
 
         ltv_results = []
         ltv_2y_results = []
@@ -1482,77 +1631,85 @@ elif current_page == "LTV结果报告":
         ax1.set_xlabel('2年LTV值')
         ax1.set_ylabel('数据来源')
         ax1.set_title('各渠道2年LTV排名')
-        ax1.grid(True, alpha=0.3, axis='x')
+        if retention_data:
+            # 准备可视化数据
+            visualization_data_2y = {}
+            visualization_data_5y = {}
+            original_data = {}
 
-        # 5年LTV排名
-        ltv_5y_df = pd.DataFrame(ltv_5y_results).sort_values('ltv_5y', ascending=True)
-        colors_5y = plt.cm.Set2(np.linspace(0, 1, len(ltv_5y_df)))
-        bars2 = ax2.barh(ltv_5y_df['data_source'], ltv_5y_df['ltv_5y'], color=colors_5y, alpha=0.8)
-
-        for bar, value in zip(bars2, ltv_5y_df['ltv_5y']):
-            width = bar.get_width()
-            ax2.text(width + width * 0.01, bar.get_y() + bar.get_height() / 2,
-                     f'{value:.1f}', ha='left', va='center', fontweight='bold')
-
-        ax2.set_xlabel('5年LTV值')
-        ax2.set_ylabel('数据来源')
-        ax2.set_title('各渠道5年LTV排名')
-        ax2.grid(True, alpha=0.3, axis='x')
-
-        plt.tight_layout()
-        st.pyplot(fig)
-        plt.close()
-
-        st.markdown('</div>', unsafe_allow_html=True)
-
-        # 各渠道拟合曲线图
-        st.markdown('<div class="glass-card">', unsafe_allow_html=True)
-        st.subheader("各渠道拟合曲线对比")
-
-        if st.session_state.retention_data:
-            n_channels = len(st.session_state.retention_data)
-            n_cols = 3
-            n_rows = (n_channels + n_cols - 1) // n_cols
-
-            fig, axes = plt.subplots(n_rows, n_cols, figsize=(15, 5 * n_rows), squeeze=False)
-
-            for i, retention_result in enumerate(st.session_state.retention_data):
-                row = i // n_cols
-                col = i % n_cols
-                ax = axes[row, col]
-
+            for retention_result in retention_data:
                 channel_name = retention_result['data_source']
-                days = retention_result['days']
-                rates = retention_result['rates']
+                
+                # 计算2年LT和曲线数据
+                lt_result_2y = calculate_lt_advanced(
+                    retention_result, channel_name, lt_years=2, 
+                    return_curve_data=True, key_days=[1, 7, 30, 60, 90]
+                )
+                
+                # 计算5年LT和曲线数据
+                lt_result_5y = calculate_lt_advanced(
+                    retention_result, channel_name, lt_years=5, 
+                    return_curve_data=True, key_days=[1, 7, 30, 60, 90]
+                )
 
-                lt_result = calculate_lt_advanced(retention_result, channel_name, lt_years=5)
+                # 保存可视化数据
+                visualization_data_2y[channel_name] = {
+                    "days": lt_result_2y['curve_days'],
+                    "rates": lt_result_2y['curve_rates'],
+                    "lt": lt_result_2y['lt_value']
+                }
 
-                ax.scatter(days, rates, color='red', s=50, alpha=0.7, label='实际数据')
+                visualization_data_5y[channel_name] = {
+                    "days": lt_result_5y['curve_days'],
+                    "rates": lt_result_5y['curve_rates'],
+                    "lt": lt_result_5y['lt_value']
+                }
 
-                if len(lt_result['curve_days']) > 0:
-                    fit_days = lt_result['curve_days']
-                    fit_rates = lt_result['curve_rates']
-                    idx_100 = np.searchsorted(fit_days, 100, side='right')
-                    ax.plot(fit_days[:idx_100], fit_rates[:idx_100],
-                            color='blue', linewidth=2, label='拟合曲线')
+                # 保存原始数据
+                original_data[channel_name] = {
+                    "days": retention_result['days'],
+                    "rates": retention_result['rates']
+                }
 
-                ax.set_title(f'{channel_name} (LT={lt_result["lt_value"]:.2f})')
-                ax.set_xlabel('留存天数')
-                ax.set_ylabel('留存率')
-                ax.set_ylim(0, 0.6)
-                ax.grid(True, alpha=0.3)
-                ax.legend()
+            # 1. 拟合效果比较图
+            st.markdown('<div class="glass-card">', unsafe_allow_html=True)
+            st.subheader("拟合效果比较图")
+            if visualization_data_2y and original_data:
+                fig_fitting = visualize_fitting_comparison(original_data, visualization_data_2y)
+                st.pyplot(fig_fitting)
+                plt.close()
+            st.markdown('</div>', unsafe_allow_html=True)
 
-            for i in range(len(st.session_state.retention_data), n_rows * n_cols):
-                row = i // n_cols
-                col = i % n_cols
-                fig.delaxes(axes[row, col])
+            # 2. 2年LT曲线
+            st.markdown('<div class="glass-card">', unsafe_allow_html=True)
+            st.subheader("2年LT留存曲线比较")
+            if visualization_data_2y:
+                fig_lt_2y, colors_2y, sorted_channels_2y = visualize_lt_curves(visualization_data_2y, years=2)
+                st.pyplot(fig_lt_2y)
+                plt.close()
+            st.markdown('</div>', unsafe_allow_html=True)
 
-            plt.tight_layout()
-            st.pyplot(fig)
-            plt.close()
+            # 3. 5年LT曲线
+            st.markdown('<div class="glass-card">', unsafe_allow_html=True)
+            st.subheader("5年LT留存曲线比较")
+            if visualization_data_5y:
+                fig_lt_5y, colors_5y, sorted_channels_5y = visualize_lt_curves(visualization_data_5y, years=5)
+                st.pyplot(fig_lt_5y)
+                plt.close()
+            st.markdown('</div>', unsafe_allow_html=True)
 
-        st.markdown('</div>', unsafe_allow_html=True)
+            # 4. 对数坐标比较图
+            st.markdown('<div class="glass-card">', unsafe_allow_html=True)
+            st.subheader("对数坐标比较图")
+            if visualization_data_2y and visualization_data_5y:
+                fig_log_comparison = visualize_log_comparison(
+                    visualization_data_2y, visualization_data_5y, 
+                    colors_2y if 'colors_2y' in locals() else None, 
+                    sorted_channels_2y if 'sorted_channels_2y' in locals() else None
+                )
+                st.pyplot(fig_log_comparison)
+                plt.close()
+            st.markdown('</div>', unsafe_allow_html=True)
 
         # 数据导出
         st.markdown('<div class="glass-card">', unsafe_allow_html=True)
