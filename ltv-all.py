@@ -84,12 +84,12 @@ st.set_page_config(
 )
 
 # ==================== CSS 样式定义 ====================
-# 更商业化的配色样式
+# 商业蓝色系配色样式
 st.markdown("""
 <style>
     /* 全局样式 */
     .main {
-        background: #f8f9fa;
+        background: #f8fafc;
         min-height: 100vh;
     }
 
@@ -101,10 +101,10 @@ st.markdown("""
 
     /* 主标题区域 */
     .main-header {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
         padding: 1.5rem;
         border-radius: 12px;
-        box-shadow: 0 4px 20px rgba(102, 126, 234, 0.3);
+        box-shadow: 0 4px 20px rgba(30, 64, 175, 0.3);
         margin-bottom: 1.5rem;
         text-align: center;
         color: white;
@@ -129,8 +129,8 @@ st.markdown("""
         background: rgba(255, 255, 255, 0.95);
         border-radius: 12px;
         padding: 1.5rem;
-        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-        border: 1px solid rgba(255, 255, 255, 0.2);
+        box-shadow: 0 8px 32px rgba(30, 64, 175, 0.1);
+        border: 1px solid rgba(59, 130, 246, 0.2);
         margin-bottom: 1.5rem;
         backdrop-filter: blur(10px);
     }
@@ -138,19 +138,19 @@ st.markdown("""
     /* 分界线 */
     .section-divider {
         height: 2px;
-        background: linear-gradient(90deg, #667eea, #764ba2);
+        background: linear-gradient(90deg, #1e40af, #3b82f6);
         margin: 1.5rem 0;
     }
 
     /* 指标卡片 */
     .metric-card {
-        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
         color: white;
         padding: 1.5rem;
         border-radius: 12px;
         text-align: center;
         margin-bottom: 1rem;
-        box-shadow: 0 4px 15px rgba(240, 147, 251, 0.3);
+        box-shadow: 0 4px 15px rgba(37, 99, 235, 0.3);
     }
 
     .metric-value {
@@ -171,63 +171,63 @@ st.markdown("""
         background: white;
         border-radius: 12px;
         padding: 1.5rem;
-        border-left: 4px solid #667eea;
-        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.1);
+        border-left: 4px solid #1e40af;
+        box-shadow: 0 4px 15px rgba(30, 64, 175, 0.1);
         margin-bottom: 1rem;
     }
 
     /* 导航步骤样式 */
     .nav-container {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
         border-radius: 12px;
         padding: 1.5rem;
         margin-bottom: 1rem;
         color: white;
-        box-shadow: 0 4px 20px rgba(102, 126, 234, 0.3);
+        box-shadow: 0 4px 20px rgba(30, 64, 175, 0.3);
     }
 
     /* 按钮样式 */
     .stButton > button {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
         color: white;
         border: none;
         border-radius: 8px;
         padding: 0.6rem 2rem;
         font-weight: 600;
         transition: all 0.3s ease;
-        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        box-shadow: 0 4px 15px rgba(30, 64, 175, 0.3);
     }
 
     .stButton > button:hover {
         transform: translateY(-2px);
-        box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        box-shadow: 0 6px 20px rgba(30, 64, 175, 0.4);
     }
 
     /* 选择框样式 */
     .stSelectbox label, .stMultiselect label, .stFileUploader label {
         font-weight: 600;
-        color: #4c51bf;
+        color: #1e40af;
         margin-bottom: 0.5rem;
     }
 
     /* 标题样式 */
     h1, h2, h3, h4 {
-        color: #4c51bf;
+        color: #1e40af;
         font-weight: 600;
         font-size: 1.2rem !important;
     }
 
     /* 说明文字样式 */
     .step-explanation {
-        background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
-        border-left: 4px solid #667eea;
+        background: linear-gradient(135deg, rgba(30, 64, 175, 0.1) 0%, rgba(59, 130, 246, 0.1) 100%);
+        border-left: 4px solid #1e40af;
         padding: 1.5rem;
         margin-top: 2rem;
         border-radius: 0 12px 12px 0;
     }
 
     .step-explanation h4 {
-        color: #4c51bf;
+        color: #1e40af;
         margin-bottom: 0.8rem;
         font-size: 1.2rem;
         font-weight: 700;
@@ -241,13 +241,58 @@ st.markdown("""
 
     .step-explanation li {
         margin-bottom: 0.5rem;
-        color: #4c51bf;
+        color: #1e40af;
         line-height: 1.6;
     }
 
     .step-explanation strong {
-        color: #4c51bf;
+        color: #1e40af;
         font-weight: 600;
+    }
+
+    /* 原理解释框样式 */
+    .principle-box {
+        background: rgba(59, 130, 246, 0.05);
+        border: 1px solid rgba(59, 130, 246, 0.2);
+        border-radius: 8px;
+        padding: 1rem;
+        margin: 1rem 0;
+    }
+
+    .principle-title {
+        color: #1e40af;
+        font-weight: 600;
+        font-size: 1rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .principle-content {
+        color: #374151;
+        font-size: 0.9rem;
+        line-height: 1.5;
+    }
+
+    /* 提示框样式 */
+    .step-tip {
+        background: #eff6ff;
+        border: 1px solid #bfdbfe;
+        border-radius: 8px;
+        padding: 1rem;
+        margin: 1rem 0;
+        border-left: 4px solid #3b82f6;
+    }
+
+    .step-tip-title {
+        color: #1e40af;
+        font-weight: 600;
+        font-size: 0.95rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .step-tip-content {
+        color: #374151;
+        font-size: 0.85rem;
+        line-height: 1.4;
     }
 
     /* 隐藏默认的Streamlit元素 */
@@ -1136,9 +1181,14 @@ with st.sidebar:
     st.markdown('</div>', unsafe_allow_html=True)
 
 # ==================== 辅助函数 ====================
-def show_dependency_warning(required_step):
-    st.warning(f"⚠️ 此步骤需要先完成「{required_step}」")
-    st.info("您可以点击左侧导航直接跳转到对应步骤，或者继续查看当前步骤的功能介绍。")
+def show_dependency_tip(required_step):
+    """显示依赖提示，但不阻止继续操作"""
+    st.markdown(f"""
+    <div class="step-tip">
+        <div class="step-tip-title">💡 建议</div>
+        <div class="step-tip-content">建议先完成「{required_step}」步骤，以获得更好的分析效果。您也可以继续当前步骤的操作。</div>
+    </div>
+    """, unsafe_allow_html=True)
 
 # ==================== 页面路由 ====================
 # 获取当前页面
@@ -1147,8 +1197,31 @@ current_page = ANALYSIS_STEPS[st.session_state.current_step]["name"]
 # ==================== 页面内容 ====================
 
 if current_page == "数据上传与汇总":
+    # 原理解释
+    st.markdown("""
+    <div class="principle-box">
+        <div class="principle-title">📚 步骤原理</div>
+        <div class="principle-content">
+        数据上传与汇总是LTV分析的基础步骤。系统将整合多个Excel文件中的用户留存数据，通过渠道映射将原始数据源映射为业务渠道名称。支持新格式表（含stat_date和new_retain_X列）和传统格式表（含留存天数和数字列）两种数据结构。
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+    
     st.markdown('<div class="glass-card">', unsafe_allow_html=True)
     st.subheader("渠道映射文件设置")
+    
+    # 文件格式说明
+    st.markdown("""
+    <div class="step-tip">
+        <div class="step-tip-title">📋 渠道映射文件格式要求</div>
+        <div class="step-tip-content">
+        • Excel格式(.xlsx/.xls)<br>
+        • 第一列：渠道名称<br>
+        • 后续列：对应的渠道号/PID<br>
+        • 一个渠道可对应多个渠道号
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
     
     # 渠道映射文件上传
     channel_mapping_file = st.file_uploader(
@@ -1190,6 +1263,24 @@ if current_page == "数据上传与汇总":
     
     st.markdown('<div class="glass-card">', unsafe_allow_html=True)
     st.subheader("数据文件处理")
+
+    # 数据文件格式说明
+    st.markdown("""
+    <div class="step-tip">
+        <div class="step-tip-title">📋 数据文件格式要求</div>
+        <div class="step-tip-content">
+        <strong>新格式表：</strong><br>
+        • 包含stat_date列（日期）<br>
+        • 包含new列（新增用户数）<br>
+        • 包含new_retain_1到new_retain_30列（各天留存数）<br><br>
+        <strong>传统格式表：</strong><br>
+        • 包含留存天数列<br>
+        • 包含回传新增数列<br>
+        • 包含1-30数字列（各天留存数）<br>
+        • 支持Excel工作表名包含"ocpx监测留存数"的特殊表格
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
 
     uploaded_files = st.file_uploader(
         "选择Excel数据文件",
@@ -1243,9 +1334,21 @@ if current_page == "数据上传与汇总":
     st.markdown('</div>', unsafe_allow_html=True)
 
 elif current_page == "异常数据剔除":
+    # 依赖性提示
     if st.session_state.merged_data is None:
-        show_dependency_warning("数据上传与汇总")
-    else:
+        show_dependency_tip("数据上传与汇总")
+    
+    # 原理解释
+    st.markdown("""
+    <div class="principle-box">
+        <div class="principle-title">📚 步骤原理</div>
+        <div class="principle-content">
+        异常数据剔除用于清理可能影响分析结果的异常记录。通过设置多重筛选条件，可以剔除特定数据来源或日期的数据。所有剔除条件采用"且"关系，即数据必须同时满足所有条件才会被剔除，确保数据清理的精准性。
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    if st.session_state.merged_data is not None:
         merged_data = st.session_state.merged_data
 
         st.markdown('<div class="glass-card">', unsafe_allow_html=True)
@@ -1316,8 +1419,26 @@ elif current_page == "异常数据剔除":
                 st.error(f"剔除数据时出错: {str(e)}")
 
         st.markdown('</div>', unsafe_allow_html=True)
+    else:
+        st.markdown('<div class="glass-card">', unsafe_allow_html=True)
+        st.info("暂无数据可供分析。您可以继续配置剔除规则，或先完成数据上传。")
+        st.markdown('</div>', unsafe_allow_html=True)
 
 elif current_page == "留存率计算":
+    # 依赖性提示
+    if st.session_state.cleaned_data is None and st.session_state.merged_data is None:
+        show_dependency_tip("数据上传与汇总")
+    
+    # 原理解释
+    st.markdown("""
+    <div class="principle-box">
+        <div class="principle-title">📚 步骤原理</div>
+        <div class="principle-content">
+        留存率计算是LTV建模的核心步骤。系统通过计算每天留存用户数与新增用户数的比值，得出1-30天的日留存率。对于每个渠道，系统会汇总所有有效记录的留存数据，并计算平均留存率。留存率数据质量直接影响后续LT拟合的准确性。
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+    
     if st.session_state.cleaned_data is not None:
         working_data = st.session_state.cleaned_data
         data_source_info = "使用清理后的数据"
@@ -1328,12 +1449,23 @@ elif current_page == "留存率计算":
         working_data = None
         data_source_info = "无可用数据"
 
-    if working_data is None:
-        show_dependency_warning("数据上传与汇总")
-    else:
+    if working_data is not None:
         st.markdown('<div class="glass-card">', unsafe_allow_html=True)
         st.subheader("留存率计算配置")
         st.info(data_source_info)
+
+        # 数据质量要求说明
+        st.markdown("""
+        <div class="step-tip">
+            <div class="step-tip-title">📋 数据质量要求</div>
+            <div class="step-tip-content">
+            • 新增用户数必须大于0<br>
+            • 留存率范围：0 < 留存率 ≤ 1.5<br>
+            • 系统自动汇总多条记录并计算平均留存率<br>
+            • 支持1-30天留存数据的非连续输入
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
 
         data_sources = working_data['数据来源'].unique()
         selected_sources = st.multiselect("选择要分析的数据来源", options=data_sources, default=data_sources)
@@ -1362,15 +1494,50 @@ elif current_page == "留存率计算":
                 st.error("请选择至少一个数据来源")
 
         st.markdown('</div>', unsafe_allow_html=True)
+    else:
+        st.markdown('<div class="glass-card">', unsafe_allow_html=True)
+        st.info("暂无数据可供分析。您可以继续配置留存率计算，或先完成数据上传。")
+        st.markdown('</div>', unsafe_allow_html=True)
 
 elif current_page == "LT拟合分析":
+    # 依赖性提示
     if st.session_state.retention_data is None:
-        show_dependency_warning("留存率计算")
-    else:
+        show_dependency_tip("留存率计算")
+    
+    # 原理解释
+    st.markdown("""
+    <div class="principle-box">
+        <div class="principle-title">📚 步骤原理</div>
+        <div class="principle-content">
+        LT拟合分析采用三阶段分层建模方法：<br>
+        <strong>第一阶段(1-30天)：</strong>使用幂函数拟合实际留存数据，生成完整的1-30天留存率<br>
+        <strong>第二阶段(31-X天)：</strong>根据渠道类型延长幂函数预测范围<br>
+        <strong>第三阶段(Y-N年)：</strong>使用指数函数建模长期留存衰减趋势<br>
+        不同渠道采用不同的阶段划分规则，确保拟合结果符合各渠道的用户行为特征。
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    if st.session_state.retention_data is not None:
         retention_data = st.session_state.retention_data
 
         st.markdown('<div class="glass-card">', unsafe_allow_html=True)
         st.subheader("分阶段拟合参数配置")
+
+        # 渠道规则说明
+        st.markdown("""
+        <div class="step-tip">
+            <div class="step-tip-title">📋 渠道拟合规则</div>
+            <div class="step-tip-content">
+            <strong>华为渠道：</strong>第二阶段30-120天，第三阶段120-220天<br>
+            <strong>小米渠道：</strong>第二阶段30-190天，第三阶段190-290天<br>
+            <strong>oppo渠道：</strong>第二阶段30-160天，第三阶段160-260天<br>
+            <strong>vivo渠道：</strong>第二阶段30-150天，第三阶段150-250天<br>
+            <strong>iPhone渠道：</strong>第二阶段30-150天，第三阶段150-250天<br>
+            <strong>其他渠道：</strong>第二阶段30-100天，第三阶段100-200天
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
 
         lt_years = st.number_input("LT计算年限", min_value=1, max_value=10, value=5)
         st.info("系统将采用三阶段分层建模")
@@ -1475,13 +1642,42 @@ elif current_page == "LT拟合分析":
                         st.markdown("---")
 
         st.markdown('</div>', unsafe_allow_html=True)
+    else:
+        st.markdown('<div class="glass-card">', unsafe_allow_html=True)
+        st.info("暂无留存率数据可供分析。您可以继续配置拟合参数，或先完成留存率计算。")
+        st.markdown('</div>', unsafe_allow_html=True)
 
 elif current_page == "ARPU计算":
+    # 依赖性提示
     if st.session_state.lt_results is None:
-        show_dependency_warning("LT拟合分析")
+        show_dependency_tip("LT拟合分析")
+    
+    # 原理解释
+    st.markdown("""
+    <div class="principle-box">
+        <div class="principle-title">📚 步骤原理</div>
+        <div class="principle-content">
+        ARPU（Average Revenue Per User）是计算LTV的关键参数。系统支持两种ARPU输入方式：Excel文件上传和手动设置。ARPU数据将与LT值相乘得到最终的LTV。确保ARPU数据的准确性对于LTV分析至关重要。
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
 
     st.markdown('<div class="glass-card">', unsafe_allow_html=True)
     st.subheader("ARPU数据处理")
+
+    # ARPU文件格式说明
+    st.markdown("""
+    <div class="step-tip">
+        <div class="step-tip-title">📋 ARPU文件格式要求</div>
+        <div class="step-tip-content">
+        • Excel格式(.xlsx/.xls)<br>
+        • 包含数据来源列（渠道名称）<br>
+        • 包含ARPU值列（数值型）<br>
+        • 系统会自动按渠道分组并计算平均ARPU<br>
+        • 支持一个渠道多条记录
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
 
     arpu_file = st.file_uploader("选择ARPU数据文件 (Excel格式)", type=['xlsx', 'xls'])
 
@@ -1528,6 +1724,17 @@ elif current_page == "ARPU计算":
 
         if st.session_state.lt_results:
             st.subheader("手动设置ARPU值")
+            
+            # 手动设置说明
+            st.markdown("""
+            <div class="step-tip">
+                <div class="step-tip-title">📋 手动设置说明</div>
+                <div class="step-tip-content">
+                为每个渠道设置对应的ARPU值，建议基于历史数据或业务预期进行设置。
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+            
             arpu_inputs = {}
 
             col1, col2 = st.columns(2)
@@ -1548,15 +1755,29 @@ elif current_page == "ARPU计算":
                 st.session_state.arpu_data = arpu_df
                 st.success("ARPU设置已保存！")
                 st.dataframe(arpu_df, use_container_width=True)
+        else:
+            st.info("请先完成LT拟合分析以获取渠道列表")
 
     st.markdown('</div>', unsafe_allow_html=True)
 
 elif current_page == "LTV结果报告":
+    # 依赖性提示
     if st.session_state.lt_results is None:
-        show_dependency_warning("LT拟合分析")
+        show_dependency_tip("LT拟合分析")
     elif st.session_state.arpu_data is None:
-        show_dependency_warning("ARPU计算")
-    else:
+        show_dependency_tip("ARPU计算")
+    
+    # 原理解释
+    st.markdown("""
+    <div class="principle-box">
+        <div class="principle-title">📚 步骤原理</div>
+        <div class="principle-content">
+        LTV结果报告是整个分析流程的最终输出。系统通过LTV = LT × ARPU的公式计算每个渠道的用户生命周期价值，并生成详细的分析报告。报告包含各渠道的LT值、ARPU、LTV计算结果以及拟合质量评估，为渠道投放决策提供数据支持。
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    if st.session_state.lt_results is not None and st.session_state.arpu_data is not None:
         lt_results = st.session_state.lt_results
         arpu_data = st.session_state.arpu_data
 
@@ -1588,6 +1809,19 @@ elif current_page == "LTV结果报告":
 
         st.markdown('<div class="glass-card">', unsafe_allow_html=True)
         st.subheader("LTV综合计算结果")
+
+        # 计算公式说明
+        st.markdown("""
+        <div class="step-tip">
+            <div class="step-tip-title">📋 计算公式</div>
+            <div class="step-tip-content">
+            <strong>LTV = LT × ARPU</strong><br>
+            LT：用户生命周期长度（天数）<br>
+            ARPU：单用户平均收入<br>
+            LTV：用户生命周期价值
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
 
         ltv_df = pd.DataFrame(ltv_results)
         display_df = ltv_df.rename(columns={
@@ -1657,6 +1891,10 @@ LTV用户生命周期价值分析报告
             )
 
         st.markdown('</div>', unsafe_allow_html=True)
+    else:
+        st.markdown('<div class="glass-card">', unsafe_allow_html=True)
+        st.info("请先完成LT拟合分析和ARPU计算以生成LTV报告。")
+        st.markdown('</div>', unsafe_allow_html=True)
 
 # ==================== 底部信息 ====================
 # 底部信息
@@ -1666,7 +1904,7 @@ with st.sidebar:
     <div class="nav-container">
         <h4 style="text-align: center; color: white;">使用指南</h4>
         <p style="font-size: 0.9rem; color: rgba(255,255,255,0.9); text-align: center;">
-        点击上方步骤可直接跳转，系统会自动检查依赖关系并提供相应提示。
+        点击上方步骤可直接跳转，系统会提供相应的操作指导。
         </p>
         <p style="font-size: 0.8rem; color: rgba(255,255,255,0.7); text-align: center;">
         LTV智能分析平台 v2.0<br>
