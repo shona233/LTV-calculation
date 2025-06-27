@@ -227,10 +227,24 @@ DEFAULT_CHANNEL_MAPPING = {
     '500316': 'A_深圳蛋丁2',
     '500297': '荣耀', '5057': '华为', '5237': 'vivo', '5599': '小米', '5115': 'OPPO',
     '500471': '网易', '500480': '网易', '500481': '网易', '500482': '网易',
+    '500337': '华为非商店-品众', '500338': '华为非商店-品众', '500343': '华为非商店-品众', 
+    '500445': '华为非商店-品众', '500383': '华为非商店-品众', '500444': '华为非商店-品众', '500441': '华为非商店-品众',
     '5072': '魅族',
     '500287': 'OPPO非商店', '500288': 'OPPO非商店',
     '5187': 'vivo非商店',
-    '500170': '小米非商店'
+    '500398': '百度sem--百度时代安卓', '500400': '百度sem--百度时代安卓', '500404': '百度sem--百度时代安卓',
+    '500402': '百度sem--百度时代ios', '500403': '百度sem--百度时代ios', '500405': '百度sem--百度时代ios',
+    '500377': '百青藤-安卓', '500379': '百青藤-安卓', '500435': '百青藤-安卓', '500436': '百青藤-安卓', 
+    '500490': '百青藤-安卓', '500491': '百青藤-安卓', '500434': '百青藤-安卓', '500492': '百青藤-安卓',
+    '500437': '百青藤-ios',
+    '500170': '小米非商店',
+    '500532': '华为非商店-星火', '500533': '华为非商店-星火', '500534': '华为非商店-星火', '500537': '华为非商店-星火',
+    '500538': '华为非商店-星火', '500539': '华为非商店-星火', '500540': '华为非商店-星火', '500541': '华为非商店-星火',
+    '500504': '微博-蜜橘', '500505': '微博-蜜橘',
+    '500367': '微博-央广', '500368': '微博-央广', '500369': '微博-央广',
+    '500498': '广点通（5.22起）', '500497': '广点通（5.22起）', '500500': '广点通（5.22起）', 
+    '500501': '广点通（5.22起）', '500496': '广点通（5.22起）', '500499': '广点通（5.22起）',
+    '500514': '网易易效', '500515': '网易易效', '500516': '网易易效'
 }
 
 
@@ -247,10 +261,28 @@ def get_default_target_month():
     return f"{target_year}-{target_month:02d}"
 
 
+# ==================== 数据类型转换函数 ====================
+def safe_convert_to_numeric(value):
+    """
+    安全地将值转换为数值类型
+    """
+    if pd.isna(value) or value == '' or value is None:
+        return 0
+    try:
+        # 如果是字符串，先去除空格
+        if isinstance(value, str):
+            value = value.strip()
+            if value == '' or value.lower() in ['nan', 'null', 'none']:
+                return 0
+        return pd.to_numeric(value, errors='coerce')
+    except:
+        return 0
+
+
 # ==================== 数据结构标准化函数 ====================
 def standardize_output_columns(df):
     """
-    标准化输出列结构，确保包含指定的列顺序
+    标准化输出列结构，确保包含指定的列顺序，并正确处理数据类型
     """
     print("正在标准化输出列结构...")
 
@@ -269,27 +301,18 @@ def standardize_output_columns(df):
     # 按精确顺序添加每一列
     for col_name in target_columns:
         if col_name == '数据来源':
-            result_df[col_name] = df[col_name] if col_name in df.columns else ''
+            result_df[col_name] = df[col_name].astype(str) if col_name in df.columns else ''
         elif col_name == 'date':
             if col_name in df.columns:
-                result_df[col_name] = df[col_name]
+                result_df[col_name] = df[col_name].astype(str)
             elif 'stat_date' in df.columns:
-                result_df[col_name] = df['stat_date']
+                result_df[col_name] = df['stat_date'].astype(str)
             else:
                 result_df[col_name] = ''
-
-
         elif col_name == '数据来源_date':
             # 创建数据来源_date列
-            data_source = df['数据来源'] if '数据来源' in df.columns else ''
-            date_col = df['date'] if 'date' in df.columns else (df['stat_date'] if 'stat_date' in df.columns else '')
-
-            # 确保两个操作数都是Series
-            if '数据来源' in df.columns:
-                data_source_str = df['数据来源'].astype(str)
-            else:
-                data_source_str = pd.Series([''] * len(df))
-
+            data_source = df['数据来源'].astype(str) if '数据来源' in df.columns else pd.Series([''] * len(df))
+            
             if 'date' in df.columns:
                 date_col_str = df['date'].astype(str)
             elif 'stat_date' in df.columns:
@@ -297,19 +320,10 @@ def standardize_output_columns(df):
             else:
                 date_col_str = pd.Series([''] * len(df))
 
-            result_df[col_name] = data_source_str + date_col_str
-
+            result_df[col_name] = data_source + date_col_str
         elif col_name == '数据来源_日期':
             # 创建数据来源_日期列
-            data_source = df['数据来源'] if '数据来源' in df.columns else ''
-            date_col = df['日期'] if '日期' in df.columns else (
-                df['date'] if 'date' in df.columns else (df['stat_date'] if 'stat_date' in df.columns else ''))
-
-            # 确保两个操作数都是Series
-            if '数据来源' in df.columns:
-                data_source_str = df['数据来源'].astype(str)
-            else:
-                data_source_str = pd.Series([''] * len(df))
+            data_source = df['数据来源'].astype(str) if '数据来源' in df.columns else pd.Series([''] * len(df))
 
             if '日期' in df.columns:
                 date_col_str = df['日期'].astype(str)
@@ -320,10 +334,27 @@ def standardize_output_columns(df):
             else:
                 date_col_str = pd.Series([''] * len(df))
 
-            result_df[col_name] = data_source_str + date_col_str
+            result_df[col_name] = data_source + date_col_str
+        elif col_name in ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10',
+                          '11', '12', '13', '14', '15', '16', '17', '18', '19', '20',
+                          '21', '22', '23', '24', '25', '26', '27', '28', '29', '30']:
+            # 数字列：确保转换为数值类型
+            if col_name in df.columns:
+                result_df[col_name] = df[col_name].apply(safe_convert_to_numeric)
+            else:
+                result_df[col_name] = 0
+        elif col_name == '回传新增数':
+            # 回传新增数列：确保转换为数值类型
+            if col_name in df.columns:
+                result_df[col_name] = df[col_name].apply(safe_convert_to_numeric)
+            else:
+                result_df[col_name] = 0
         else:
             # 其他列直接复制，如果不存在则填空
-            result_df[col_name] = df[col_name] if col_name in df.columns else ''
+            if col_name in df.columns:
+                result_df[col_name] = df[col_name]
+            else:
+                result_df[col_name] = ''
 
     # 添加原数据中存在但不在目标列表中的其他列（保持在最后）
     for col in df.columns:
@@ -332,6 +363,39 @@ def standardize_output_columns(df):
 
     print(f"已标准化输出列结构，共 {len(result_df.columns)} 列，按指定顺序排列")
     return result_df
+
+
+# ==================== 渠道映射处理函数 ====================
+def parse_channel_mapping_from_excel(channel_file):
+    """
+    从上传的Excel文件解析渠道映射
+    """
+    try:
+        # 读取Excel文件
+        df = pd.read_excel(channel_file)
+        
+        pid_to_channel = {}
+        
+        # 遍历每一行
+        for _, row in df.iterrows():
+            # 第一列是渠道名称
+            channel_name = str(row.iloc[0]).strip()
+            if pd.isna(channel_name) or channel_name == '' or channel_name == 'nan':
+                continue
+                
+            # 从第二列开始是渠道号
+            for col_idx in range(1, len(row)):
+                pid = row.iloc[col_idx]
+                if pd.isna(pid) or str(pid).strip() in ['', 'nan', '　', ' ']:
+                    continue
+                pid_str = str(pid).strip()
+                if pid_str:
+                    pid_to_channel[pid_str] = channel_name
+                    
+        return pid_to_channel
+    except Exception as e:
+        st.error(f"解析渠道映射文件失败：{str(e)}")
+        return {}
 
 
 # ==================== 文件整合核心函数 ====================
@@ -392,15 +456,15 @@ def integrate_excel_files_streamlit(uploaded_files, target_month=None, channel_m
                     # 创建标准的输出结构
                     standardized_data = file_data_copy.copy()
 
-                    # 将new列的值映射到"回传新增数"列
+                    # 将new列的值映射到"回传新增数"列，确保是数值类型
                     if 'new' in standardized_data.columns:
-                        standardized_data['回传新增数'] = standardized_data['new']
+                        standardized_data['回传新增数'] = standardized_data['new'].apply(safe_convert_to_numeric)
 
-                    # 将new_retain_1到new_retain_30的值分别映射到数字列名(1到30)
+                    # 将new_retain_1到new_retain_30的值分别映射到数字列名(1到30)，确保是数值类型
                     for i in range(1, 31):
                         retain_col = f'new_retain_{i}'
                         if retain_col in standardized_data.columns:
-                            standardized_data[str(i)] = standardized_data[retain_col]
+                            standardized_data[str(i)] = standardized_data[retain_col].apply(safe_convert_to_numeric)
 
                     # 确保stat_date被视为日期列
                     date_col = 'stat_date'
@@ -479,10 +543,16 @@ def integrate_excel_files_streamlit(uploaded_files, target_month=None, channel_m
 
                     # ========== 处理回传新增数列映射 ==========
                     if report_users_col and report_users_col != '回传新增数':
-                        file_data_copy['回传新增数'] = file_data_copy[report_users_col]
+                        file_data_copy['回传新增数'] = file_data_copy[report_users_col].apply(safe_convert_to_numeric)
                     elif not report_users_col and column_b:
                         # 如果没有找到相关列，使用第二列作为"回传新增数"
-                        file_data_copy['回传新增数'] = file_data_copy[column_b]
+                        file_data_copy['回传新增数'] = file_data_copy[column_b].apply(safe_convert_to_numeric)
+
+                    # ========== 处理数字列（1-30天留存数据）==========
+                    for i in range(1, 31):
+                        col_name = str(i)
+                        if col_name in file_data_copy.columns:
+                            file_data_copy[col_name] = file_data_copy[col_name].apply(safe_convert_to_numeric)
 
                     # ========== 处理日期列数据和筛选 ==========
                     if date_col:
@@ -642,23 +712,6 @@ def integrate_excel_files_streamlit(uploaded_files, target_month=None, channel_m
         return None, 0, mapping_warnings
 
 
-# ==================== 渠道映射处理函数 ====================
-def parse_channel_mapping(channel_df):
-    pid_to_channel = {}
-    for _, row in channel_df.iterrows():
-        channel_name = str(row.iloc[0]).strip()
-        if pd.isna(channel_name) or channel_name == '' or channel_name == 'nan':
-            continue
-        for col_idx in range(1, len(row)):
-            pid = row.iloc[col_idx]
-            if pd.isna(pid) or str(pid).strip() in ['', 'nan', '　', ' ']:
-                continue
-            pid_str = str(pid).strip()
-            if pid_str:
-                pid_to_channel[pid_str] = channel_name
-    return pid_to_channel
-
-
 # ==================== 页面初始化 ====================
 # 主标题
 st.markdown("""
@@ -756,14 +809,14 @@ def calculate_retention_rates_advanced(df):
         all_rates = []
 
         for _, row in source_data.iterrows():
-            new_users = row.get('回传新增数', 0)
+            new_users = safe_convert_to_numeric(row.get('回传新增数', 0))
             if pd.isna(new_users) or new_users <= 0:
                 continue
 
             for day in range(1, 31):
                 day_col = str(day)
                 if day_col in row and not pd.isna(row[day_col]):
-                    retain_count = row[day_col]
+                    retain_count = safe_convert_to_numeric(row[day_col])
                     if retain_count > 0:
                         retention_rate = retain_count / new_users
                         if 0 < retention_rate <= 1.5:
@@ -970,6 +1023,47 @@ current_page = ANALYSIS_STEPS[st.session_state.current_step]["name"]
 
 if current_page == "数据上传与汇总":
     st.markdown('<div class="glass-card">', unsafe_allow_html=True)
+    st.subheader("渠道映射文件设置")
+    
+    # 渠道映射文件上传
+    channel_mapping_file = st.file_uploader(
+        "上传渠道映射文件 (Excel格式，可选)",
+        type=['xlsx', 'xls'],
+        help="格式：第一列为渠道名称，后续列为对应的渠道号"
+    )
+    
+    if channel_mapping_file:
+        try:
+            custom_mapping = parse_channel_mapping_from_excel(channel_mapping_file)
+            if custom_mapping:
+                st.session_state.channel_mapping = custom_mapping
+                st.success(f"渠道映射文件加载成功！共包含 {len(custom_mapping)} 个映射关系")
+                
+                # 显示映射预览
+                with st.expander("查看渠道映射详情"):
+                    mapping_df = pd.DataFrame([
+                        {'渠道号': pid, '渠道名称': channel}
+                        for pid, channel in sorted(custom_mapping.items())
+                    ])
+                    st.dataframe(mapping_df, use_container_width=True)
+            else:
+                st.error("渠道映射文件解析失败，将使用默认映射")
+        except Exception as e:
+            st.error(f"读取渠道映射文件时出错：{str(e)}")
+    else:
+        st.info("未上传渠道映射文件，将使用默认映射关系")
+        
+        # 显示默认映射
+        with st.expander("查看默认渠道映射"):
+            default_mapping_df = pd.DataFrame([
+                {'渠道号': pid, '渠道名称': channel}
+                for pid, channel in sorted(DEFAULT_CHANNEL_MAPPING.items())
+            ])
+            st.dataframe(default_mapping_df, use_container_width=True)
+    
+    st.markdown('</div>', unsafe_allow_html=True)
+    
+    st.markdown('<div class="glass-card">', unsafe_allow_html=True)
     st.subheader("数据文件处理")
 
     uploaded_files = st.file_uploader(
@@ -1005,6 +1099,12 @@ if current_page == "数据上传与汇总":
                             if '回传新增数' in merged_data.columns:
                                 total_users = merged_data['回传新增数'].sum()
                                 st.metric("总新增用户", f"{total_users:,.0f}")
+
+                        # 显示映射警告
+                        if mapping_warnings:
+                            st.warning("以下文件未在渠道映射中找到对应关系：")
+                            for warning in mapping_warnings:
+                                st.text(f"• {warning}")
 
                         st.subheader("数据预览")
                         st.dataframe(merged_data.head(10), use_container_width=True)
