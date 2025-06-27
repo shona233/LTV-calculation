@@ -21,33 +21,59 @@ warnings.filterwarnings('ignore', category=UserWarning, module='openpyxl.styles.
 warnings.filterwarnings('ignore', category=UserWarning,
                         message="Could not infer format, so each element will be parsed individually")
 
-# 解决中文显示问题 - 修复版本
-try:
-    import matplotlib.font_manager as fm
-    # 获取系统可用字体
-    font_list = [f.name for f in fm.fontManager.ttflist]
-    
-    # 优先使用的中文字体列表
-    chinese_fonts = ['SimHei', 'Microsoft YaHei', 'SimSun', 'DejaVu Sans', 'Arial Unicode MS', 'WenQuanYi Micro Hei']
-    
-    selected_font = None
-    for font in chinese_fonts:
-        if font in font_list:
-            selected_font = font
-            break
-    
-    if selected_font:
-        plt.rcParams['font.sans-serif'] = [selected_font]
-    else:
-        # 如果没有找到中文字体，使用默认字体并设置为支持unicode
-        plt.rcParams['font.sans-serif'] = ['DejaVu Sans']
+# 解决中文显示问题 - 增强版本
+def setup_chinese_font():
+    """设置中文字体"""
+    try:
+        import matplotlib.font_manager as fm
         
-    plt.rcParams['axes.unicode_minus'] = False
-    
-except Exception as e:
-    st.warning(f"字体设置警告: {e}")
-    plt.rcParams['font.sans-serif'] = ['DejaVu Sans']
-    plt.rcParams['axes.unicode_minus'] = False
+        # 系统中文字体列表（按优先级排序）
+        chinese_fonts = [
+            'SimHei',           # 黑体
+            'Microsoft YaHei',  # 微软雅黑
+            'SimSun',          # 宋体
+            'KaiTi',           # 楷体
+            'FangSong',        # 仿宋
+            'STSong',          # 华文宋体
+            'STHeiti',         # 华文黑体
+            'Arial Unicode MS', # Arial Unicode MS
+            'DejaVu Sans',     # 备用字体
+        ]
+        
+        # 获取系统所有可用字体
+        available_fonts = [f.name for f in fm.fontManager.ttflist]
+        
+        # 找到第一个可用的中文字体
+        selected_font = None
+        for font in chinese_fonts:
+            if font in available_fonts:
+                selected_font = font
+                break
+        
+        if selected_font:
+            plt.rcParams['font.sans-serif'] = [selected_font] + ['DejaVu Sans']
+            st.success(f"已设置中文字体: {selected_font}")
+        else:
+            # 如果没有找到中文字体，尝试其他方法
+            plt.rcParams['font.sans-serif'] = ['DejaVu Sans', 'Arial', 'Liberation Sans', 'Bitstream Vera Sans']
+            st.warning("未找到中文字体，使用默认字体")
+        
+        # 解决负号显示问题
+        plt.rcParams['axes.unicode_minus'] = False
+        
+        # 设置字体大小
+        plt.rcParams['font.size'] = 10
+        
+        return True
+        
+    except Exception as e:
+        st.warning(f"字体设置失败: {e}")
+        plt.rcParams['font.sans-serif'] = ['DejaVu Sans']
+        plt.rcParams['axes.unicode_minus'] = False
+        return False
+
+# 初始化字体设置
+setup_chinese_font()
 
 # 设置页面配置
 st.set_page_config(
@@ -58,12 +84,12 @@ st.set_page_config(
 )
 
 # ==================== CSS 样式定义 ====================
-# 蓝色系CSS样式
+# 更商业化的配色样式
 st.markdown("""
 <style>
     /* 全局样式 */
     .main {
-        background: #f8fafc;
+        background: #f8f9fa;
         min-height: 100vh;
     }
 
@@ -75,130 +101,135 @@ st.markdown("""
 
     /* 主标题区域 */
     .main-header {
-        background: white;
-        padding: 1.2rem;
-        border-radius: 8px;
-        box-shadow: 0 2px 4px rgba(59, 130, 246, 0.1);
-        border: 1px solid #dbeafe;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        padding: 1.5rem;
+        border-radius: 12px;
+        box-shadow: 0 4px 20px rgba(102, 126, 234, 0.3);
         margin-bottom: 1.5rem;
         text-align: center;
+        color: white;
     }
 
     .main-title {
-        font-size: 1.8rem;
+        font-size: 2rem;
         font-weight: 700;
-        color: #1e40af;
-        margin-bottom: 0.3rem;
+        color: white;
+        margin-bottom: 0.5rem;
+        text-shadow: 0 2px 4px rgba(0,0,0,0.3);
     }
 
     .main-subtitle {
-        color: #3b82f6;
-        font-size: 1.1rem;
+        color: rgba(255,255,255,0.9);
+        font-size: 1.2rem;
         font-weight: 400;
     }
 
     /* 卡片样式 */
     .glass-card {
-        background: white;
-        border-radius: 8px;
-        padding: 1rem;
-        box-shadow: 0 2px 4px rgba(59, 130, 246, 0.1);
-        border: 1px solid #dbeafe;
-        margin-bottom: 1rem;
+        background: rgba(255, 255, 255, 0.95);
+        border-radius: 12px;
+        padding: 1.5rem;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        margin-bottom: 1.5rem;
+        backdrop-filter: blur(10px);
     }
 
     /* 分界线 */
     .section-divider {
-        height: 1px;
-        background: #bfdbfe;
-        margin: 1rem 0;
+        height: 2px;
+        background: linear-gradient(90deg, #667eea, #764ba2);
+        margin: 1.5rem 0;
     }
 
     /* 指标卡片 */
     .metric-card {
-        background: #eff6ff;
-        color: #1e40af;
-        padding: 1rem;
-        border-radius: 8px;
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        color: white;
+        padding: 1.5rem;
+        border-radius: 12px;
         text-align: center;
-        border: 1px solid #bfdbfe;
-        margin-bottom: 0.8rem;
+        margin-bottom: 1rem;
+        box-shadow: 0 4px 15px rgba(240, 147, 251, 0.3);
     }
 
     .metric-value {
-        font-size: 2rem;
+        font-size: 2.2rem;
         font-weight: 700;
         margin-bottom: 0.5rem;
-        color: #1e40af;
+        color: white;
+        text-shadow: 0 2px 4px rgba(0,0,0,0.3);
     }
 
     .metric-label {
-        font-size: 0.9rem;
-        color: #3b82f6;
+        font-size: 0.95rem;
+        color: rgba(255,255,255,0.9);
     }
 
     /* 状态卡片 */
     .status-card {
         background: white;
-        border-radius: 8px;
-        padding: 1rem;
-        border-left: 4px solid #3b82f6;
-        box-shadow: 0 1px 3px rgba(59, 130, 246, 0.1);
-        margin-bottom: 0.8rem;
+        border-radius: 12px;
+        padding: 1.5rem;
+        border-left: 4px solid #667eea;
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.1);
+        margin-bottom: 1rem;
     }
 
     /* 导航步骤样式 */
     .nav-container {
-        background: white;
-        border-radius: 8px;
-        padding: 1rem;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 12px;
+        padding: 1.5rem;
         margin-bottom: 1rem;
-        border: 1px solid #dbeafe;
+        color: white;
+        box-shadow: 0 4px 20px rgba(102, 126, 234, 0.3);
     }
 
     /* 按钮样式 */
     .stButton > button {
-        background: #3b82f6;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         color: white;
         border: none;
-        border-radius: 6px;
-        padding: 0.5rem 2rem;
+        border-radius: 8px;
+        padding: 0.6rem 2rem;
         font-weight: 600;
         transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
     }
 
     .stButton > button:hover {
-        background: #2563eb;
-        transform: translateY(-1px);
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
     }
 
     /* 选择框样式 */
     .stSelectbox label, .stMultiselect label, .stFileUploader label {
         font-weight: 600;
-        color: #1e40af;
+        color: #4c51bf;
         margin-bottom: 0.5rem;
     }
 
     /* 标题样式 */
     h1, h2, h3, h4 {
-        color: #1e40af;
+        color: #4c51bf;
         font-weight: 600;
-        font-size: 1.1rem !important;
+        font-size: 1.2rem !important;
     }
 
     /* 说明文字样式 */
     .step-explanation {
-        background: #eff6ff;
-        border-left: 4px solid #3b82f6;
+        background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+        border-left: 4px solid #667eea;
         padding: 1.5rem;
         margin-top: 2rem;
-        border-radius: 0 8px 8px 0;
+        border-radius: 0 12px 12px 0;
     }
 
     .step-explanation h4 {
-        color: #1e40af;
+        color: #4c51bf;
         margin-bottom: 0.8rem;
-        font-size: 1.1rem;
+        font-size: 1.2rem;
         font-weight: 700;
     }
 
@@ -210,12 +241,12 @@ st.markdown("""
 
     .step-explanation li {
         margin-bottom: 0.5rem;
-        color: #1e40af;
-        line-height: 1.5;
+        color: #4c51bf;
+        line-height: 1.6;
     }
 
     .step-explanation strong {
-        color: #1e40af;
+        color: #4c51bf;
         font-weight: 600;
     }
 
@@ -779,39 +810,36 @@ def calculate_cumulative_lt(days_array, rates_array, target_days):
             result[day] = cumulative_lt
     return result
 
-# ==================== LT拟合分析函数 ====================
-# LT拟合分析 - 使用第二段代码的逻辑
+# ==================== LT拟合分析函数 - 完全参考您提供的代码逻辑 ====================
 def calculate_lt_advanced(retention_result, channel_name, lt_years=5, return_curve_data=False, key_days=None):
     """
     按渠道规则计算 LT，允许 1-30 天数据不连续。
-    参数:
-        lt_years: 计算几年的LT，默认5年
-        return_curve_data: 是否返回曲线数据用于可视化
-        key_days: 关键时间点列表，用于计算这些时间点的累积LT值
+    完全参考提供的代码逻辑
     """
-    # 渠道规则
+    # 渠道规则 - 与提供代码完全一致
     CHANNEL_RULES = {
         "华为": {"stage_2": [30, 120], "stage_3_base": [120, 220]},
         "小米": {"stage_2": [30, 190], "stage_3_base": [190, 290]},
         "oppo": {"stage_2": [30, 160], "stage_3_base": [160, 260]},
         "vivo": {"stage_2": [30, 150], "stage_3_base": [150, 250]},
-        "iphone": {"stage_2": [30, 150], "stage_3_base": [150, 250]},
+        "iphone": {"stage_2": [30, 150], "stage_3_base": [150, 250], "stage_2_func": "log"},
         "其他": {"stage_2": [30, 100], "stage_3_base": [100, 200]}
     }
 
-    if re.search(r'华为', channel_name):
+    # 渠道规则匹配 - 与提供代码完全一致
+    if re.search(r'\d+月华为$', channel_name):
         rules = CHANNEL_RULES["华为"]
-    elif re.search(r'小米', channel_name):
+    elif re.search(r'\d+月小米$', channel_name):
         rules = CHANNEL_RULES["小米"]
-    elif re.search(r'oppo|OPPO', channel_name):
+    elif re.search(r'\d+月oppo$', channel_name) or re.search(r'\d+月OPPO$', channel_name):
         rules = CHANNEL_RULES["oppo"]
-    elif re.search(r'vivo', channel_name):
+    elif re.search(r'\d+月vivo$', channel_name):
         rules = CHANNEL_RULES["vivo"]
-    elif re.search(r'iphone|iPhone', channel_name):
+    elif re.search(r'\d+月[iI][pP]hone$', channel_name):
         rules = CHANNEL_RULES["iphone"]
     else:
         rules = CHANNEL_RULES["其他"]
-
+        
     stage_2_start, stage_2_end = rules["stage_2"]
     stage_3_base_start, stage_3_base_end = rules["stage_3_base"]
 
@@ -824,7 +852,7 @@ def calculate_lt_advanced(retention_result, channel_name, lt_years=5, return_cur
     # 存储拟合参数，用于后续分析
     fit_params = {}
 
-    # ----- 第一阶段 -----
+    # ----- 第一阶段 - 与提供代码完全一致 -----
     try:
         # 用已有数据对 1-30 天的留存率进行拟合
         popt_power, _ = curve_fit(power_function, days, rates)
@@ -841,7 +869,7 @@ def calculate_lt_advanced(retention_result, channel_name, lt_years=5, return_cur
         lt1_to_30 = 0.0
         a, b = 1.0, -1.0  # 默认参数
 
-    # ----- 第二阶段 -----
+    # ----- 第二阶段 - 与提供代码完全一致 -----
     try:
         days_stage_2 = np.arange(stage_2_start, stage_2_end + 1)
         rates_stage_2 = power_function(days_stage_2, a, b)
@@ -850,7 +878,7 @@ def calculate_lt_advanced(retention_result, channel_name, lt_years=5, return_cur
         lt_stage_2 = 0.0
         rates_stage_2 = np.array([])
 
-    # ----- 第三阶段 -----
+    # ----- 第三阶段 - 与提供代码完全一致 -----
     try:
         days_stage_3_base = np.arange(stage_3_base_start, stage_3_base_end + 1)
         rates_stage_3_base = power_function(days_stage_3_base, a, b)
@@ -867,15 +895,15 @@ def calculate_lt_advanced(retention_result, channel_name, lt_years=5, return_cur
         )
         c, d = popt_exp
         fit_params["exponential"] = {"c": c, "d": d}
-        days_stage_3 = np.arange(stage_3_base_start, max_days + 1)
+        days_stage_3 = np.arange(stage_3_base_start, max_days + 1)  # 使用可变的最大天数
         rates_stage_3 = exponential_function(days_stage_3, c, d)
         lt_stage_3 = np.sum(rates_stage_3)
     except Exception as e:
-        days_stage_3 = np.arange(stage_3_base_start, max_days + 1)
+        days_stage_3 = np.arange(stage_3_base_start, max_days + 1)  # 使用可变的最大天数
         rates_stage_3 = power_function(days_stage_3, a, b) if 'a' in locals() else np.zeros(len(days_stage_3))
         lt_stage_3 = np.sum(rates_stage_3)
 
-    # ----- 总 LT 计算 -----
+    # ----- 总 LT 计算 - 与提供代码完全一致 -----
     total_lt = 1.0 + lt1_to_30 + lt_stage_2 + lt_stage_3
 
     # 计算R²用于评估拟合质量
@@ -886,7 +914,7 @@ def calculate_lt_advanced(retention_result, channel_name, lt_years=5, return_cur
         r2_score = 0.0
 
     if return_curve_data:
-        # 返回不包含第0天的曲线数据用于可视化
+        # 返回不包含第0天的曲线数据用于可视化 - 与提供代码完全一致
         all_days = np.concatenate([
             days_full,      # 第1-30天
             days_stage_2,   # 第二阶段
@@ -930,145 +958,110 @@ def calculate_lt_advanced(retention_result, channel_name, lt_years=5, return_cur
 
     return total_lt
 
-# ==================== 可视化函数 - 使用第二段代码的逻辑，改为蓝色系 ====================
-def visualize_lt_curves(visualization_data, years=2):
+# ==================== 可视化函数 - 使用与提供代码一致的配色和逻辑 ====================
+def create_individual_channel_charts(visualization_data_2y, visualization_data_5y, original_data):
     """
-    创建线性坐标LT曲线图，按LT值从低到高排序，使用蓝色系
+    为每个渠道创建单独的2年和5年图表
+    使用与提供代码一致的配色方案
     """
+    # 使用tab10配色方案，与提供代码一致
+    colors = plt.cm.tab10.colors
+    
     # 按LT值从低到高排序渠道
-    sorted_channels = sorted(visualization_data.items(), key=lambda x: x[1]['lt'])
-
-    # 创建图表
-    fig = plt.figure(figsize=(7, 4))  # 调整为适合一行四张的大小
-    ax = fig.add_subplot(111)
-
-    # 设置蓝色系颜色循环
-    blue_colors = [
-        '#1e3a8a', '#1e40af', '#2563eb', '#3b82f6', '#60a5fa', 
-        '#93c5fd', '#1e293b', '#334155', '#475569', '#64748b'
-    ]
-
-    # 为每个渠道绘制曲线
-    for idx, (channel_name, data) in enumerate(sorted_channels):
-        color = blue_colors[idx % len(blue_colors)]
-
-        # 线性坐标图
-        ax.plot(
-            data["days"],
-            data["rates"],
-            label=f"{channel_name} (LT={data['lt']:.2f})",
-            color=color,
-            linewidth=2
-        )
-
-    # 线性坐标设置
-    ax.set_ylim(0, 0.6)
-    ax.set_yticks([0, 0.15, 0.3, 0.45, 0.6])
-    ax.set_yticklabels(['0%', '15%', '30%', '45%', '60%'])
-    ax.grid(True, ls="--", alpha=0.5)
-    ax.set_xlabel('留存天数')
-    ax.set_ylabel('留存率')
-    ax.set_title(f'{years}年LT留存曲线比较')
-    ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left', fontsize=8)
-
-    plt.tight_layout()
-    return fig, blue_colors, sorted_channels
-
-def visualize_log_comparison(visualization_data_2y, visualization_data_5y, colors=None, sorted_channels_2y=None):
-    """
-    创建2年和5年对数坐标比较图作为左右子图，使用蓝色系
-    """
-    fig = plt.figure(figsize=(7, 4))  # 调整为适合一行四张的大小
-    ax = fig.add_subplot(111)
-
-    # 如果没有提供排序渠道和颜色，则重新计算
-    if sorted_channels_2y is None:
-        sorted_channels_2y = sorted(visualization_data_2y.items(), key=lambda x: x[1]['lt'])
-    if colors is None:
-        colors = ['#1e3a8a', '#1e40af', '#2563eb', '#3b82f6', '#60a5fa', '#93c5fd', '#1e293b', '#334155', '#475569', '#64748b']
-
-    # 绘制2年和5年数据在同一图上
-    for idx, (channel_name, data) in enumerate(sorted_channels_2y):
+    sorted_channels = sorted(visualization_data_2y.items(), key=lambda x: x[1]['lt'])
+    
+    chart_figures = []
+    
+    for idx, (channel_name, data_2y) in enumerate(sorted_channels):
+        if channel_name not in visualization_data_5y:
+            continue
+            
+        data_5y = visualization_data_5y[channel_name]
         color = colors[idx % len(colors)]
-        ax.plot(
-            data["days"],
-            data["rates"],
-            color=color,
-            linewidth=2,
-            alpha=0.7,
-            label=f"{channel_name}"
-        )
-
-    # 对数坐标设置
-    ax.set_yscale('log')
-    ax.set_ylim(0.001, 0.6)
-    ax.set_yticks([0.001, 0.01, 0.1, 0.6])
-    ax.set_yticklabels(['0.1%', '1%', '10%', '60%'])
-    ax.grid(True, ls="--", alpha=0.5)
-    ax.set_xlabel('留存天数')
-    ax.set_ylabel('留存率 (对数坐标)')
-    ax.set_title('LT留存曲线 (对数坐标)')
-    ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left', fontsize=8)
-
-    plt.tight_layout()
-    return fig
-
-def visualize_fitting_comparison(original_data, visualization_data):
-    """可视化拟合效果比较（实际数据vs拟合曲线）- 显示所有渠道，使用蓝色系"""
-    # 按LT值从低到高排序渠道
-    channels = sorted(visualization_data.keys(), key=lambda x: visualization_data[x]['lt'])
-
-    # 创建图表
-    fig = plt.figure(figsize=(7, 4))  # 调整为适合一行四张的大小
-    ax = fig.add_subplot(111)
-
-    blue_colors = [
-        '#1e3a8a', '#1e40af', '#2563eb', '#3b82f6', '#60a5fa', 
-        '#93c5fd', '#1e293b', '#334155', '#475569', '#64748b'
-    ]
-
-    for i, channel_name in enumerate(channels):
-        color = blue_colors[i % len(blue_colors)]
-        data = visualization_data[channel_name]
-
-        # 绘制原始数据点
+        
+        # 创建2年图表
+        fig_2y = plt.figure(figsize=(7, 4))
+        ax_2y = fig_2y.add_subplot(111)
+        
+        # 绘制2年实际数据点
         if channel_name in original_data:
-            ax.scatter(
+            ax_2y.scatter(
                 original_data[channel_name]["days"],
                 original_data[channel_name]["rates"],
-                color=color,
-                s=30,
-                alpha=0.8,
-                label=f'{channel_name} 实际'
+                color='red',
+                s=50,
+                alpha=0.7,
+                label='实际数据',
+                zorder=3
             )
-
-        # 绘制拟合曲线（限制在0-100天范围内更清晰展示拟合效果）
-        fit_days = data["days"]
-        fit_rates = data["rates"]
-
-        # 限制显示范围到100天以内
-        idx_100 = np.searchsorted(fit_days, 100, side='right')
-        ax.plot(
-            fit_days[:idx_100],
-            fit_rates[:idx_100],
+        
+        # 绘制2年拟合曲线
+        ax_2y.plot(
+            data_2y["days"],
+            data_2y["rates"],
             color=color,
             linewidth=2,
-            alpha=0.7,
-            linestyle='--',
-            label=f'{channel_name} 拟合'
+            label=f'拟合曲线 (LT={data_2y["lt"]:.2f})',
+            zorder=2
         )
-
-    ax.set_title('拟合效果比较')
-    ax.set_xlabel('留存天数')
-    ax.set_ylabel('留存率')
-    ax.set_ylim(0, 0.6)
-    ax.set_yticks([0, 0.15, 0.3, 0.45, 0.6])
-    ax.set_yticklabels(['0%', '15%', '30%', '45%', '60%'])
-    ax.grid(True, ls="--", alpha=0.3)
-    ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left', fontsize=8)
-
-    plt.tight_layout()
-    return fig
+        
+        # 设置2年图表样式 - 与提供代码一致
+        ax_2y.set_ylim(0, 0.6)
+        ax_2y.set_yticks([0, 0.15, 0.3, 0.45, 0.6])
+        ax_2y.set_yticklabels(['0%', '15%', '30%', '45%', '60%'])
+        ax_2y.grid(True, ls="--", alpha=0.5)
+        ax_2y.set_xlabel('留存天数')
+        ax_2y.set_ylabel('留存率')
+        ax_2y.set_title(f'{channel_name} - 2年LT留存曲线')
+        ax_2y.legend()
+        plt.tight_layout()
+        
+        # 创建5年图表
+        fig_5y = plt.figure(figsize=(7, 4))
+        ax_5y = fig_5y.add_subplot(111)
+        
+        # 绘制5年实际数据点
+        if channel_name in original_data:
+            ax_5y.scatter(
+                original_data[channel_name]["days"],
+                original_data[channel_name]["rates"],
+                color='red',
+                s=50,
+                alpha=0.7,
+                label='实际数据',
+                zorder=3
+            )
+        
+        # 绘制5年拟合曲线
+        ax_5y.plot(
+            data_5y["days"],
+            data_5y["rates"],
+            color=color,
+            linewidth=2,
+            label=f'拟合曲线 (LT={data_5y["lt"]:.2f})',
+            zorder=2
+        )
+        
+        # 设置5年图表样式 - 与提供代码一致
+        ax_5y.set_ylim(0, 0.6)
+        ax_5y.set_yticks([0, 0.15, 0.3, 0.45, 0.6])
+        ax_5y.set_yticklabels(['0%', '15%', '30%', '45%', '60%'])
+        ax_5y.grid(True, ls="--", alpha=0.5)
+        ax_5y.set_xlabel('留存天数')
+        ax_5y.set_ylabel('留存率')
+        ax_5y.set_title(f'{channel_name} - 5年LT留存曲线')
+        ax_5y.legend()
+        plt.tight_layout()
+        
+        chart_figures.append({
+            'channel': channel_name,
+            'fig_2y': fig_2y,
+            'fig_5y': fig_5y,
+            'lt_2y': data_2y["lt"],
+            'lt_5y': data_5y["lt"]
+        })
+    
+    return chart_figures
 
 # ==================== 页面初始化 ====================
 # 主标题
@@ -1130,7 +1123,7 @@ def get_step_status(step_index):
 # 侧边栏导航
 with st.sidebar:
     st.markdown('<div class="nav-container">', unsafe_allow_html=True)
-    st.markdown('<h4 style="text-align: center; margin-bottom: 1rem; color: #1e40af;">分析流程</h4>',
+    st.markdown('<h4 style="text-align: center; margin-bottom: 1rem; color: white;">分析流程</h4>',
                 unsafe_allow_html=True)
 
     for i, step in enumerate(ANALYSIS_STEPS):
@@ -1449,34 +1442,37 @@ elif current_page == "LT拟合分析":
                     ])
                     st.dataframe(results_df, use_container_width=True)
 
-                # 一行四张图表展示
+                # 为每个渠道创建独立图表
                 if visualization_data_2y and visualization_data_5y and original_data:
-                    st.subheader("拟合分析图表")
+                    st.subheader("各渠道LT拟合分析图表")
                     
-                    # 创建四个图表
-                    fig1 = visualize_fitting_comparison(original_data, visualization_data_2y)
-                    fig2, _, _ = visualize_lt_curves(visualization_data_2y, years=2)
-                    fig3, _, _ = visualize_lt_curves(visualization_data_5y, years=5)
-                    fig4 = visualize_log_comparison(visualization_data_2y, visualization_data_5y)
+                    # 创建所有渠道的独立图表
+                    chart_figures = create_individual_channel_charts(
+                        visualization_data_2y, visualization_data_5y, original_data
+                    )
                     
-                    # 一行四列布局
-                    col1, col2, col3, col4 = st.columns(4)
-                    
-                    with col1:
-                        st.pyplot(fig1, use_container_width=True)
-                        plt.close(fig1)
-                    
-                    with col2:
-                        st.pyplot(fig2, use_container_width=True)
-                        plt.close(fig2)
-                    
-                    with col3:
-                        st.pyplot(fig3, use_container_width=True)
-                        plt.close(fig3)
-                    
-                    with col4:
-                        st.pyplot(fig4, use_container_width=True)
-                        plt.close(fig4)
+                    # 分渠道显示图表，每个渠道2年和5年并排
+                    for chart_data in chart_figures:
+                        st.markdown(f"### {chart_data['channel']}")
+                        
+                        col1, col2 = st.columns(2)
+                        
+                        with col1:
+                            st.pyplot(chart_data['fig_2y'], use_container_width=True)
+                            plt.close(chart_data['fig_2y'])
+                        
+                        with col2:
+                            st.pyplot(chart_data['fig_5y'], use_container_width=True)
+                            plt.close(chart_data['fig_5y'])
+                        
+                        # 显示LT对比信息
+                        col1, col2 = st.columns(2)
+                        with col1:
+                            st.metric("2年LT", f"{chart_data['lt_2y']:.2f}")
+                        with col2:
+                            st.metric("5年LT", f"{chart_data['lt_5y']:.2f}")
+                        
+                        st.markdown("---")
 
         st.markdown('</div>', unsafe_allow_html=True)
 
@@ -1618,10 +1614,11 @@ elif current_page == "LTV结果报告":
         col1, col2 = st.columns(2)
 
         with col1:
+            # 修复CSV导出的中文编码问题
             csv_data = display_df.to_csv(index=False, encoding='utf-8-sig')
             st.download_button(
                 label="下载LTV分析结果 (CSV)",
-                data=csv_data,
+                data=csv_data.encode('utf-8-sig'),
                 file_name=f"LTV_Analysis_Results_{datetime.datetime.now().strftime('%Y%m%d_%H%M')}.csv",
                 mime="text/csv",
                 use_container_width=True
@@ -1653,7 +1650,7 @@ LTV用户生命周期价值分析报告
 
             st.download_button(
                 label="下载详细分析报告 (TXT)",
-                data=report_text,
+                data=report_text.encode('utf-8'),
                 file_name=f"LTV_Detailed_Report_{datetime.datetime.now().strftime('%Y%m%d_%H%M')}.txt",
                 mime="text/plain",
                 use_container_width=True
@@ -1667,11 +1664,11 @@ with st.sidebar:
     st.markdown("---")
     st.markdown("""
     <div class="nav-container">
-        <h4 style="text-align: center; color: #1e40af;">使用指南</h4>
-        <p style="font-size: 0.9rem; color: #3b82f6; text-align: center;">
+        <h4 style="text-align: center; color: white;">使用指南</h4>
+        <p style="font-size: 0.9rem; color: rgba(255,255,255,0.9); text-align: center;">
         点击上方步骤可直接跳转，系统会自动检查依赖关系并提供相应提示。
         </p>
-        <p style="font-size: 0.8rem; color: #6b7280; text-align: center;">
+        <p style="font-size: 0.8rem; color: rgba(255,255,255,0.7); text-align: center;">
         LTV智能分析平台 v2.0<br>
         基于分阶段数学建模
         </p>
