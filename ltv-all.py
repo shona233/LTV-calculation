@@ -1585,7 +1585,7 @@ elif current_page == "留存率计算":
             <div class="step-tip-title">📋 数据质量要求</div>
             <div class="step-tip-content">
             • 新增用户数必须大于0<br>
-            • 留存率范围：0 < 留存率 ≤ 1.5<br>
+            • 留存率范围：0 < 留存率 ≤ 100% <br>
             • 系统自动汇总多条记录并计算平均留存率<br>
             • 支持1-30天留存数据的非连续输入
             </div>
