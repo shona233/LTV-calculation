@@ -277,32 +277,49 @@ def standardize_output_columns(df):
                 result_df[col_name] = df['stat_date']
             else:
                 result_df[col_name] = ''
+
+
         elif col_name == '数据来源_date':
             # 创建数据来源_date列
             data_source = df['数据来源'] if '数据来源' in df.columns else ''
             date_col = df['date'] if 'date' in df.columns else (df['stat_date'] if 'stat_date' in df.columns else '')
-            if isinstance(data_source, str):
-                data_source_str = data_source
+
+            # 确保两个操作数都是Series
+            if '数据来源' in df.columns:
+                data_source_str = df['数据来源'].astype(str)
             else:
-                data_source_str = data_source.astype(str)
-            if isinstance(date_col, str):
-                date_col_str = date_col
+                data_source_str = pd.Series([''] * len(df))
+
+            if 'date' in df.columns:
+                date_col_str = df['date'].astype(str)
+            elif 'stat_date' in df.columns:
+                date_col_str = df['stat_date'].astype(str)
             else:
-                date_col_str = date_col.astype(str)
+                date_col_str = pd.Series([''] * len(df))
+
             result_df[col_name] = data_source_str + date_col_str
+
         elif col_name == '数据来源_日期':
             # 创建数据来源_日期列
             data_source = df['数据来源'] if '数据来源' in df.columns else ''
             date_col = df['日期'] if '日期' in df.columns else (
                 df['date'] if 'date' in df.columns else (df['stat_date'] if 'stat_date' in df.columns else ''))
-            if isinstance(data_source, str):
-                data_source_str = data_source
+
+            # 确保两个操作数都是Series
+            if '数据来源' in df.columns:
+                data_source_str = df['数据来源'].astype(str)
             else:
-                data_source_str = data_source.astype(str)
-            if isinstance(date_col, str):
-                date_col_str = date_col
+                data_source_str = pd.Series([''] * len(df))
+
+            if '日期' in df.columns:
+                date_col_str = df['日期'].astype(str)
+            elif 'date' in df.columns:
+                date_col_str = df['date'].astype(str)
+            elif 'stat_date' in df.columns:
+                date_col_str = df['stat_date'].astype(str)
             else:
-                date_col_str = date_col.astype(str)
+                date_col_str = pd.Series([''] * len(df))
+
             result_df[col_name] = data_source_str + date_col_str
         else:
             # 其他列直接复制，如果不存在则填空
