@@ -295,6 +295,29 @@ st.markdown("""
         line-height: 1.4;
     }
 
+    /* 剔除信息样式 */
+    .exclusion-info {
+        background: #fef2f2;
+        border: 1px solid #fecaca;
+        border-radius: 8px;
+        padding: 1rem;
+        margin: 1rem 0;
+        border-left: 4px solid #ef4444;
+    }
+
+    .exclusion-info-title {
+        color: #dc2626;
+        font-weight: 600;
+        font-size: 0.95rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .exclusion-info-content {
+        color: #374151;
+        font-size: 0.85rem;
+        line-height: 1.4;
+    }
+
     /* 隐藏默认的Streamlit元素 */
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
@@ -1003,20 +1026,29 @@ def calculate_lt_advanced(retention_result, channel_name, lt_years=5, return_cur
 
     return total_lt
 
-# ==================== 可视化函数 - 使用与提供代码一致的配色和逻辑 ====================
-def create_individual_channel_charts(visualization_data_2y, visualization_data_5y, original_data):
+# ==================== 高质量可视化函数 ====================
+def create_professional_charts(visualization_data_2y, visualization_data_5y, original_data):
     """
-    为每个渠道创建单独的2年和5年图表
-    使用与提供代码一致的配色方案
+    创建专业的可视化图表，参考用户提供的图片风格
     """
-    # 使用tab10配色方案，与提供代码一致
-    colors = plt.cm.tab10.colors
+    # 确保中文字体设置
+    plt.rcParams['font.sans-serif'] = ['SimHei', 'Microsoft YaHei', 'Arial Unicode MS', 'DejaVu Sans']
+    plt.rcParams['axes.unicode_minus'] = False
+    
+    # 颜色配置 - 使用专业配色
+    colors = [
+        '#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd',
+        '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf',
+        '#aec7e8', '#ffbb78', '#98df8a', '#ff9896', '#c5b0d5',
+        '#c49c94', '#f7b6d3', '#c7c7c7', '#dbdb8d', '#9edae5'
+    ]
     
     # 按LT值从低到高排序渠道
     sorted_channels = sorted(visualization_data_2y.items(), key=lambda x: x[1]['lt'])
     
     chart_figures = []
     
+    # ========== 创建单渠道图表 (类似图1风格) ==========
     for idx, (channel_name, data_2y) in enumerate(sorted_channels):
         if channel_name not in visualization_data_5y:
             continue
@@ -1024,89 +1056,137 @@ def create_individual_channel_charts(visualization_data_2y, visualization_data_5
         data_5y = visualization_data_5y[channel_name]
         color = colors[idx % len(colors)]
         
-        # 创建2年图表
-        fig_2y = plt.figure(figsize=(7, 4))
-        ax_2y = fig_2y.add_subplot(111)
+        # 创建100天图表（类似图1）
+        fig_100d = plt.figure(figsize=(6, 4))
+        ax = fig_100d.add_subplot(111)
         
-        # 绘制2年实际数据点
+        # 绘制实际数据点
         if channel_name in original_data:
-            ax_2y.scatter(
+            ax.scatter(
                 original_data[channel_name]["days"],
                 original_data[channel_name]["rates"],
                 color='red',
-                s=50,
-                alpha=0.7,
+                s=30,
+                alpha=0.8,
                 label='实际数据',
                 zorder=3
             )
         
-        # 绘制2年拟合曲线
-        ax_2y.plot(
-            data_2y["days"],
-            data_2y["rates"],
+        # 绘制拟合曲线（只显示100天内的数据）
+        days_100 = data_2y["days"][data_2y["days"] <= 100]
+        rates_100 = data_2y["rates"][:len(days_100)]
+        
+        ax.plot(
+            days_100,
+            rates_100,
             color=color,
             linewidth=2,
             label=f'拟合曲线 (LT={data_2y["lt"]:.2f})',
             zorder=2
         )
         
-        # 设置2年图表样式 - 与提供代码一致
-        ax_2y.set_ylim(0, 0.6)
-        ax_2y.set_yticks([0, 0.15, 0.3, 0.45, 0.6])
-        ax_2y.set_yticklabels(['0%', '15%', '30%', '45%', '60%'])
-        ax_2y.grid(True, ls="--", alpha=0.5)
-        ax_2y.set_xlabel('留存天数')
-        ax_2y.set_ylabel('留存率')
-        ax_2y.set_title(f'{channel_name} - 2年LT留存曲线')
-        ax_2y.legend()
+        # 设置图表样式
+        ax.set_xlim(0, 100)
+        ax.set_ylim(0, 0.6)
+        ax.set_xlabel('留存天数', fontsize=10)
+        ax.set_ylabel('留存率', fontsize=10)
+        ax.set_title(f'{channel_name} (LT={data_2y["lt"]:.2f})', fontsize=11, fontweight='bold')
+        ax.grid(True, linestyle='--', alpha=0.3)
+        ax.legend(fontsize=8)
+        
+        # 设置Y轴刻度为百分比
+        y_ticks = [0, 0.15, 0.3, 0.45, 0.6]
+        y_labels = ['0%', '15%', '30%', '45%', '60%']
+        ax.set_yticks(y_ticks)
+        ax.set_yticklabels(y_labels)
+        
         plt.tight_layout()
         
-        # 创建5年图表
-        fig_5y = plt.figure(figsize=(7, 4))
-        ax_5y = fig_5y.add_subplot(111)
+        chart_figures.append({
+            'channel': channel_name,
+            'fig_100d': fig_100d,
+            'lt_value': data_2y["lt"]
+        })
+    
+    # ========== 创建综合对比图表 (类似图2风格) ==========
+    # 2年综合图表
+    fig_2y_combined = plt.figure(figsize=(12, 8))
+    ax_2y = fig_2y_combined.add_subplot(111)
+    
+    legend_items = []
+    for idx, (channel_name, data) in enumerate(sorted_channels):
+        if channel_name not in visualization_data_2y:
+            continue
+            
+        color = colors[idx % len(colors)]
+        data_2y = visualization_data_2y[channel_name]
         
-        # 绘制5年实际数据点
-        if channel_name in original_data:
-            ax_5y.scatter(
-                original_data[channel_name]["days"],
-                original_data[channel_name]["rates"],
-                color='red',
-                s=50,
-                alpha=0.7,
-                label='实际数据',
-                zorder=3
-            )
+        # 绘制2年拟合曲线
+        ax_2y.plot(
+            data_2y["days"],
+            data_2y["rates"],
+            color=color,
+            linewidth=1.5,
+            alpha=0.8,
+            label=f'{channel_name} (LT={data_2y["lt"]:.2f})'
+        )
+        
+        legend_items.append(f'{channel_name} (LT={data_2y["lt"]:.2f})')
+    
+    ax_2y.set_xlim(0, 730)  # 2年
+    ax_2y.set_ylim(0, 0.6)
+    ax_2y.set_xlabel('留存天数', fontsize=12)
+    ax_2y.set_ylabel('留存率', fontsize=12)
+    ax_2y.set_title('各渠道2年LT留存曲线拟合对比 (按LT值从低到高排序)', fontsize=14, fontweight='bold')
+    ax_2y.grid(True, linestyle='--', alpha=0.3)
+    
+    # 设置Y轴刻度为百分比
+    y_ticks = [0, 0.15, 0.3, 0.45, 0.6]
+    y_labels = ['0%', '15%', '30%', '45%', '60%']
+    ax_2y.set_yticks(y_ticks)
+    ax_2y.set_yticklabels(y_labels)
+    
+    # 设置图例
+    ax_2y.legend(bbox_to_anchor=(1.05, 1), loc='upper left', fontsize=9)
+    plt.tight_layout()
+    
+    # 5年综合图表
+    fig_5y_combined = plt.figure(figsize=(12, 8))
+    ax_5y = fig_5y_combined.add_subplot(111)
+    
+    for idx, (channel_name, data) in enumerate(sorted_channels):
+        if channel_name not in visualization_data_5y:
+            continue
+            
+        color = colors[idx % len(colors)]
+        data_5y = visualization_data_5y[channel_name]
         
         # 绘制5年拟合曲线
         ax_5y.plot(
             data_5y["days"],
             data_5y["rates"],
             color=color,
-            linewidth=2,
-            label=f'拟合曲线 (LT={data_5y["lt"]:.2f})',
-            zorder=2
+            linewidth=1.5,
+            alpha=0.8,
+            label=f'{channel_name} (LT={data_5y["lt"]:.2f})'
         )
-        
-        # 设置5年图表样式 - 与提供代码一致
-        ax_5y.set_ylim(0, 0.6)
-        ax_5y.set_yticks([0, 0.15, 0.3, 0.45, 0.6])
-        ax_5y.set_yticklabels(['0%', '15%', '30%', '45%', '60%'])
-        ax_5y.grid(True, ls="--", alpha=0.5)
-        ax_5y.set_xlabel('留存天数')
-        ax_5y.set_ylabel('留存率')
-        ax_5y.set_title(f'{channel_name} - 5年LT留存曲线')
-        ax_5y.legend()
-        plt.tight_layout()
-        
-        chart_figures.append({
-            'channel': channel_name,
-            'fig_2y': fig_2y,
-            'fig_5y': fig_5y,
-            'lt_2y': data_2y["lt"],
-            'lt_5y': data_5y["lt"]
-        })
     
-    return chart_figures
+    ax_5y.set_xlim(0, 1825)  # 5年
+    ax_5y.set_ylim(0, 0.6)
+    ax_5y.set_xlabel('留存天数', fontsize=12)
+    ax_5y.set_ylabel('留存率', fontsize=12)
+    ax_5y.set_title('各渠道5年LT留存曲线拟合对比 (按LT值从低到高排序)', fontsize=14, fontweight='bold')
+    ax_5y.grid(True, linestyle='--', alpha=0.3)
+    
+    # 设置Y轴刻度为百分比
+    ax_5y.set_yticks(y_ticks)
+    ax_5y.set_yticklabels(y_labels)
+    
+    # 设置图例
+    ax_5y.legend(bbox_to_anchor=(1.05, 1), loc='upper left', fontsize=9)
+    plt.tight_layout()
+    
+    return chart_figures, fig_2y_combined, fig_5y_combined
 
 # ==================== 页面初始化 ====================
 # 主标题
@@ -1442,9 +1522,23 @@ elif current_page == "留存率计算":
     if st.session_state.cleaned_data is not None:
         working_data = st.session_state.cleaned_data
         data_source_info = "使用清理后的数据"
+        
+        # 显示剔除信息
+        if st.session_state.excluded_data and len(st.session_state.excluded_data) > 0:
+            st.markdown(f"""
+            <div class="exclusion-info">
+                <div class="exclusion-info-title">⚠️ 数据剔除信息</div>
+                <div class="exclusion-info-content">
+                已剔除 {len(st.session_state.excluded_data)} 条异常数据：<br>
+                {', '.join(st.session_state.excluded_data[:10])}
+                {' ...' if len(st.session_state.excluded_data) > 10 else ''}
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+            
     elif st.session_state.merged_data is not None:
         working_data = st.session_state.merged_data
-        data_source_info = "使用原始数据"
+        data_source_info = "使用原始数据（未经剔除处理）"
     else:
         working_data = None
         data_source_info = "无可用数据"
@@ -1487,9 +1581,17 @@ elif current_page == "留存率计算":
                             
                             if len(days) > 0:
                                 st.write(f"数据天数范围: {min(days)} - {max(days)} 天")
+                                st.write(f"数据点数量: {len(days)} 个")
                                 st.write(f"平均留存率: {np.mean(rates):.4f}")
                                 st.write(f"最高留存率: {max(rates):.4f}")
                                 st.write(f"最低留存率: {min(rates):.4f}")
+                                
+                                # 显示具体的天数和留存率数据
+                                retention_df = pd.DataFrame({
+                                    '天数': days,
+                                    '留存率': [f"{rate:.4f}" for rate in rates]
+                                })
+                                st.dataframe(retention_df, use_container_width=True)
             else:
                 st.error("请选择至少一个数据来源")
 
@@ -1609,37 +1711,42 @@ elif current_page == "LT拟合分析":
                     ])
                     st.dataframe(results_df, use_container_width=True)
 
-                # 为每个渠道创建独立图表
+                # 创建专业的可视化图表
                 if visualization_data_2y and visualization_data_5y and original_data:
-                    st.subheader("各渠道LT拟合分析图表")
+                    st.subheader("LT拟合分析图表")
                     
-                    # 创建所有渠道的独立图表
-                    chart_figures = create_individual_channel_charts(
-                        visualization_data_2y, visualization_data_5y, original_data
-                    )
+                    with st.spinner("正在生成专业图表..."):
+                        chart_figures, fig_2y_combined, fig_5y_combined = create_professional_charts(
+                            visualization_data_2y, visualization_data_5y, original_data
+                        )
                     
-                    # 分渠道显示图表，每个渠道2年和5年并排
-                    for chart_data in chart_figures:
-                        st.markdown(f"### {chart_data['channel']}")
-                        
-                        col1, col2 = st.columns(2)
-                        
-                        with col1:
-                            st.pyplot(chart_data['fig_2y'], use_container_width=True)
-                            plt.close(chart_data['fig_2y'])
-                        
-                        with col2:
-                            st.pyplot(chart_data['fig_5y'], use_container_width=True)
-                            plt.close(chart_data['fig_5y'])
-                        
-                        # 显示LT对比信息
-                        col1, col2 = st.columns(2)
-                        with col1:
-                            st.metric("2年LT", f"{chart_data['lt_2y']:.2f}")
-                        with col2:
-                            st.metric("5年LT", f"{chart_data['lt_5y']:.2f}")
-                        
-                        st.markdown("---")
+                    # 显示综合对比图表
+                    st.markdown("### 各渠道拟合曲线综合对比")
+                    
+                    col1, col2 = st.columns(2)
+                    
+                    with col1:
+                        st.markdown("#### 2年LT对比")
+                        st.pyplot(fig_2y_combined, use_container_width=True)
+                        plt.close(fig_2y_combined)
+                    
+                    with col2:
+                        st.markdown("#### 5年LT对比")
+                        st.pyplot(fig_5y_combined, use_container_width=True)
+                        plt.close(fig_5y_combined)
+                    
+                    # 显示单渠道图表（按LT值排序）
+                    st.markdown("### 各渠道单独分析图表（按LT值从低到高排序）")
+                    
+                    # 每行显示3个图表
+                    for i in range(0, len(chart_figures), 3):
+                        cols = st.columns(3)
+                        for j, col in enumerate(cols):
+                            if i + j < len(chart_figures):
+                                chart_data = chart_figures[i + j]
+                                with col:
+                                    st.pyplot(chart_data['fig_100d'], use_container_width=True)
+                                    plt.close(chart_data['fig_100d'])
 
         st.markdown('</div>', unsafe_allow_html=True)
     else:
@@ -1825,15 +1932,16 @@ elif current_page == "LTV结果报告":
 
         ltv_df = pd.DataFrame(ltv_results)
         display_df = ltv_df.rename(columns={
-            'data_source': '数据来源',
-            'lt_value': 'LT值',
+            'data_source': '渠道名称',
+            'lt_value': 'LT',
             'arpu_value': 'ARPU',
             'ltv_value': 'LTV',
             'fit_success': '拟合状态',
             'model_used': '使用模型'
         })
 
-        display_df['LT值'] = display_df['LT值'].round(2)
+        # 数值格式化
+        display_df['LT'] = display_df['LT'].round(2)
         display_df['ARPU'] = display_df['ARPU'].round(2)
         display_df['LTV'] = display_df['LTV'].round(2)
         display_df['拟合状态'] = display_df['拟合状态'].map({True: '成功', False: '失败'})
@@ -1848,8 +1956,11 @@ elif current_page == "LTV结果报告":
         col1, col2 = st.columns(2)
 
         with col1:
+            # 创建标准格式的CSV导出数据（按用户要求的列顺序）
+            export_df = display_df[['渠道名称', 'LT', 'ARPU', 'LTV']].copy()
+            
             # 修复CSV导出的中文编码问题
-            csv_data = display_df.to_csv(index=False, encoding='utf-8-sig')
+            csv_data = export_df.to_csv(index=False, encoding='utf-8-sig')
             st.download_button(
                 label="下载LTV分析结果 (CSV)",
                 data=csv_data.encode('utf-8-sig'),
@@ -1874,10 +1985,18 @@ LTV用户生命周期价值分析报告
 • 平均LTV: {display_df['LTV'].mean():.2f}
 • 最高LTV: {display_df['LTV'].max():.2f}
 • 最低LTV: {display_df['LTV'].min():.2f}
-• 平均LT值: {display_df['LT值'].mean():.2f} 天
+• 平均LT值: {display_df['LT'].mean():.2f} 天
 • 平均ARPU: {display_df['ARPU'].mean():.2f}
 
-计算公式: LTV = LT × ARPU
+详细结果
+-----------
+{export_df.to_string(index=False)}
+
+计算方法
+-----------
+• LT拟合: 三阶段分层建模（幂函数+指数函数）
+• LTV公式: LTV = LT × ARPU
+• 数据处理: {"使用清理后数据" if st.session_state.cleaned_data is not None else "使用原始数据"}
 
 报告生成: LTV智能分析平台 v2.0
 """
