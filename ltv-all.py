@@ -1314,10 +1314,8 @@ if current_page == "数据上传与汇总":
     <div class="step-tip">
         <div class="step-tip-title">📋 渠道映射文件格式要求</div>
         <div class="step-tip-content">
-        • Excel格式(.xlsx/.xls)<br>
-        • 第一列：渠道名称<br>
-        • 后续列：对应的渠道号/PID<br>
-        • 一个渠道可对应多个渠道号
+        • Excel第一列：渠道名称<br>
+        • 后续列：对应的渠道号(一个渠道可对应多个渠道号)
         </div>
     </div>
     """, unsafe_allow_html=True)
