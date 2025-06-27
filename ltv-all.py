@@ -1435,15 +1435,6 @@ elif current_page == "异常数据剔除":
     if st.session_state.merged_data is None:
         show_dependency_tip("数据上传与汇总")
     
-    # 原理解释
-    st.markdown("""
-    <div class="principle-box">
-        <div class="principle-title">📚 步骤原理</div>
-        <div class="principle-content">
-        异常数据剔除用于清理可能影响分析结果的异常记录。通过设置多重筛选条件，可以剔除特定数据来源或日期的数据。所有剔除条件采用"且"关系，即数据必须同时满足所有条件才会被剔除，确保数据清理的精准性。
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
     
     if st.session_state.merged_data is not None:
         merged_data = st.session_state.merged_data
