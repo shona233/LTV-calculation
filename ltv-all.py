@@ -54,15 +54,16 @@ def setup_chinese_font():
             # 设置matplotlib中文字体
             plt.rcParams['font.sans-serif'] = [selected_font, 'Microsoft YaHei', 'SimSun', 'Arial Unicode MS']
             plt.rcParams['axes.unicode_minus'] = False  # 解决负号显示问题
+            plt.rcParams['font.size'] = 10
+            # 强制清除字体缓存并重新设置
+            mpl.font_manager._rebuild()
             st.success(f"已设置中文字体: {selected_font}")
         else:
             # 如果没有找到中文字体，使用默认设置
             plt.rcParams['font.sans-serif'] = ['SimHei', 'Microsoft YaHei', 'SimSun', 'Arial Unicode MS']
             plt.rcParams['axes.unicode_minus'] = False
+            plt.rcParams['font.size'] = 10
             st.warning("使用默认中文字体设置")
-        
-        # 设置字体大小
-        plt.rcParams['font.size'] = 10
         
         return True
         
@@ -71,6 +72,7 @@ def setup_chinese_font():
         # 使用默认设置作为备用
         plt.rcParams['font.sans-serif'] = ['SimHei', 'Microsoft YaHei', 'SimSun', 'Arial Unicode MS']
         plt.rcParams['axes.unicode_minus'] = False
+        plt.rcParams['font.size'] = 10
         return False
 
 # 初始化字体设置
@@ -145,30 +147,39 @@ st.markdown("""
         box-shadow: 0 4px 20px rgba(30, 64, 175, 0.3);
     }
 
-    /* 按钮样式 - 修改悬停效果为黄色 */
+    /* 按钮样式 - 修改悬停效果和激活状态 */
     .stButton > button {
-        background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+        background: linear-gradient(135deg, #64748b 0%, #94a3b8 100%);
         color: white;
         border: none;
         border-radius: 8px;
         padding: 0.6rem 2rem;
         font-weight: 600;
         transition: all 0.3s ease;
-        box-shadow: 0 4px 15px rgba(30, 64, 175, 0.3);
+        box-shadow: 0 4px 15px rgba(100, 116, 139, 0.3);
     }
 
     .stButton > button:hover {
         background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%);
         transform: translateY(-2px);
         box-shadow: 0 6px 20px rgba(245, 158, 11, 0.4);
+        color: #1f2937;
     }
 
-    /* 子步骤样式 */
+    /* 激活状态的按钮 */
+    .stButton > button[data-baseweb="button"][aria-pressed="true"] {
+        background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+        color: #fbbf24;
+        font-weight: 700;
+    }
+
+    /* 子步骤样式 - 蓝色 */
     .sub-steps {
         font-size: 0.8rem;
-        color: rgba(255,255,255,0.7);
+        color: #3b82f6;
         margin-top: 0.3rem;
         line-height: 1.2;
+        font-weight: 500;
     }
 
     /* 警告文字颜色 */
@@ -293,6 +304,44 @@ def safe_convert_to_numeric(value):
         return pd.to_numeric(value, errors='coerce')
     except:
         return 0
+
+# ==================== 数据预览优化函数 ====================
+def optimize_dataframe_for_preview(df, max_rows=2):
+    """优化DataFrame预览：有值的列放前面，跳过date为'日期'的行"""
+    preview_df = df.copy()
+    
+    # 跳过date值为"日期"的行
+    if 'date' in preview_df.columns:
+        preview_df = preview_df[preview_df['date'] != '日期']
+    if '日期' in preview_df.columns:
+        preview_df = preview_df[preview_df['日期'] != '日期']
+    
+    # 取前max_rows行
+    preview_df = preview_df.head(max_rows)
+    
+    if preview_df.empty:
+        return preview_df
+    
+    # 计算每列的非空值数量
+    non_null_counts = {}
+    for col in preview_df.columns:
+        non_null_count = preview_df[col].notna().sum()
+        # 排除全为0或空的数值列
+        if preview_df[col].dtype in ['int64', 'float64']:
+            non_zero_count = (preview_df[col] != 0).sum()
+            non_null_counts[col] = non_null_count + non_zero_count
+        else:
+            non_null_counts[col] = non_null_count
+    
+    # 按非空值数量排序列
+    sorted_columns = sorted(non_null_counts.keys(), key=lambda x: non_null_counts[x], reverse=True)
+    
+    # 确保'数据来源'列在最前面（如果存在）
+    if '数据来源' in sorted_columns:
+        sorted_columns.remove('数据来源')
+        sorted_columns.insert(0, '数据来源')
+    
+    return preview_df[sorted_columns]
 
 # ==================== 渠道映射处理函数 - 修改为支持新格式 ====================
 def parse_channel_mapping_from_excel(channel_file):
@@ -665,11 +714,13 @@ def calculate_lt_advanced(retention_result, channel_name, lt_years=5, return_cur
 
     return total_lt
 
-# ==================== 单渠道图表生成函数 ====================
-def create_individual_channel_chart(channel_name, curve_data, original_data, lt_years=5):
-    """创建单个渠道的5年LT拟合图表"""
+# ==================== 单渠道图表生成函数 - 修改为100天 ====================
+def create_individual_channel_chart(channel_name, curve_data, original_data, max_days=100):
+    """创建单个渠道的100天LT拟合图表"""
+    # 重新设置字体
     plt.rcParams['font.sans-serif'] = ['SimHei', 'Microsoft YaHei', 'SimSun', 'Arial Unicode MS']
     plt.rcParams['axes.unicode_minus'] = False
+    plt.rcParams['font.size'] = 10
     
     fig = plt.figure(figsize=(8, 6))
     ax = fig.add_subplot(111)
@@ -686,10 +737,19 @@ def create_individual_channel_chart(channel_name, curve_data, original_data, lt_
             zorder=3
         )
     
+    # 限制拟合曲线到100天
+    curve_days = curve_data["days"]
+    curve_rates = curve_data["rates"]
+    
+    # 筛选100天内的数据
+    mask = curve_days <= max_days
+    curve_days_filtered = curve_days[mask]
+    curve_rates_filtered = curve_rates[mask]
+    
     # 绘制拟合曲线
     ax.plot(
-        curve_data["days"],
-        curve_data["rates"],
+        curve_days_filtered,
+        curve_rates_filtered,
         color='blue',
         linewidth=2.5,
         label='拟合曲线',
@@ -697,12 +757,11 @@ def create_individual_channel_chart(channel_name, curve_data, original_data, lt_
     )
     
     # 设置图表样式
-    max_days = lt_years * 365
     ax.set_xlim(0, max_days)
     ax.set_ylim(0, 0.6)
     ax.set_xlabel('留存天数', fontsize=12)
     ax.set_ylabel('留存率', fontsize=12)
-    ax.set_title(f'{channel_name} ({lt_years}年LT={curve_data["lt"]:.2f})', fontsize=14, fontweight='bold')
+    ax.set_title(f'{channel_name} ({max_days}天LT拟合)', fontsize=14, fontweight='bold')
     ax.grid(True, linestyle='--', alpha=0.4)
     ax.legend(fontsize=10)
     
@@ -729,7 +788,8 @@ st.markdown("""
 session_keys = [
     'channel_mapping', 'merged_data', 'cleaned_data', 'retention_data',
     'lt_results_2y', 'lt_results_5y', 'arpu_data', 'ltv_results', 'current_step',
-    'excluded_data', 'excluded_dates_info', 'show_exclusion', 'show_manual_arpu'
+    'excluded_data', 'excluded_dates_info', 'show_exclusion', 'show_manual_arpu',
+    'visualization_data_5y', 'original_data'
 ]
 for key in session_keys:
     if key not in st.session_state:
@@ -768,8 +828,8 @@ with st.sidebar:
             st.session_state.current_step = i
             st.rerun()
         
-        # 显示子步骤
-        if "sub_steps" in step:
+        # 只在LT模型构建时显示子步骤
+        if "sub_steps" in step and i == st.session_state.current_step and step['name'] == "LT模型构建":
             sub_steps_text = " • ".join(step["sub_steps"])
             st.markdown(f'<div class="sub-steps">{sub_steps_text}</div>', unsafe_allow_html=True)
 
@@ -877,14 +937,15 @@ if current_page == "LT模型构建":
                             for warning in mapping_warnings:
                                 st.text(f"• {warning}")
 
-                        # 数据预览 - 每个文件显示两行
+                        # 优化的数据预览 - 每个文件显示两行
                         st.subheader("数据预览")
                         unique_sources = merged_data['数据来源'].unique()
                         
                         for source in unique_sources:
-                            source_data = merged_data[merged_data['数据来源'] == source].head(2)
+                            source_data = merged_data[merged_data['数据来源'] == source]
+                            optimized_preview = optimize_dataframe_for_preview(source_data, max_rows=2)
                             st.markdown(f"**{source}：**")
-                            st.dataframe(source_data, use_container_width=True)
+                            st.dataframe(optimized_preview, use_container_width=True)
                             
                     else:
                         st.error("未找到有效数据")
@@ -950,12 +1011,14 @@ if current_page == "LT模型构建":
             with col1:
                 st.markdown(f"### 将被剔除的数据 ({len(to_exclude)} 条)")
                 if len(to_exclude) > 0:
-                    st.dataframe(to_exclude.head(5), use_container_width=True)
+                    preview_exclude = optimize_dataframe_for_preview(to_exclude, max_rows=5)
+                    st.dataframe(preview_exclude, use_container_width=True)
 
             with col2:
                 st.markdown(f"### 保留的数据 ({len(to_keep)} 条)")
                 if len(to_keep) > 0:
-                    st.dataframe(to_keep.head(5), use_container_width=True)
+                    preview_keep = optimize_dataframe_for_preview(to_keep, max_rows=5)
+                    st.dataframe(preview_keep, use_container_width=True)
 
             if st.button("确认剔除异常数据", type="primary", use_container_width=True):
                 try:
@@ -1123,6 +1186,8 @@ if current_page == "LT模型构建":
 
                 st.session_state.lt_results_2y = lt_results_2y
                 st.session_state.lt_results_5y = lt_results_5y
+                st.session_state.visualization_data_5y = visualization_data_5y
+                st.session_state.original_data = original_data
                 st.success("LT拟合分析完成！")
 
                 # 显示LT值表格
@@ -1155,9 +1220,9 @@ if current_page == "LT模型构建":
                         ])
                         st.dataframe(results_5y_df, use_container_width=True)
 
-                # 显示单渠道图表
+                # 显示单渠道图表 - 100天版本
                 if visualization_data_5y and original_data:
-                    st.subheader("各渠道5年LT拟合图表")
+                    st.subheader("各渠道100天LT拟合图表")
                     
                     # 按LT值排序
                     sorted_channels = sorted(visualization_data_5y.items(), key=lambda x: x[1]['lt'])
@@ -1170,7 +1235,7 @@ if current_page == "LT模型构建":
                                 channel_name, curve_data = sorted_channels[i + j]
                                 with col:
                                     fig = create_individual_channel_chart(
-                                        channel_name, curve_data, original_data, lt_years=5
+                                        channel_name, curve_data, original_data, max_days=100
                                     )
                                     st.pyplot(fig, use_container_width=True)
                                     plt.close(fig)
@@ -1202,6 +1267,7 @@ elif current_page == "ARPU计算":
         &nbsp;&nbsp;- pid：渠道号<br>
         &nbsp;&nbsp;- instl_user_cnt：新增用户数<br>
         &nbsp;&nbsp;- ad_all_rven_1d_m：收入数据<br>
+        &nbsp;&nbsp;- stat_date：统计日期<br>
         • 支持按月份筛选数据
         </div>
     </div>
@@ -1224,16 +1290,15 @@ elif current_page == "ARPU计算":
                 st.info("可用列: " + ", ".join(arpu_df.columns.tolist()))
             else:
                 # 显示数据预览
-                st.dataframe(arpu_df.head(10), use_container_width=True)
+                preview_arpu = optimize_dataframe_for_preview(arpu_df, max_rows=10)
+                st.dataframe(preview_arpu, use_container_width=True)
                 
-                # 月份筛选
+                # 月份筛选 - 使用stat_date列
                 st.subheader("月份筛选")
                 
-                # 假设有日期列，如果没有可以让用户手动输入月份范围
-                if '日期' in arpu_df.columns or 'date' in arpu_df.columns:
-                    date_col = '日期' if '日期' in arpu_df.columns else 'date'
-                    arpu_df[date_col] = pd.to_datetime(arpu_df[date_col], errors='coerce')
-                    arpu_df['month'] = arpu_df[date_col].dt.to_period('M')
+                if 'stat_date' in arpu_df.columns:
+                    arpu_df['stat_date'] = pd.to_datetime(arpu_df['stat_date'], errors='coerce')
+                    arpu_df['month'] = arpu_df['stat_date'].dt.to_period('M')
                     available_months = arpu_df['month'].dropna().unique()
                     available_months = sorted([str(m) for m in available_months])
                     
@@ -1245,10 +1310,10 @@ elif current_page == "ARPU计算":
                             end_month = st.selectbox("结束月份", options=available_months, 
                                                    index=len(available_months)-1)
                     else:
-                        st.warning("无法解析日期数据，将使用所有数据")
+                        st.warning("无法解析stat_date数据，将使用所有数据")
                         start_month = end_month = None
                 else:
-                    st.info("未找到日期列，将使用所有数据")
+                    st.info("未找到stat_date列，将使用所有数据")
                     start_month = end_month = None
 
                 if st.button("计算ARPU", type="primary", use_container_width=True):
@@ -1425,14 +1490,20 @@ elif current_page == "LTV结果报告":
         # 创建完整的结果表格
         display_data = []
         for result in ltv_results:
-            # 获取拟合参数信息
+            # 获取拟合参数信息 - 修改备注换行
             power_params = result['power_params']
             exp_params = result['exp_params']
             
-            power_func = f"y = {power_params.get('a', 0):.4f} * x^{power_params.get('b', 0):.4f}" if power_params else "未知"
-            exp_func = f"y = {exp_params.get('c', 0):.4f} * exp({exp_params.get('d', 0):.4f} * x)" if exp_params else "未知"
+            备注_parts = []
+            if power_params:
+                power_func = f"幂函数: y = {power_params.get('a', 0):.4f} * x^{power_params.get('b', 0):.4f}"
+                备注_parts.append(power_func)
             
-            备注 = f"幂函数: {power_func}\n指数函数: {exp_func}"
+            if exp_params:
+                exp_func = f"指数函数: y = {exp_params.get('c', 0):.4f} * exp({exp_params.get('d', 0):.4f} * x)"
+                备注_parts.append(exp_func)
+            
+            备注 = "\n".join(备注_parts) if 备注_parts else "未知"
             
             display_data.append({
                 '渠道名称': result['data_source'],
@@ -1453,6 +1524,32 @@ elif current_page == "LTV结果报告":
         
         st.dataframe(results_df, use_container_width=True, height=600)
         st.markdown('</div>', unsafe_allow_html=True)
+
+        # 显示所有拟合曲线 - 一行四个
+        if st.session_state.visualization_data_5y and st.session_state.original_data:
+            st.markdown('<div class="glass-card">', unsafe_allow_html=True)
+            st.subheader("所有渠道拟合曲线（100天）")
+            
+            visualization_data_5y = st.session_state.visualization_data_5y
+            original_data = st.session_state.original_data
+            
+            # 按LT值排序
+            sorted_channels = sorted(visualization_data_5y.items(), key=lambda x: x[1]['lt'])
+            
+            # 每行显示4个图表
+            for i in range(0, len(sorted_channels), 4):
+                cols = st.columns(4)
+                for j, col in enumerate(cols):
+                    if i + j < len(sorted_channels):
+                        channel_name, curve_data = sorted_channels[i + j]
+                        with col:
+                            fig = create_individual_channel_chart(
+                                channel_name, curve_data, original_data, max_days=100
+                            )
+                            st.pyplot(fig, use_container_width=True)
+                            plt.close(fig)
+            
+            st.markdown('</div>', unsafe_allow_html=True)
 
         # 数据导出
         st.markdown('<div class="glass-card">', unsafe_allow_html=True)
@@ -1550,7 +1647,7 @@ with st.sidebar:
         按步骤完成分析流程，每步都有详细指导。
         </p>
         <p style="font-size: 0.8rem; color: rgba(255,255,255,0.7); text-align: center;">
-        LTV智能分析平台 v3.0<br>
+        LTV智能分析平台 v3.1<br>
         基于三阶段数学建模
         </p>
     </div>
