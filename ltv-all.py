@@ -147,39 +147,30 @@ st.markdown("""
         box-shadow: 0 4px 20px rgba(30, 64, 175, 0.3);
     }
 
-    /* 按钮样式 - 修改悬停效果和激活状态 */
+    /* 按钮样式 - 修改悬停效果为黄色 */
     .stButton > button {
-        background: linear-gradient(135deg, #64748b 0%, #94a3b8 100%);
+        background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
         color: white;
         border: none;
         border-radius: 8px;
         padding: 0.6rem 2rem;
         font-weight: 600;
         transition: all 0.3s ease;
-        box-shadow: 0 4px 15px rgba(100, 116, 139, 0.3);
+        box-shadow: 0 4px 15px rgba(30, 64, 175, 0.3);
     }
 
     .stButton > button:hover {
         background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%);
         transform: translateY(-2px);
         box-shadow: 0 6px 20px rgba(245, 158, 11, 0.4);
-        color: #1f2937;
     }
 
-    /* 激活状态的按钮 */
-    .stButton > button[data-baseweb="button"][aria-pressed="true"] {
-        background: linear-gradient(135deg, #059669 0%, #10b981 100%);
-        color: #fbbf24;
-        font-weight: 700;
-    }
-
-    /* 子步骤样式 - 蓝色 */
+    /* 子步骤样式 */
     .sub-steps {
         font-size: 0.8rem;
-        color: #3b82f6;
+        color: rgba(255,255,255,0.7);
         margin-top: 0.3rem;
         line-height: 1.2;
-        font-weight: 500;
     }
 
     /* 警告文字颜色 */
