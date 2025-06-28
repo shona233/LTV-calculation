@@ -61,6 +61,8 @@ def setup_chinese_font():
                 # 额外的字体设置
                 plt.rcParams['font.family'] = 'sans-serif'
                 mpl.rcParams.update({'font.sans-serif': [selected_font, 'Microsoft YaHei', 'SimSun', 'Arial Unicode MS', 'DejaVu Sans']})
+                # 设置全局字体
+                mpl.font_manager.fontManager.addfont(None)
             except:
                 pass
             st.success(f"已设置中文字体: {selected_font}")
@@ -516,16 +518,16 @@ def integrate_excel_files_streamlit(uploaded_files, target_month=None, channel_m
     
     return integrate_excel_files_cached(file_names, file_contents, target_month, reverse_mapping)
 
-# ==================== 留存率计算函数 - 修改计算方法 ====================
+# ==================== 留存率计算函数 - 修改为以新增用户均值为基数 ====================
 def calculate_retention_rates_new_method(df):
-    """新的留存率计算方法：按渠道计算平均新增和留存，然后计算留存率"""
+    """新的留存率计算方法：按渠道计算平均新增数作为基数，各天留存数/平均新增数"""
     retention_results = []
     data_sources = df['数据来源'].unique()
 
     for source in data_sources:
         source_data = df[df['数据来源'] == source].copy()
         
-        # 计算平均新增用户数
+        # 计算平均新增用户数作为基数
         new_users_values = []
         for _, row in source_data.iterrows():
             new_users = safe_convert_to_numeric(row.get('回传新增数', 0))
@@ -537,7 +539,7 @@ def calculate_retention_rates_new_method(df):
         
         avg_new_users = np.mean(new_users_values)
         
-        # 计算1-30天的平均留存数
+        # 计算1-30天的平均留存数，并用平均新增数作为基数计算留存率
         retention_data = {'data_source': source, 'avg_new_users': avg_new_users}
         days = []
         rates = []
@@ -554,9 +556,10 @@ def calculate_retention_rates_new_method(df):
             
             if day_retain_values:
                 avg_retain = np.mean(day_retain_values)
+                # 修改计算方法：留存率 = 平均留存数 / 平均新增数
                 retention_rate = avg_retain / avg_new_users if avg_new_users > 0 else 0
                 
-                # 修改留存率范围为 0 < 留存率 ≤ 100%
+                # 留存率范围为 0 ≤ 留存率 ≤ 1.0
                 if 0 <= retention_rate <= 1.0:
                     days.append(day)
                     rates.append(retention_rate)
@@ -713,25 +716,15 @@ def calculate_lt_advanced(retention_result, channel_name, lt_years=5, return_cur
 
     return total_lt
 
-# ==================== 单渠道图表生成函数 - 修改为100天 ====================
+# ==================== 单渠道图表生成函数 - 强化中文显示 ====================
 def create_individual_channel_chart(channel_name, curve_data, original_data, max_days=100):
     """创建单个渠道的100天LT拟合图表"""
-    # 强制设置中文字体
-    import matplotlib.font_manager as fm
-    
-    # 尝试多种字体设置方法
+    # 强制重新设置中文字体
     plt.rcParams['font.sans-serif'] = ['SimHei', 'Microsoft YaHei', 'DejaVu Sans', 'SimSun', 'Arial Unicode MS']
     plt.rcParams['axes.unicode_minus'] = False
     plt.rcParams['font.size'] = 10
     
-    # 清除字体缓存
-    try:
-        fm._rebuild()
-    except:
-        pass
-    
-    fig = plt.figure(figsize=(8, 6))
-    ax = fig.add_subplot(111)
+    fig, ax = plt.subplots(figsize=(8, 6))
     
     # 绘制实际数据点
     if channel_name in original_data:
@@ -764,36 +757,28 @@ def create_individual_channel_chart(channel_name, curve_data, original_data, max
         zorder=2
     )
     
-    # 设置图表样式 - 强制指定字体
-    try:
-        # 尝试使用FontProperties
-        chinese_font = fm.FontProperties(family=['SimHei', 'Microsoft YaHei', 'DejaVu Sans'])
-        
-        ax.set_xlim(0, max_days)
-        ax.set_ylim(0, 0.6)
-        ax.set_xlabel('留存天数', fontsize=12, fontproperties=chinese_font)
-        ax.set_ylabel('留存率', fontsize=12, fontproperties=chinese_font)
-        ax.set_title(f'{channel_name} ({max_days}天LT拟合)', fontsize=14, fontweight='bold', fontproperties=chinese_font)
-        ax.grid(True, linestyle='--', alpha=0.4)
-        
-        # 设置图例字体
-        legend = ax.legend(fontsize=10, prop=chinese_font)
-        
-    except:
-        # 如果FontProperties失败，使用默认设置
-        ax.set_xlim(0, max_days)
-        ax.set_ylim(0, 0.6)
-        ax.set_xlabel('Retention Days', fontsize=12)  # 使用英文作为备用
-        ax.set_ylabel('Retention Rate', fontsize=12)
-        ax.set_title(f'{channel_name} ({max_days}d LT Fitting)', fontsize=14, fontweight='bold')
-        ax.grid(True, linestyle='--', alpha=0.4)
-        ax.legend(fontsize=10)
+    # 设置图表样式 - 强制使用中文
+    ax.set_xlim(0, max_days)
+    ax.set_ylim(0, 0.6)
+    ax.set_xlabel('留存天数', fontsize=12, fontfamily='SimHei')
+    ax.set_ylabel('留存率', fontsize=12, fontfamily='SimHei')
+    ax.set_title(f'{channel_name} ({max_days}天LT拟合)', fontsize=14, fontweight='bold', fontfamily='SimHei')
+    ax.grid(True, linestyle='--', alpha=0.4)
+    
+    # 设置图例 - 强制中文字体
+    legend = ax.legend(fontsize=10)
+    for text in legend.get_texts():
+        text.set_fontfamily('SimHei')
     
     # 设置Y轴刻度为百分比
     y_ticks = [0, 0.15, 0.3, 0.45, 0.6]
     y_labels = ['0%', '15%', '30%', '45%', '60%']
     ax.set_yticks(y_ticks)
     ax.set_yticklabels(y_labels)
+    
+    # 强制设置刻度标签字体
+    for label in ax.get_xticklabels() + ax.get_yticklabels():
+        label.set_fontfamily('SimHei')
     
     plt.tight_layout()
     return fig
@@ -813,7 +798,7 @@ session_keys = [
     'channel_mapping', 'merged_data', 'cleaned_data', 'retention_data',
     'lt_results_2y', 'lt_results_5y', 'arpu_data', 'ltv_results', 'current_step',
     'excluded_data', 'excluded_dates_info', 'show_exclusion', 'show_manual_arpu',
-    'visualization_data_5y', 'original_data'
+    'visualization_data_5y', 'original_data', 'show_upload_interface'
 ]
 for key in session_keys:
     if key not in st.session_state:
@@ -828,6 +813,8 @@ if st.session_state.show_exclusion is None:
     st.session_state.show_exclusion = False
 if st.session_state.show_manual_arpu is None:
     st.session_state.show_manual_arpu = False
+if st.session_state.show_upload_interface is None:
+    st.session_state.show_upload_interface = False
 
 # ==================== 分析步骤定义 - 重构为3步 ====================
 ANALYSIS_STEPS = [
@@ -873,7 +860,7 @@ if current_page == "LT模型构建":
         LT模型构建包含四个核心步骤：<br>
         <strong>1. 数据上传汇总：</strong>整合多个Excel文件，支持新格式表和传统格式表<br>
         <strong>2. 异常剔除：</strong>按需清理异常数据，提高模型准确性<br>
-        <strong>3. 留存率计算：</strong>按渠道计算平均新增用户和留存数，生成1-30天留存率<br>
+        <strong>3. 留存率计算：</strong>按渠道计算平均新增用户数作为基数，各天留存数÷平均新增数<br>
         <strong>4. LT拟合分析：</strong>采用三阶段分层建模，预测用户生命周期长度
         </div>
     </div>
@@ -883,100 +870,116 @@ if current_page == "LT模型构建":
     st.markdown('<div class="glass-card">', unsafe_allow_html=True)
     st.subheader("1. 数据上传与汇总")
     
-    # 渠道映射文件上传
-    channel_mapping_file = st.file_uploader(
-        "上传渠道映射文件 (Excel格式，可选)",
-        type=['xlsx', 'xls'],
-        help="格式：第一列为渠道名称，后续列为对应的渠道号"
-    )
-    
-    if channel_mapping_file:
-        try:
-            custom_mapping = parse_channel_mapping_from_excel(channel_mapping_file)
-            if custom_mapping and isinstance(custom_mapping, dict) and len(custom_mapping) > 0:
-                st.session_state.channel_mapping = custom_mapping
-                st.success(f"渠道映射文件加载成功！共包含 {len(custom_mapping)} 个渠道")
-                
-                # 自动展开映射详情
-                with st.expander("查看渠道映射详情", expanded=True):
-                    mapping_rows = []
-                    for channel_name, pids in custom_mapping.items():
-                        for pid in pids:
-                            mapping_rows.append({'渠道名称': channel_name, '渠道号': pid})
-                    mapping_df = pd.DataFrame(mapping_rows)
-                    st.dataframe(mapping_df, use_container_width=True)
-            else:
-                st.error("渠道映射文件解析失败，将使用默认映射")
-        except Exception as e:
-            st.error(f"读取渠道映射文件时出错：{str(e)}")
-    else:
-        st.info("未上传渠道映射文件，将使用默认映射关系")
+    # 默认渠道映射 - 默认展开
+    with st.expander("查看默认渠道映射（📋 请按渠道名称命名文件，用于ARPU计算）", expanded=True):
+        st.markdown("""
+        <div class="step-tip">
+            <div class="step-tip-title">💡 重要提示</div>
+            <div class="step-tip-content">
+            请将Excel文件按照下表中的<strong>渠道名称</strong>进行命名，这样系统可以自动匹配ARPU数据。<br>
+            例如：华为.xlsx、小米.xlsx、OPPO.xlsx 等
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
         
-        # 显示默认映射
-        with st.expander("查看默认渠道映射"):
-            default_mapping_rows = []
-            for channel_name, pids in DEFAULT_CHANNEL_MAPPING.items():
-                for pid in pids:
-                    default_mapping_rows.append({'渠道名称': channel_name, '渠道号': pid})
-            default_mapping_df = pd.DataFrame(default_mapping_rows)
-            st.dataframe(default_mapping_df, use_container_width=True)
-
-    # 数据文件上传
-    uploaded_files = st.file_uploader(
-        "选择Excel数据文件",
-        type=['xlsx', 'xls'],
-        accept_multiple_files=True,
-        help="支持上传多个Excel文件"
-    )
-
-    default_month = get_default_target_month()
-    target_month = st.text_input("目标月份 (YYYY-MM)", value=default_month)
-
-    if uploaded_files:
-        st.info(f"已选择 {len(uploaded_files)} 个文件")
-
-        if st.button("开始处理数据", type="primary", use_container_width=True):
-            with st.spinner("正在处理数据文件..."):
-                try:
-                    merged_data, processed_count, mapping_warnings = integrate_excel_files_streamlit(
-                        uploaded_files, target_month, st.session_state.channel_mapping
-                    )
-
-                    if merged_data is not None and not merged_data.empty:
-                        st.session_state.merged_data = merged_data
-                        st.success(f"数据处理完成！成功处理 {processed_count} 个文件")
-
-                        col1, col2, col3 = st.columns(3)
-                        with col1:
-                            st.metric("总记录数", f"{len(merged_data):,}")
-                        with col2:
-                            st.metric("数据来源数", merged_data['数据来源'].nunique())
-                        with col3:
-                            if '回传新增数' in merged_data.columns:
-                                total_users = merged_data['回传新增数'].sum()
-                                st.metric("总新增用户", f"{total_users:,.0f}")
-
-                        if mapping_warnings:
-                            st.warning("以下文件未在渠道映射中找到对应关系：")
-                            for warning in mapping_warnings:
-                                st.text(f"• {warning}")
-
-                        # 优化的数据预览 - 每个文件显示两行
-                        st.subheader("数据预览")
-                        unique_sources = merged_data['数据来源'].unique()
-                        
-                        for source in unique_sources:
-                            source_data = merged_data[merged_data['数据来源'] == source]
-                            optimized_preview = optimize_dataframe_for_preview(source_data, max_rows=2)
-                            st.markdown(f"**{source}：**")
-                            st.dataframe(optimized_preview, use_container_width=True)
-                            
-                    else:
-                        st.error("未找到有效数据")
-                except Exception as e:
-                    st.error(f"处理过程中出现错误：{str(e)}")
+        default_mapping_rows = []
+        for channel_name, pids in DEFAULT_CHANNEL_MAPPING.items():
+            for pid in pids:
+                default_mapping_rows.append({'渠道名称': channel_name, '渠道号': pid})
+        default_mapping_df = pd.DataFrame(default_mapping_rows)
+        st.dataframe(default_mapping_df, use_container_width=True)
+    
+    # 按钮控制显示上传界面
+    if not st.session_state.show_upload_interface:
+        if st.button("开始数据上传", type="primary", use_container_width=True):
+            st.session_state.show_upload_interface = True
+            st.rerun()
     else:
-        st.info("请选择Excel文件开始数据处理")
+        # 渠道映射文件上传
+        channel_mapping_file = st.file_uploader(
+            "上传渠道映射文件 (Excel格式，可选)",
+            type=['xlsx', 'xls'],
+            help="格式：第一列为渠道名称，后续列为对应的渠道号"
+        )
+        
+        if channel_mapping_file:
+            try:
+                custom_mapping = parse_channel_mapping_from_excel(channel_mapping_file)
+                if custom_mapping and isinstance(custom_mapping, dict) and len(custom_mapping) > 0:
+                    st.session_state.channel_mapping = custom_mapping
+                    st.success(f"渠道映射文件加载成功！共包含 {len(custom_mapping)} 个渠道")
+                    
+                    # 自动展开映射详情
+                    with st.expander("查看渠道映射详情", expanded=True):
+                        mapping_rows = []
+                        for channel_name, pids in custom_mapping.items():
+                            for pid in pids:
+                                mapping_rows.append({'渠道名称': channel_name, '渠道号': pid})
+                        mapping_df = pd.DataFrame(mapping_rows)
+                        st.dataframe(mapping_df, use_container_width=True)
+                else:
+                    st.error("渠道映射文件解析失败，将使用默认映射")
+            except Exception as e:
+                st.error(f"读取渠道映射文件时出错：{str(e)}")
+        else:
+            st.info("未上传渠道映射文件，将使用默认映射关系")
+
+        # 数据文件上传
+        uploaded_files = st.file_uploader(
+            "选择Excel数据文件",
+            type=['xlsx', 'xls'],
+            accept_multiple_files=True,
+            help="支持上传多个Excel文件"
+        )
+
+        default_month = get_default_target_month()
+        target_month = st.text_input("目标月份 (YYYY-MM)", value=default_month)
+
+        if uploaded_files:
+            st.info(f"已选择 {len(uploaded_files)} 个文件")
+
+            if st.button("开始处理数据", type="primary", use_container_width=True):
+                with st.spinner("正在处理数据文件..."):
+                    try:
+                        merged_data, processed_count, mapping_warnings = integrate_excel_files_streamlit(
+                            uploaded_files, target_month, st.session_state.channel_mapping
+                        )
+
+                        if merged_data is not None and not merged_data.empty:
+                            st.session_state.merged_data = merged_data
+                            st.success(f"数据处理完成！成功处理 {processed_count} 个文件")
+
+                            col1, col2, col3 = st.columns(3)
+                            with col1:
+                                st.metric("总记录数", f"{len(merged_data):,}")
+                            with col2:
+                                st.metric("数据来源数", merged_data['数据来源'].nunique())
+                            with col3:
+                                if '回传新增数' in merged_data.columns:
+                                    total_users = merged_data['回传新增数'].sum()
+                                    st.metric("总新增用户", f"{total_users:,.0f}")
+
+                            if mapping_warnings:
+                                st.warning("以下文件未在渠道映射中找到对应关系：")
+                                for warning in mapping_warnings:
+                                    st.text(f"• {warning}")
+
+                            # 优化的数据预览 - 每个文件显示两行
+                            st.subheader("数据预览")
+                            unique_sources = merged_data['数据来源'].unique()
+                            
+                            for source in unique_sources:
+                                source_data = merged_data[merged_data['数据来源'] == source]
+                                optimized_preview = optimize_dataframe_for_preview(source_data, max_rows=2)
+                                st.markdown(f"**{source}：**")
+                                st.dataframe(optimized_preview, use_container_width=True)
+                                
+                        else:
+                            st.error("未找到有效数据")
+                    except Exception as e:
+                        st.error(f"处理过程中出现错误：{str(e)}")
+        else:
+            st.info("请选择Excel文件开始数据处理")
 
     st.markdown('</div>', unsafe_allow_html=True)
 
@@ -1070,6 +1073,19 @@ if current_page == "LT模型构建":
     if st.session_state.merged_data is not None:
         st.markdown('<div class="glass-card">', unsafe_allow_html=True)
         st.subheader("3. 留存率计算")
+        
+        # 修改计算方法说明
+        st.markdown("""
+        <div class="step-tip">
+            <div class="step-tip-title">📋 留存率计算方法</div>
+            <div class="step-tip-content">
+            <strong>新计算方法：</strong>以平均新增用户数作为基数<br>
+            • 计算每个渠道的平均新增用户数<br>
+            • 计算各天的平均留存数<br>
+            • 留存率 = 各天平均留存数 ÷ 平均新增用户数
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
         
         # 确定使用的数据
         if st.session_state.cleaned_data is not None:
@@ -1281,17 +1297,18 @@ elif current_page == "ARPU计算":
     st.markdown('<div class="glass-card">', unsafe_allow_html=True)
     st.subheader("ARPU数据处理")
 
-    # ARPU文件格式说明
+    # ARPU文件格式说明 - 更新格式
     st.markdown("""
     <div class="step-tip">
         <div class="step-tip-title">📋 ARPU文件格式要求</div>
         <div class="step-tip-content">
         • Excel格式(.xlsx/.xls)<br>
         • 必须包含以下列：<br>
-        &nbsp;&nbsp;- pid：渠道号<br>
-        &nbsp;&nbsp;- instl_user_cnt：新增用户数<br>
-        &nbsp;&nbsp;- ad_all_rven_1d_m：收入数据<br>
-        &nbsp;&nbsp;- stat_date：统计日期<br>
+        &nbsp;&nbsp;- <strong>月份</strong>：月份信息<br>
+        &nbsp;&nbsp;- <strong>pid</strong>：渠道号<br>
+        &nbsp;&nbsp;- <strong>stat_date</strong>：统计日期<br>
+        &nbsp;&nbsp;- <strong>instl_user_cnt</strong>：新增用户数<br>
+        &nbsp;&nbsp;- <strong>ad_all_rven_1d_m</strong>：收入数据<br>
         • 支持按月份筛选数据
         </div>
     </div>
@@ -1317,10 +1334,27 @@ elif current_page == "ARPU计算":
                 preview_arpu = optimize_dataframe_for_preview(arpu_df, max_rows=10)
                 st.dataframe(preview_arpu, use_container_width=True)
                 
-                # 月份筛选 - 使用stat_date列
+                # 月份筛选 - 优先使用月份列，其次使用stat_date列
                 st.subheader("月份筛选")
                 
-                if 'stat_date' in arpu_df.columns:
+                if '月份' in arpu_df.columns:
+                    # 使用月份列
+                    available_months = sorted(arpu_df['月份'].dropna().unique())
+                    available_months = [str(m) for m in available_months]
+                    
+                    if available_months:
+                        col1, col2 = st.columns(2)
+                        with col1:
+                            start_month = st.selectbox("开始月份", options=available_months)
+                        with col2:
+                            end_month = st.selectbox("结束月份", options=available_months, 
+                                                   index=len(available_months)-1)
+                    else:
+                        st.warning("月份列无有效数据，将使用所有数据")
+                        start_month = end_month = None
+                        
+                elif 'stat_date' in arpu_df.columns:
+                    # 使用stat_date列
                     arpu_df['stat_date'] = pd.to_datetime(arpu_df['stat_date'], errors='coerce')
                     arpu_df['month'] = arpu_df['stat_date'].dt.to_period('M')
                     available_months = arpu_df['month'].dropna().unique()
@@ -1337,7 +1371,7 @@ elif current_page == "ARPU计算":
                         st.warning("无法解析stat_date数据，将使用所有数据")
                         start_month = end_month = None
                 else:
-                    st.info("未找到stat_date列，将使用所有数据")
+                    st.info("未找到月份或stat_date列，将使用所有数据")
                     start_month = end_month = None
 
                 if st.button("计算ARPU", type="primary", use_container_width=True):
@@ -1345,7 +1379,10 @@ elif current_page == "ARPU计算":
                         try:
                             # 月份筛选
                             if start_month and end_month:
-                                mask = (arpu_df['month'] >= start_month) & (arpu_df['month'] <= end_month)
+                                if '月份' in arpu_df.columns:
+                                    mask = (arpu_df['月份'] >= start_month) & (arpu_df['月份'] <= end_month)
+                                else:
+                                    mask = (arpu_df['month'] >= start_month) & (arpu_df['month'] <= end_month)
                                 filtered_arpu_df = arpu_df[mask].copy()
                                 st.info(f"筛选月份: {start_month} 至 {end_month}")
                             else:
@@ -1636,9 +1673,9 @@ LTV用户生命周期价值分析报告
 • LT拟合: 三阶段分层建模（1-30天幂函数 + 31-X天幂函数延续 + Y天后指数函数）
 • LTV公式: LTV = LT × ARPU
 • 渠道规则: 按华为、小米、OPPO、vivo、iPhone分类设定不同拟合参数
-• 留存率计算: 按渠道平均新增用户数和留存数计算
+• 留存率计算: 按渠道平均新增用户数作为基数，各天留存数÷平均新增数
 
-报告生成: LTV智能分析平台 v3.0
+报告生成: LTV智能分析平台 v3.2
 """
 
             st.download_button(
@@ -1671,7 +1708,7 @@ with st.sidebar:
         按步骤完成分析流程，每步都有详细指导。
         </p>
         <p style="font-size: 0.8rem; color: rgba(255,255,255,0.7); text-align: center;">
-        LTV智能分析平台 v3.1<br>
+        LTV智能分析平台 v3.2<br>
         基于三阶段数学建模
         </p>
     </div>
