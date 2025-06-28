@@ -25,13 +25,17 @@ warnings.filterwarnings('ignore', category=UserWarning,
 def setup_chinese_font():
     """设置中文字体 - 简化版本避免错误"""
     try:
-        # 使用简单的字体设置
+        # 使用简单的字体设置，不使用复杂的检测
         plt.rcParams['font.sans-serif'] = ['SimHei', 'Microsoft YaHei', 'DejaVu Sans']
         plt.rcParams['axes.unicode_minus'] = False
         plt.rcParams['font.size'] = 10
         return True
     except Exception as e:
-        st.warning(f"字体设置失败，使用默认字体: {e}")
+        # 如果设置失败，使用默认配置
+        plt.rcParams['font.sans-serif'] = ['DejaVu Sans']
+        plt.rcParams['axes.unicode_minus'] = False
+        plt.rcParams['font.size'] = 10
+        st.info(f"📝 中文字体设置失败，将在图表中使用英文标签")
         return False
 
 # 初始化字体设置
@@ -106,22 +110,45 @@ st.markdown("""
         box-shadow: 0 4px 20px rgba(30, 64, 175, 0.3);
     }
 
-    /* 按钮样式 - 修改悬停效果为深蓝色 */
+    /* 按钮样式 - 彻底修改所有状态，覆盖Streamlit默认样式 */
     .stButton > button {
-        background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
-        color: white;
-        border: none;
-        border-radius: 8px;
-        padding: 0.6rem 2rem;
-        font-weight: 600;
-        transition: all 0.3s ease;
-        box-shadow: 0 4px 15px rgba(30, 64, 175, 0.3);
+        background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%) !important;
+        color: white !important;
+        border: none !important;
+        border-radius: 8px !important;
+        padding: 0.6rem 2rem !important;
+        font-weight: 600 !important;
+        transition: all 0.3s ease !important;
+        box-shadow: 0 4px 15px rgba(30, 64, 175, 0.3) !important;
     }
 
     .stButton > button:hover {
-        background: linear-gradient(135deg, #1d4ed8 0%, #2563eb 100%);
-        transform: translateY(-2px);
-        box-shadow: 0 6px 20px rgba(29, 78, 216, 0.4);
+        background: linear-gradient(135deg, #1d4ed8 0%, #2563eb 100%) !important;
+        transform: translateY(-2px) !important;
+        box-shadow: 0 6px 20px rgba(29, 78, 216, 0.4) !important;
+        color: white !important;
+    }
+    
+    .stButton > button:active {
+        background: linear-gradient(135deg, #1d4ed8 0%, #2563eb 100%) !important;
+        color: white !important;
+    }
+    
+    .stButton > button:focus {
+        background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%) !important;
+        color: white !important;
+        box-shadow: 0 4px 15px rgba(30, 64, 175, 0.3) !important;
+    }
+    
+    /* 针对特定类型的按钮 */
+    div[data-testid="stButton"] > button {
+        background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%) !important;
+        color: white !important;
+    }
+    
+    div[data-testid="stButton"] > button:hover {
+        background: linear-gradient(135deg, #1d4ed8 0%, #2563eb 100%) !important;
+        color: white !important;
     }
 
     /* 子步骤样式 */
@@ -337,10 +364,29 @@ def parse_channel_mapping_from_excel(channel_file):
 # ==================== 内置ARPU数据 ====================
 def get_builtin_arpu_data():
     """获取内置的2024.1-2025.4的ARPU基础数据"""
-    # 示例数据结构 - 用户可以替换为实际的10000多行数据
+    # 方法1: 从本地CSV文件加载（推荐）
+    try:
+        # 如果有本地CSV文件，取消下面这行的注释并修改文件路径
+        # builtin_df = pd.read_csv('path/to/your/builtin_arpu_data.csv')
+        # return builtin_df
+        pass
+    except:
+        pass
+    
+    # 方法2: 从Excel文件加载
+    try:
+        # 如果有本地Excel文件，取消下面这行的注释并修改文件路径
+        # builtin_df = pd.read_excel('path/to/your/builtin_arpu_data.xlsx')
+        # return builtin_df
+        pass
+    except:
+        pass
+    
+    # 方法3: 直接在代码中定义数据（适合较小数据量）
+    # 示例数据结构 - 请替换为您的实际数据
     builtin_data = []
     
-    # 2024年1月到2025年4月的数据
+    # 2024年1月到2025年4月的月份列表
     months = []
     for year in [2024, 2025]:
         start_month = 1 if year == 2024 else 1
@@ -348,20 +394,91 @@ def get_builtin_arpu_data():
         for month in range(start_month, end_month + 1):
             months.append(f"{year}-{month:02d}")
     
-    # 为每个渠道和月份生成示例数据
-    for channel_name, pids in DEFAULT_CHANNEL_MAPPING.items():
-        for pid in pids:
-            for month in months:
-                # 生成示例数据 - 用户需要替换为实际数据
+    # 为每个渠道和月份生成数据
+    # 这里是示例数据，请替换为您的实际数据
+    sample_arpu_data = {
+        # 格式: 'pid': {'months': [月份列表], 'users': [用户数列表], 'revenue': [收入列表]}
+        '9000': {  # 总体
+            'users': [1000, 1200, 1100, 1300, 1250, 1400, 1350, 1500, 1450, 1600, 1550, 1700, 1650, 1800, 1750, 1900],
+            'revenue': [50000, 60000, 55000, 65000, 62500, 70000, 67500, 75000, 72500, 80000, 77500, 85000, 82500, 90000, 87500, 95000]
+        },
+        '5057': {  # 华为
+            'users': [800, 900, 850, 950, 920, 1000, 980, 1050, 1020, 1100, 1080, 1150, 1120, 1200, 1180, 1250],
+            'revenue': [40000, 45000, 42500, 47500, 46000, 50000, 49000, 52500, 51000, 55000, 54000, 57500, 56000, 60000, 59000, 62500]
+        },
+        '5599': {  # 小米
+            'users': [600, 700, 650, 750, 720, 800, 780, 850, 820, 900, 880, 950, 920, 1000, 980, 1050],
+            'revenue': [30000, 35000, 32500, 37500, 36000, 40000, 39000, 42500, 41000, 45000, 44000, 47500, 46000, 50000, 49000, 52500]
+        },
+        # 继续添加其他渠道的数据...
+        # 您需要为 DEFAULT_CHANNEL_MAPPING 中的所有 pid 添加数据
+    }
+    
+    # 将示例数据转换为标准格式
+    for pid, data in sample_arpu_data.items():
+        users_list = data['users']
+        revenue_list = data['revenue']
+        
+        for i, month in enumerate(months):
+            if i < len(users_list):  # 确保有数据
                 builtin_data.append({
                     '月份': month,
                     'pid': pid,
-                    'stat_date': f"{month}-15",  # 示例日期
-                    'instl_user_cnt': np.random.randint(100, 5000),  # 示例新增用户数
-                    'ad_all_rven_1d_m': np.random.uniform(10, 500)  # 示例收入
+                    'stat_date': f"{month}-15",  # 月中日期
+                    'instl_user_cnt': users_list[i],
+                    'ad_all_rven_1d_m': revenue_list[i]
                 })
     
     return pd.DataFrame(builtin_data)
+
+def load_builtin_arpu_from_file():
+    """从上传的文件加载内置ARPU数据"""
+    st.subheader("🔧 管理员功能：上传内置ARPU数据")
+    
+    uploaded_builtin_file = st.file_uploader(
+        "上传内置ARPU数据文件 (将替换系统默认数据)",
+        type=['xlsx', 'xls', 'csv'],
+        help="包含2024.1-2025.4期间的完整ARPU数据",
+        key="builtin_arpu_upload"
+    )
+    
+    if uploaded_builtin_file:
+        try:
+            if uploaded_builtin_file.name.endswith('.csv'):
+                uploaded_df = pd.read_csv(uploaded_builtin_file)
+            else:
+                uploaded_df = pd.read_excel(uploaded_builtin_file)
+            
+            # 验证数据格式
+            required_cols = ['月份', 'pid', 'stat_date', 'instl_user_cnt', 'ad_all_rven_1d_m']
+            missing_cols = [col for col in required_cols if col not in uploaded_df.columns]
+            
+            if missing_cols:
+                st.error(f"❌ 文件缺少必需列: {', '.join(missing_cols)}")
+                return None
+            else:
+                st.success(f"✅ 内置ARPU数据上传成功！包含 {len(uploaded_df)} 条记录")
+                
+                # 显示数据摘要
+                col1, col2, col3 = st.columns(3)
+                with col1:
+                    st.metric("记录总数", f"{len(uploaded_df):,}")
+                with col2:
+                    st.metric("渠道数量", uploaded_df['pid'].nunique())
+                with col3:
+                    st.metric("月份数量", uploaded_df['月份'].nunique())
+                
+                # 显示数据预览
+                st.markdown("**数据预览：**")
+                st.dataframe(uploaded_df.head(10), use_container_width=True)
+                
+                return uploaded_df
+                
+        except Exception as e:
+            st.error(f"❌ 文件处理失败：{str(e)}")
+            return None
+    
+    return None
 
 def load_user_arpu_data_after_april(uploaded_file, builtin_df):
     """加载用户上传的5月及之后的ARPU数据，并与内置数据合并"""
@@ -435,20 +552,25 @@ def integrate_excel_files_cached(file_names, file_contents, target_month, channe
     mapping_warnings = []
 
     for i, (file_name, file_content) in enumerate(zip(file_names, file_contents)):
-        source_name = os.path.splitext(file_name)[0]
+        source_name = os.path.splitext(file_name)[0].strip()  # 去除空格
         
-        # 渠道映射处理 - 修复逻辑
+        # 渠道映射处理 - 修复匹配逻辑
+        mapped_source = source_name  # 默认使用文件名
+        
+        # 首先检查是否直接是渠道名称
         if source_name in channel_mapping:
-            # 如果文件名直接是渠道名，直接使用
             mapped_source = source_name
         else:
-            # 如果文件名不是渠道名，尝试作为渠道号查找
+            # 检查是否是渠道号
             reverse_mapping = create_reverse_mapping(channel_mapping)
             if source_name in reverse_mapping:
                 mapped_source = reverse_mapping[source_name]
             else:
-                mapped_source = source_name
+                # 都不匹配时才报警告
                 mapping_warnings.append(f"文件 '{source_name}' 未在渠道映射表中找到对应项")
+                
+        # 调试信息（可选）
+        # print(f"文件: {file_name}, source_name: '{source_name}', mapped_source: '{mapped_source}'")
 
         try:
             # 从内存中读取Excel文件
@@ -574,9 +696,9 @@ def integrate_excel_files_streamlit(uploaded_files, target_month=None, channel_m
     
     return integrate_excel_files_cached(file_names, file_contents, target_month, channel_mapping)
 
-# ==================== 留存率计算函数 - 修改为以新增用户均值为基数 ====================
+# ==================== 留存率计算函数 - 确保使用数字列名 ====================
 def calculate_retention_rates_new_method(df):
-    """新的留存率计算方法：按渠道计算平均新增数作为基数，各天留存数/平均新增数"""
+    """OCPX格式留存率计算：各天留存列（1、2、3...）平均值÷回传新增数平均值"""
     retention_results = []
     data_sources = df['数据来源'].unique()
 
@@ -595,24 +717,28 @@ def calculate_retention_rates_new_method(df):
         
         avg_new_users = np.mean(new_users_values)
         
-        # 计算1-30天的平均留存数，并用平均新增数作为基数计算留存率
+        # 计算1-30天的平均留存数，使用数字列名"1"、"2"、"3"...
         retention_data = {'data_source': source, 'avg_new_users': avg_new_users}
         days = []
         rates = []
         
         for day in range(1, 31):
-            day_col = str(day)
+            day_col = str(day)  # 确保使用字符串格式的数字列名
             day_retain_values = []
             
+            # 检查该列是否存在
+            if day_col not in source_data.columns:
+                continue
+            
             for _, row in source_data.iterrows():
-                if day_col in row and not pd.isna(row[day_col]):
+                if day_col in row.index and not pd.isna(row[day_col]):
                     retain_count = safe_convert_to_numeric(row[day_col])
                     if retain_count >= 0:  # 允许0值
                         day_retain_values.append(retain_count)
             
             if day_retain_values:
                 avg_retain = np.mean(day_retain_values)
-                # 修改计算方法：留存率 = 平均留存数 / 平均新增数
+                # OCPX计算方法：留存率 = 平均留存数 / 平均新增数
                 retention_rate = avg_retain / avg_new_users if avg_new_users > 0 else 0
                 
                 # 留存率范围为 0 ≤ 留存率 ≤ 1.0
@@ -772,9 +898,13 @@ def calculate_lt_advanced(retention_result, channel_name, lt_years=5, return_cur
 
     return total_lt
 
-# ==================== 单渠道图表生成函数 - 彻底解决中文显示问题 ====================
+# ==================== 单渠道图表生成函数 - 修复中文显示 ====================
 def create_individual_channel_chart(channel_name, curve_data, original_data, max_days=100):
-    """创建单个渠道的100天LT拟合图表 - 避免中文字体问题"""
+    """创建单个渠道的100天LT拟合图表 - 简化中文显示"""
+    
+    # 设置中文字体 - 简化方法
+    plt.rcParams['font.sans-serif'] = ['SimHei', 'Microsoft YaHei', 'Arial Unicode MS', 'DejaVu Sans']
+    plt.rcParams['axes.unicode_minus'] = False
     
     fig, ax = plt.subplots(figsize=(8, 6))
     
@@ -783,10 +913,10 @@ def create_individual_channel_chart(channel_name, curve_data, original_data, max
         ax.scatter(
             original_data[channel_name]["days"],
             original_data[channel_name]["rates"],
-            color='#ef4444',  # 浅红色改为红色
+            color='#ef4444',
             s=60,
             alpha=0.8,
-            label='Actual Data',  # 使用英文避免字体问题
+            label='实际数据',
             zorder=3
         )
     
@@ -803,21 +933,28 @@ def create_individual_channel_chart(channel_name, curve_data, original_data, max
     ax.plot(
         curve_days_filtered,
         curve_rates_filtered,
-        color='#3b82f6',  # 蓝色
+        color='#3b82f6',
         linewidth=2.5,
-        label='Fitted Curve',  # 使用英文避免字体问题
+        label='拟合曲线',
         zorder=2
     )
     
-    # 设置图表样式 - 使用英文避免字体问题
+    # 设置图表样式
     ax.set_xlim(0, max_days)
     ax.set_ylim(0, 0.6)
-    ax.set_xlabel('Retention Days', fontsize=12)
-    ax.set_ylabel('Retention Rate', fontsize=12)
-    ax.set_title(f'{channel_name} ({max_days}d LT Fitting)', fontsize=14, fontweight='bold')
-    ax.grid(True, linestyle='--', alpha=0.4)
     
-    # 设置图例
+    try:
+        # 尝试使用中文
+        ax.set_xlabel('留存天数', fontsize=12)
+        ax.set_ylabel('留存率', fontsize=12)
+        ax.set_title(f'{channel_name} ({max_days}天LT拟合)', fontsize=14, fontweight='bold')
+    except:
+        # 如果中文失败，使用英文
+        ax.set_xlabel('Retention Days', fontsize=12)
+        ax.set_ylabel('Retention Rate', fontsize=12)
+        ax.set_title(f'{channel_name} ({max_days}d LT Fitting)', fontsize=14, fontweight='bold')
+    
+    ax.grid(True, linestyle='--', alpha=0.4)
     ax.legend(fontsize=10)
     
     # 设置Y轴刻度为百分比
@@ -917,13 +1054,15 @@ if current_page == "LT模型构建":
     st.subheader("1. 数据上传与汇总")
     
     # 默认渠道映射 - 默认展开，添加上传选择
-    with st.expander("查看默认渠道映射（📋 请按渠道名称命名文件，用于ARPU计算）", expanded=True):
+    st.subheader("渠道映射配置")
+    with st.expander("📋 默认渠道映射（请按渠道名称命名文件）", expanded=True):
         st.markdown("""
         <div class="step-tip">
             <div class="step-tip-title">💡 重要提示</div>
             <div class="step-tip-content">
-            请将Excel文件按照下表中的<strong>渠道名称</strong>进行命名，这样系统可以自动匹配ARPU数据。<br>
-            例如：华为.xlsx、小米.xlsx、OPPO.xlsx 等
+            <strong>文件命名规则：</strong>请将Excel文件按照下表中的<strong>渠道名称</strong>进行命名<br>
+            例如：<code>鼎乐-盛世7.xlsx</code>、<code>华为.xlsx</code>、<code>小米.xlsx</code> 等<br>
+            <strong>用途：</strong>正确命名可自动匹配ARPU数据和渠道分析
             </div>
         </div>
         """, unsafe_allow_html=True)
@@ -935,27 +1074,36 @@ if current_page == "LT模型构建":
         default_mapping_df = pd.DataFrame(default_mapping_rows)
         st.dataframe(default_mapping_df, use_container_width=True)
         
-        # 添加是否需要上传渠道映射的选择
-        st.subheader("渠道映射设置")
-        need_custom_mapping = st.radio(
-            "是否需要上传自定义渠道映射？",
-            options=["使用默认映射", "上传自定义映射"],
-            index=0,
-            help="如果您的渠道与默认映射不同，请选择上传自定义映射"
-        )
+    # 添加是否需要上传渠道映射的选择
+    st.markdown("### 渠道映射选项")
+    need_custom_mapping = st.radio(
+        "选择渠道映射方式：",
+        options=["✅ 使用默认渠道映射", "📤 上传自定义渠道映射"],
+        index=0,
+        help="如果您的渠道与默认映射不同，请选择上传自定义映射"
+    )
     
     # 按钮控制显示上传界面
     if not st.session_state.show_upload_interface:
-        if st.button("开始数据上传", type="primary", use_container_width=True):
+        if st.button("📤 开始数据上传", type="primary", use_container_width=True):
             st.session_state.show_upload_interface = True
             st.rerun()
+        
+        # 显示当前渠道映射摘要
+        with st.expander("🔍 查看当前渠道映射摘要", expanded=False):
+            current_channels = list(st.session_state.channel_mapping.keys())
+            st.markdown(f"**当前共有 {len(current_channels)} 个渠道：**")
+            channels_text = "、".join(current_channels)
+            st.text(channels_text)
     else:
         # 渠道映射文件上传 - 只在选择自定义映射时显示
-        if need_custom_mapping == "上传自定义映射":
+        if need_custom_mapping == "📤 上传自定义渠道映射":
+            st.markdown("### 上传自定义渠道映射文件")
             channel_mapping_file = st.file_uploader(
-                "上传渠道映射文件 (Excel格式)",
+                "选择渠道映射Excel文件",
                 type=['xlsx', 'xls'],
-                help="格式：第一列为渠道名称，后续列为对应的渠道号"
+                help="格式：第一列为渠道名称，后续列为对应的渠道号",
+                key="custom_channel_mapping"
             )
             
             if channel_mapping_file:
@@ -963,10 +1111,10 @@ if current_page == "LT模型构建":
                     custom_mapping = parse_channel_mapping_from_excel(channel_mapping_file)
                     if custom_mapping and isinstance(custom_mapping, dict) and len(custom_mapping) > 0:
                         st.session_state.channel_mapping = custom_mapping
-                        st.success(f"渠道映射文件加载成功！共包含 {len(custom_mapping)} 个渠道")
+                        st.success(f"✅ 自定义渠道映射加载成功！共包含 {len(custom_mapping)} 个渠道")
                         
                         # 自动展开映射详情
-                        with st.expander("查看渠道映射详情", expanded=True):
+                        with st.expander("查看自定义渠道映射详情", expanded=True):
                             mapping_rows = []
                             for channel_name, pids in custom_mapping.items():
                                 for pid in pids:
@@ -974,11 +1122,13 @@ if current_page == "LT模型构建":
                             mapping_df = pd.DataFrame(mapping_rows)
                             st.dataframe(mapping_df, use_container_width=True)
                     else:
-                        st.error("渠道映射文件解析失败，将使用默认映射")
+                        st.error("❌ 渠道映射文件解析失败，将使用默认映射")
                 except Exception as e:
-                    st.error(f"读取渠道映射文件时出错：{str(e)}")
+                    st.error(f"❌ 读取渠道映射文件时出错：{str(e)}")
+            else:
+                st.info("📤 请上传自定义渠道映射文件")
         else:
-            st.info("正在使用默认渠道映射")
+            st.success("✅ 正在使用默认渠道映射")
 
         # 数据文件上传
         uploaded_files = st.file_uploader(
@@ -1003,7 +1153,7 @@ if current_page == "LT模型构建":
 
                         if merged_data is not None and not merged_data.empty:
                             st.session_state.merged_data = merged_data
-                            st.success(f"数据处理完成！成功处理 {processed_count} 个文件")
+                            st.success(f"✅ 数据处理完成！成功处理 {processed_count} 个文件")
 
                             col1, col2, col3 = st.columns(3)
                             with col1:
@@ -1015,14 +1165,30 @@ if current_page == "LT模型构建":
                                     total_users = merged_data['回传新增数'].sum()
                                     st.metric("总新增用户", f"{total_users:,.0f}")
 
+                            # 显示文件匹配情况
+                            st.subheader("📋 文件匹配情况")
+                            unique_sources = merged_data['数据来源'].unique()
+                            match_info = []
+                            for source in unique_sources:
+                                # 检查是否在默认映射中
+                                is_in_mapping = source in st.session_state.channel_mapping
+                                match_info.append({
+                                    '文件/渠道名称': source,
+                                    '匹配状态': '✅ 已匹配' if is_in_mapping else '⚠️ 未匹配',
+                                    '记录数': len(merged_data[merged_data['数据来源'] == source])
+                                })
+                            
+                            match_df = pd.DataFrame(match_info)
+                            st.dataframe(match_df, use_container_width=True)
+
                             if mapping_warnings:
-                                st.warning("以下文件未在渠道映射中找到对应关系：")
+                                st.warning("⚠️ 以下文件未在渠道映射中找到对应关系：")
                                 for warning in mapping_warnings:
                                     st.text(f"• {warning}")
+                                st.info("💡 提示：请确保文件名与渠道映射表中的渠道名称完全一致")
 
                             # 优化的数据预览 - 每个文件显示两行
                             st.subheader("数据预览")
-                            unique_sources = merged_data['数据来源'].unique()
                             
                             for source in unique_sources:
                                 source_data = merged_data[merged_data['数据来源'] == source]
@@ -1130,16 +1296,15 @@ if current_page == "LT模型构建":
         st.markdown('<div class="glass-card">', unsafe_allow_html=True)
         st.subheader("3. 留存率计算")
         
-        # 修改计算方法说明
         st.markdown("""
         <div class="step-tip">
             <div class="step-tip-title">📋 OCPX格式留存率计算方法</div>
             <div class="step-tip-content">
             <strong>OCPX表计算方法：</strong>以平均新增用户数作为基数<br>
             • 计算每个渠道的<strong>回传新增数</strong>的平均值作为基数<br>
-            • 计算各天留存列（1、2、3...30）的平均值<br>
+            • 计算各天留存列（<strong>列名必须为：1、2、3...30</strong>）的平均值<br>
             • 留存率 = 各天留存数平均值 ÷ 回传新增数平均值<br>
-            • 适用于包含1、2、3...30等数字列名的OCPX监测表格
+            • ⚠️ <strong>重要：</strong>确保Excel表格中留存数据的列名为数字：1、2、3、4...30
             </div>
         </div>
         """, unsafe_allow_html=True)
@@ -1359,14 +1524,44 @@ elif current_page == "ARPU计算":
     data_source_option = st.radio(
         "选择ARPU数据来源：",
         options=[
-            "使用内置数据(2024.1-2025.4) + 上传新数据(2025.5+)", 
-            "完全上传自定义数据"
+            "🔧 管理员模式：上传内置数据", 
+            "📊 使用内置数据(2024.1-2025.4) + 上传新数据(2025.5+)", 
+            "📤 完全上传自定义数据"
         ],
-        index=0,
-        help="内置数据包含2024年1月到2025年4月的基础ARPU值，您只需上传5月及之后的数据"
+        index=1,
+        help="选择不同的数据处理模式"
     )
 
-    if data_source_option == "使用内置数据(2024.1-2025.4) + 上传新数据(2025.5+)":
+    if data_source_option == "🔧 管理员模式：上传内置数据":
+        # 管理员模式：上传内置数据
+        st.markdown("""
+        <div class="step-tip">
+            <div class="step-tip-title">🔧 管理员模式</div>
+            <div class="step-tip-content">
+            • 上传包含2024年1月至2025年4月的完整ARPU数据<br>
+            • 数据将作为系统内置数据使用<br>
+            • 必须包含列：<strong>月份、pid、stat_date、instl_user_cnt、ad_all_rven_1d_m</strong><br>
+            • 支持Excel(.xlsx/.xls)和CSV格式
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # 使用新的函数加载内置数据
+        uploaded_builtin_data = load_builtin_arpu_from_file()
+        
+        if uploaded_builtin_data is not None:
+            # 使用上传的数据作为内置数据
+            arpu_df = uploaded_builtin_data
+            process_arpu_calculation = True
+            st.info("💾 将使用您上传的数据作为内置ARPU数据")
+        else:
+            # 使用默认示例数据
+            builtin_df = get_builtin_arpu_data()
+            arpu_df = builtin_df
+            process_arpu_calculation = True
+            st.warning("⚠️ 未上传数据，使用系统示例数据")
+            
+    elif data_source_option == "📊 使用内置数据(2024.1-2025.4) + 上传新数据(2025.5+)":
         # 使用内置数据 + 新数据
         st.markdown("""
         <div class="step-tip">
@@ -1424,9 +1619,9 @@ elif current_page == "ARPU计算":
         # 完全自定义数据
         st.markdown("""
         <div class="step-tip">
-            <div class="step-tip-title">📋 完全自定义数据模式</div>
+            <div class="step-tip-title">📤 完全自定义数据模式</div>
             <div class="step-tip-content">
-            • Excel格式(.xlsx/.xls)<br>
+            • Excel格式(.xlsx/.xls)或CSV格式<br>
             • 必须包含以下列：<br>
             &nbsp;&nbsp;- <strong>月份</strong>：月份信息<br>
             &nbsp;&nbsp;- <strong>pid</strong>：渠道号<br>
@@ -1438,20 +1633,23 @@ elif current_page == "ARPU计算":
         </div>
         """, unsafe_allow_html=True)
 
-        arpu_file = st.file_uploader("选择ARPU数据文件 (Excel格式)", type=['xlsx', 'xls'])
+        arpu_file = st.file_uploader("选择ARPU数据文件", type=['xlsx', 'xls', 'csv'])
 
         if arpu_file:
             try:
                 with st.spinner("正在读取ARPU文件..."):
-                    arpu_df = pd.read_excel(arpu_file)
-                st.success("ARPU文件上传成功！")
+                    if arpu_file.name.endswith('.csv'):
+                        arpu_df = pd.read_csv(arpu_file)
+                    else:
+                        arpu_df = pd.read_excel(arpu_file)
+                st.success("✅ ARPU文件上传成功！")
                 
                 # 检查必需列
                 required_cols = ['pid', 'instl_user_cnt', 'ad_all_rven_1d_m']
                 missing_cols = [col for col in required_cols if col not in arpu_df.columns]
                 
                 if missing_cols:
-                    st.error(f"文件缺少必需列: {', '.join(missing_cols)}")
+                    st.error(f"❌ 文件缺少必需列: {', '.join(missing_cols)}")
                     st.info("可用列: " + ", ".join(arpu_df.columns.tolist()))
                     process_arpu_calculation = False
                 else:
@@ -1461,10 +1659,10 @@ elif current_page == "ARPU计算":
                     process_arpu_calculation = True
                     
             except Exception as e:
-                st.error(f"文件读取失败：{str(e)}")
+                st.error(f"❌ 文件读取失败：{str(e)}")
                 process_arpu_calculation = False
         else:
-            st.info("请上传ARPU数据文件")
+            st.info("📤 请上传ARPU数据文件")
             process_arpu_calculation = False
 
     # 统一的ARPU计算处理
