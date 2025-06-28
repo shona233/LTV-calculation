@@ -52,17 +52,24 @@ def setup_chinese_font():
         
         if selected_font:
             # 设置matplotlib中文字体
-            plt.rcParams['font.sans-serif'] = [selected_font, 'Microsoft YaHei', 'SimSun', 'Arial Unicode MS']
+            plt.rcParams['font.sans-serif'] = [selected_font, 'Microsoft YaHei', 'SimSun', 'Arial Unicode MS', 'DejaVu Sans']
             plt.rcParams['axes.unicode_minus'] = False  # 解决负号显示问题
             plt.rcParams['font.size'] = 10
             # 强制清除字体缓存并重新设置
-            mpl.font_manager._rebuild()
+            try:
+                fm._rebuild()
+                # 额外的字体设置
+                plt.rcParams['font.family'] = 'sans-serif'
+                mpl.rcParams.update({'font.sans-serif': [selected_font, 'Microsoft YaHei', 'SimSun', 'Arial Unicode MS', 'DejaVu Sans']})
+            except:
+                pass
             st.success(f"已设置中文字体: {selected_font}")
         else:
             # 如果没有找到中文字体，使用默认设置
-            plt.rcParams['font.sans-serif'] = ['SimHei', 'Microsoft YaHei', 'SimSun', 'Arial Unicode MS']
+            plt.rcParams['font.sans-serif'] = ['SimHei', 'Microsoft YaHei', 'SimSun', 'Arial Unicode MS', 'DejaVu Sans']
             plt.rcParams['axes.unicode_minus'] = False
             plt.rcParams['font.size'] = 10
+            plt.rcParams['font.family'] = 'sans-serif'
             st.warning("使用默认中文字体设置")
         
         return True
@@ -70,9 +77,10 @@ def setup_chinese_font():
     except Exception as e:
         st.warning(f"字体设置失败: {e}")
         # 使用默认设置作为备用
-        plt.rcParams['font.sans-serif'] = ['SimHei', 'Microsoft YaHei', 'SimSun', 'Arial Unicode MS']
+        plt.rcParams['font.sans-serif'] = ['SimHei', 'Microsoft YaHei', 'SimSun', 'Arial Unicode MS', 'DejaVu Sans']
         plt.rcParams['axes.unicode_minus'] = False
         plt.rcParams['font.size'] = 10
+        plt.rcParams['font.family'] = 'sans-serif'
         return False
 
 # 初始化字体设置
@@ -708,10 +716,19 @@ def calculate_lt_advanced(retention_result, channel_name, lt_years=5, return_cur
 # ==================== 单渠道图表生成函数 - 修改为100天 ====================
 def create_individual_channel_chart(channel_name, curve_data, original_data, max_days=100):
     """创建单个渠道的100天LT拟合图表"""
-    # 重新设置字体
-    plt.rcParams['font.sans-serif'] = ['SimHei', 'Microsoft YaHei', 'SimSun', 'Arial Unicode MS']
+    # 强制设置中文字体
+    import matplotlib.font_manager as fm
+    
+    # 尝试多种字体设置方法
+    plt.rcParams['font.sans-serif'] = ['SimHei', 'Microsoft YaHei', 'DejaVu Sans', 'SimSun', 'Arial Unicode MS']
     plt.rcParams['axes.unicode_minus'] = False
     plt.rcParams['font.size'] = 10
+    
+    # 清除字体缓存
+    try:
+        fm._rebuild()
+    except:
+        pass
     
     fig = plt.figure(figsize=(8, 6))
     ax = fig.add_subplot(111)
@@ -747,14 +764,30 @@ def create_individual_channel_chart(channel_name, curve_data, original_data, max
         zorder=2
     )
     
-    # 设置图表样式
-    ax.set_xlim(0, max_days)
-    ax.set_ylim(0, 0.6)
-    ax.set_xlabel('留存天数', fontsize=12)
-    ax.set_ylabel('留存率', fontsize=12)
-    ax.set_title(f'{channel_name} ({max_days}天LT拟合)', fontsize=14, fontweight='bold')
-    ax.grid(True, linestyle='--', alpha=0.4)
-    ax.legend(fontsize=10)
+    # 设置图表样式 - 强制指定字体
+    try:
+        # 尝试使用FontProperties
+        chinese_font = fm.FontProperties(family=['SimHei', 'Microsoft YaHei', 'DejaVu Sans'])
+        
+        ax.set_xlim(0, max_days)
+        ax.set_ylim(0, 0.6)
+        ax.set_xlabel('留存天数', fontsize=12, fontproperties=chinese_font)
+        ax.set_ylabel('留存率', fontsize=12, fontproperties=chinese_font)
+        ax.set_title(f'{channel_name} ({max_days}天LT拟合)', fontsize=14, fontweight='bold', fontproperties=chinese_font)
+        ax.grid(True, linestyle='--', alpha=0.4)
+        
+        # 设置图例字体
+        legend = ax.legend(fontsize=10, prop=chinese_font)
+        
+    except:
+        # 如果FontProperties失败，使用默认设置
+        ax.set_xlim(0, max_days)
+        ax.set_ylim(0, 0.6)
+        ax.set_xlabel('Retention Days', fontsize=12)  # 使用英文作为备用
+        ax.set_ylabel('Retention Rate', fontsize=12)
+        ax.set_title(f'{channel_name} ({max_days}d LT Fitting)', fontsize=14, fontweight='bold')
+        ax.grid(True, linestyle='--', alpha=0.4)
+        ax.legend(fontsize=10)
     
     # 设置Y轴刻度为百分比
     y_ticks = [0, 0.15, 0.3, 0.45, 0.6]
