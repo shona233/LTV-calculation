@@ -868,9 +868,9 @@ if current_page == "LT模型构建":
     # 原理解释
     st.markdown("""
     <div class="principle-box">
-        <div class="principle-title">📚 LT模型构建原理</div>
+        <div class="principle-title">LT模型构建包含三个核心步骤：</div>
         <div class="principle-content">
-        LT模型构建包含三个核心步骤：<br>
+        <br>
         <strong>1. 数据上传汇总：</strong>快速整合多个Excel文件，支持OCPX新格式<br>
         <strong>2. 留存率计算：</strong>OCPX格式：各天留存列（1、2、3...）平均值÷回传新增数平均值<br>
         <strong>3. LT拟合分析：</strong>采用三阶段分层建模，预测用户生命周期长度
