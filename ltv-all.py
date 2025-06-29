@@ -531,6 +531,88 @@ def get_default_target_month():
         target_month = today.month - 2
     return f"{target_year}-{target_month:02d}"
 
+# ==================== 数据类型转换函数 ====================
+def safe_convert_to_numeric(value):
+    """安全地将值转换为数值类型"""
+    if pd.isna(value) or value == '' or value is None:
+        return 0
+    try:
+        if isinstance(value, str):
+            value = value.strip()
+            if value == '' or value.lower() in ['nan', 'null', 'none']:
+                return 0
+        return pd.to_numeric(value, errors='coerce')
+    except:
+        return 0
+
+# ==================== 数据预览优化函数 ====================
+def optimize_dataframe_for_preview(df, max_rows=2):
+    """优化DataFrame预览：有值的列放前面，跳过date为'日期'的行"""
+    preview_df = df.copy()
+    
+    # 跳过date值为"日期"的行
+    if 'date' in preview_df.columns:
+        preview_df = preview_df[preview_df['date'] != '日期']
+    if '日期' in preview_df.columns:
+        preview_df = preview_df[preview_df['日期'] != '日期']
+    
+    # 取前max_rows行
+    preview_df = preview_df.head(max_rows)
+    
+    if preview_df.empty:
+        return preview_df
+    
+    # 计算每列的非空值数量
+    non_null_counts = {}
+    for col in preview_df.columns:
+        non_null_count = preview_df[col].notna().sum()
+        # 排除全为0或空的数值列
+        if preview_df[col].dtype in ['int64', 'float64']:
+            non_zero_count = (preview_df[col] != 0).sum()
+            non_null_counts[col] = non_null_count + non_zero_count
+        else:
+            non_null_counts[col] = non_null_count
+    
+    # 按非空值数量排序列
+    sorted_columns = sorted(non_null_counts.keys(), key=lambda x: non_null_counts[x], reverse=True)
+    
+    # 确保'数据来源'列在最前面（如果存在）
+    if '数据来源' in sorted_columns:
+        sorted_columns.remove('数据来源')
+        sorted_columns.insert(0, '数据来源')
+    
+    return preview_df[sorted_columns]
+
+# ==================== 渠道映射处理函数 ====================
+def parse_channel_mapping_from_excel(channel_file):
+    """从上传的Excel文件解析渠道映射"""
+    try:
+        df = pd.read_excel(channel_file)
+        channel_mapping = {}
+        
+        for _, row in df.iterrows():
+            channel_name = str(row.iloc[0]).strip()
+            if pd.isna(channel_name) or channel_name == '' or channel_name == 'nan':
+                continue
+                
+            pids = []
+            for col_idx in range(1, len(row)):
+                pid = row.iloc[col_idx]
+                if pd.isna(pid) or str(pid).strip() in ['', 'nan', '　', ' ']:
+                    continue
+                # 确保渠道号为字符串格式，去除小数
+                pid_str = str(int(float(pid))) if isinstance(pid, (int, float)) else str(pid).strip()
+                if pid_str:
+                    pids.append(pid_str)
+            
+            if pids:
+                channel_mapping[channel_name] = pids
+                    
+        return channel_mapping
+    except Exception as e:
+        st.error(f"解析渠道映射文件失败：{str(e)}")
+        return {}
+
 # ==================== OCPX数据合并函数 ====================
 def merge_ocpx_data(retention_data, new_users_data, target_month):
     """合并OCPX格式的留存数据和新增数据"""
@@ -636,88 +718,6 @@ def merge_ocpx_data(retention_data, new_users_data, target_month):
         st.error(f"处理OCPX数据时出错：{str(e)}")
         return None
 
-# ==================== 数据类型转换函数 ====================
-def safe_convert_to_numeric(value):
-    """安全地将值转换为数值类型"""
-    if pd.isna(value) or value == '' or value is None:
-        return 0
-    try:
-        if isinstance(value, str):
-            value = value.strip()
-            if value == '' or value.lower() in ['nan', 'null', 'none']:
-                return 0
-        return pd.to_numeric(value, errors='coerce')
-    except:
-        return 0
-
-# ==================== 数据预览优化函数 ====================
-def optimize_dataframe_for_preview(df, max_rows=2):
-    """优化DataFrame预览：有值的列放前面，跳过date为'日期'的行"""
-    preview_df = df.copy()
-    
-    # 跳过date值为"日期"的行
-    if 'date' in preview_df.columns:
-        preview_df = preview_df[preview_df['date'] != '日期']
-    if '日期' in preview_df.columns:
-        preview_df = preview_df[preview_df['日期'] != '日期']
-    
-    # 取前max_rows行
-    preview_df = preview_df.head(max_rows)
-    
-    if preview_df.empty:
-        return preview_df
-    
-    # 计算每列的非空值数量
-    non_null_counts = {}
-    for col in preview_df.columns:
-        non_null_count = preview_df[col].notna().sum()
-        # 排除全为0或空的数值列
-        if preview_df[col].dtype in ['int64', 'float64']:
-            non_zero_count = (preview_df[col] != 0).sum()
-            non_null_counts[col] = non_null_count + non_zero_count
-        else:
-            non_null_counts[col] = non_null_count
-    
-    # 按非空值数量排序列
-    sorted_columns = sorted(non_null_counts.keys(), key=lambda x: non_null_counts[x], reverse=True)
-    
-    # 确保'数据来源'列在最前面（如果存在）
-    if '数据来源' in sorted_columns:
-        sorted_columns.remove('数据来源')
-        sorted_columns.insert(0, '数据来源')
-    
-    return preview_df[sorted_columns]
-
-# ==================== 渠道映射处理函数 ====================
-def parse_channel_mapping_from_excel(channel_file):
-    """从上传的Excel文件解析渠道映射"""
-    try:
-        df = pd.read_excel(channel_file)
-        channel_mapping = {}
-        
-        for _, row in df.iterrows():
-            channel_name = str(row.iloc[0]).strip()
-            if pd.isna(channel_name) or channel_name == '' or channel_name == 'nan':
-                continue
-                
-            pids = []
-            for col_idx in range(1, len(row)):
-                pid = row.iloc[col_idx]
-                if pd.isna(pid) or str(pid).strip() in ['', 'nan', '　', ' ']:
-                    continue
-                # 确保渠道号为字符串格式，去除小数
-                pid_str = str(int(float(pid))) if isinstance(pid, (int, float)) else str(pid).strip()
-                if pid_str:
-                    pids.append(pid_str)
-            
-            if pids:
-                channel_mapping[channel_name] = pids
-                    
-        return channel_mapping
-    except Exception as e:
-        st.error(f"解析渠道映射文件失败：{str(e)}")
-        return {}
-
 # ==================== 文件整合核心函数 - 支持OCPX新格式 ====================
 @st.cache_data
 def integrate_excel_files_cached(file_names, file_contents, target_month, channel_mapping):
@@ -786,7 +786,6 @@ def integrate_excel_files_cached(file_names, file_contents, target_month, channe
             else:
                 # 使用第一个工作表
                 file_data = pd.read_excel(io.BytesIO(file_content), sheet_name=0)
-
             
             if file_data is not None and not file_data.empty:
                 # 传统格式数据处理逻辑
@@ -1217,7 +1216,8 @@ session_keys = [
     'channel_mapping', 'merged_data', 'cleaned_data', 'retention_data',
     'lt_results_2y', 'lt_results_5y', 'arpu_data', 'ltv_results', 'current_step',
     'excluded_data', 'excluded_dates_info', 'show_exclusion', 'show_manual_arpu',
-    'visualization_data_5y', 'original_data', 'show_upload_interface', 'show_custom_mapping'
+    'visualization_data_5y', 'original_data', 'show_upload_interface', 'show_custom_mapping',
+    'admin_default_arpu_data'
 ]
 for key in session_keys:
     if key not in st.session_state:
@@ -1379,9 +1379,10 @@ if current_page == "LT模型构建":
             • Sheet1: "监测渠道回传量" - 包含日期和回传新增数<br>
             • Sheet2: "ocpx监测留存数" - 包含日期和留存数据（列名：1、2、3...）<br><br>
             <strong>传统格式：</strong><br>
-            • 列名：stat_date（日期）、new（新增数）、new_retain_1、new_retain_2、new_retain_3...（留存数）<br>
-            • 示例：stat_date | new | new_retain_1 | new_retain_2 | new_retain_3<br>
-            • 系统会自动将new_retain_X转换为数字列名1、2、3...
+            • 列名格式：<strong>stat_date</strong>（日期）、<strong>new</strong>（新增数）、<strong>new_retain_1、new_retain_2...</strong>（留存数）<br>
+            • 系统自动将new_retain_X转换为标准列名1、2、3...<br><br>
+            <strong>兼容格式：</strong><br>
+            • 系统会尝试自动识别其他格式的Excel文件
             </div>
         </div>
         """, unsafe_allow_html=True)
@@ -1774,8 +1775,8 @@ elif current_page == "ARPU计算":
     <div class="principle-box">
         <div class="principle-title">📚 ARPU计算原理</div>
         <div class="principle-content">
-        ARPU（Average Revenue Per User）计算基于用户新增数和收入数据。系统内置2024.1-2025.4的基础数据，
-        用户可上传2025年5月及之后的数据进行合并计算。公式为：ARPU = 总收入 ÷ 总新增用户数。
+        ARPU（Average Revenue Per User）计算基于用户新增数和收入数据。系统支持管理员设置默认数据，
+        用户可上传最新月份数据进行合并计算。公式为：ARPU = 总收入 ÷ 总新增用户数。
         </div>
     </div>
     """, unsafe_allow_html=True)
@@ -2304,6 +2305,11 @@ with st.sidebar:
         <h4 style="text-align: center; color: white;">使用指南</h4>
         <p style="font-size: 0.9rem; color: rgba(255,255,255,0.9); text-align: center;">
         按步骤完成分析流程，每步都有详细指导。
+        </p>
+        <p style="font-size: 0.8rem; color: rgba(255,255,255,0.7); text-align: center;">
+        💡 <strong>管理员功能：</strong><br>
+        在ARPU计算页面可上传<br>
+        默认ARPU数据文件
         </p>
         <p style="font-size: 0.8rem; color: rgba(255,255,255,0.7); text-align: center;">
         LTV智能分析平台 v3.5<br>
