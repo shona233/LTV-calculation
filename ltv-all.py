@@ -285,7 +285,7 @@ st.markdown("""
     
     /* 防止内容区域高度变化 - 减小最小高度 */
     .glass-card {
-        min-height: 30px;
+        min-height: 20px;
     }
 </style>
 """, unsafe_allow_html=True)
