@@ -626,9 +626,10 @@ def optimize_dataframe_for_preview(df, max_rows=2):
     return preview_df[sorted_columns]
 
 # ==================== 智能匹配函数 ====================
+import difflib
+
 def calculate_similarity(str1, str2):
     """计算两个字符串的相似度（0-1之间，1表示完全相同）"""
-    import difflib
     return difflib.SequenceMatcher(None, str1.lower(), str2.lower()).ratio()
 
 def find_best_match(file_name, channel_mapping, threshold=0.6):
@@ -933,6 +934,7 @@ def integrate_excel_files_cached_with_mapping(file_names, file_contents, target_
 
         try:
             # 从内存中读取Excel文件 - 优化读取方式
+            file_data = None  # 初始化file_data变量
             with io.BytesIO(file_content) as buffer:
                 xls = pd.ExcelFile(buffer, engine='openpyxl')
                 sheet_names = xls.sheet_names
@@ -1943,6 +1945,10 @@ if current_page == "LT模型构建":
         # 检查是否需要渠道名称确认
         suggestions = get_file_channel_suggestions(uploaded_files, st.session_state.channel_mapping)
         
+        # 初始化变量
+        confirmed_mappings = {}
+        process_button_key = "process_data_direct"
+        
         if suggestions:
             st.markdown("### 📋 渠道名称确认")
             st.markdown("""
@@ -1958,7 +1964,6 @@ if current_page == "LT模型构建":
             if 'file_channel_confirmations' not in st.session_state:
                 st.session_state.file_channel_confirmations = {}
             
-            confirmed_mappings = {}
             all_confirmed = True
             
             for file_name, suggestion in suggestions.items():
@@ -1993,20 +1998,7 @@ if current_page == "LT模型构建":
             
             # 所有文件都已确认，可以处理数据
             st.success("✅ 所有文件渠道名称已确认，可以开始处理数据")
-            
-            # 将确认的映射添加到临时渠道映射中
-            temp_channel_mapping = st.session_state.channel_mapping.copy()
-            for file_name, confirmed_channel in confirmed_mappings.items():
-                # 将文件名作为该渠道的别名
-                if confirmed_channel in temp_channel_mapping:
-                    # 这里我们不修改原始映射，而是在处理时使用确认的映射
-                    pass
-            
             process_button_key = "process_data_with_confirmations"
-        else:
-            # 没有需要确认的文件
-            process_button_key = "process_data_direct"
-            confirmed_mappings = {}
 
         if st.button("开始处理数据", type="primary", use_container_width=True, key=process_button_key):
             with st.spinner("正在处理数据文件..."):
