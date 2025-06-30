@@ -1695,7 +1695,7 @@ ANALYSIS_STEPS = [
 
 # ==================== 侧边栏导航 ====================
 with st.sidebar:
-    st.markdown('<div style="margin-top: 2rem;"></div>')  # 添加空白
+    st.markdown('<div style="margin-top: 2rem;"></div>', unsafe_allow_html=True)  # 添加空白
     st.markdown('<h4 class="nav-title">分析流程</h4>', unsafe_allow_html=True)
 
     for i, step in enumerate(ANALYSIS_STEPS):
