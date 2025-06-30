@@ -1676,11 +1676,11 @@ with st.sidebar:
                      type="primary" if i == st.session_state.current_step else "secondary"):
             st.session_state.current_step = i
             st.rerun()
-        
+  
         # 只在LT模型构建时显示子步骤
         if "sub_steps" in step and i == st.session_state.current_step and step['name'] == "LT模型构建":
             sub_steps_text = " • ".join(step["sub_steps"])
-            st.markdown(f'<div class="sub-steps">{sub_steps_text}</div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="sub-steps" style="color: #1e40af;">{sub_steps_text}</div>', unsafe_allow_html=True)
 
     st.markdown('</div>', unsafe_allow_html=True)
 
