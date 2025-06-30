@@ -2895,13 +2895,13 @@ with st.sidebar:
     <div class="nav-container">
         <h4 style="text-align: center; color: white;">LTV = LT × ARPU</h4>
         <p style="font-size: 0.9rem; color: rgba(255,255,255,0.9); text-align: center;">
-        LT通过留存数据三阶段拟合预测用户生命周期长度
+        留存数据三阶段拟合预测计算LT
         </p>
         <p style="font-size: 0.8rem; color: rgba(255,255,255,0.7); text-align: center;">
-        ARPU计算各渠道每用户平均收入
+        ARPU计算每用户平均收入
         </p>
         <p style="font-size: 0.8rem; color: rgba(255,255,255,0.7); text-align: center;">
-        自动匹配渠道数据并生成LTV分析报告
+        整合生成LTV分析报告
         </p>
     </div>
     """, unsafe_allow_html=True)
