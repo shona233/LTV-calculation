@@ -2893,18 +2893,15 @@ with st.sidebar:
     st.markdown("---")
     st.markdown("""
     <div class="nav-container">
-        <h4 style="text-align: center; color: white;">使用指南</h4>
+        <h4 style="text-align: center; color: white;">LTV = LT × ARPU</h4>
         <p style="font-size: 0.9rem; color: rgba(255,255,255,0.9); text-align: center;">
-        按步骤完成分析流程，每步都有详细指导。
+        LT通过留存数据三阶段拟合预测用户生命周期长度
         </p>
         <p style="font-size: 0.8rem; color: rgba(255,255,255,0.7); text-align: center;">
-        <strong>管理员功能：</strong><br>
-        在ARPU计算页面可上传<br>
-        默认ARPU数据文件
+        ARPU计算各渠道每用户平均收入
         </p>
         <p style="font-size: 0.8rem; color: rgba(255,255,255,0.7); text-align: center;">
-        LTV智能分析平台 v3.5<br>
-        基于三阶段数学建模
+        自动匹配渠道数据并生成LTV分析报告
         </p>
     </div>
     """, unsafe_allow_html=True)
