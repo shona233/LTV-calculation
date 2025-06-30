@@ -834,7 +834,7 @@ if st.session_state.current_step is None:
 
 # ==================== 分析步骤定义 ====================
 ANALYSIS_STEPS = [
-    {"name": "LT模型构建", "sub_steps": ["数据上传汇总", "留存率计算", "LT拟合分析"]},
+    {"name": "LT模型构建", "sub_steps": ["数据上传汇总", "异常值剔除", "留存率计算", "LT拟合分析"]},
     {"name": "ARPU计算"},
     {"name": "LTV结果报告"}
 ]
@@ -870,15 +870,16 @@ if current_page == "LT模型构建":
     <div class="principle-box">
         <div class="principle-title">📚 LT模型构建原理</div>
         <div class="principle-content">
-        LT模型构建包含三个核心步骤：<br>
+        LT模型构建包含四个核心步骤：<br>
         <strong>1. 数据上传汇总：</strong>快速整合多个Excel文件，支持OCPX新格式<br>
-        <strong>2. 留存率计算：</strong>OCPX格式：各天留存列（1、2、3...）平均值÷回传新增数平均值<br>
-        <strong>3. LT拟合分析：</strong>采用三阶段分层建模，预测用户生命周期长度
+        <strong>2. 异常值剔除：</strong>剔除异常渠道和日期数据，提高数据质量<br>
+        <strong>3. 留存率计算：</strong>OCPX格式：各天留存列（1、2、3...）平均值÷回传新增数平均值<br>
+        <strong>4. LT拟合分析：</strong>采用三阶段分层建模，预测用户生命周期长度
         </div>
     </div>
     """, unsafe_allow_html=True)
     
-    # 步骤1：数据上传与汇总（默认展开）
+    # 步骤1：数据上传与汇总
     st.markdown('<div class="glass-card">', unsafe_allow_html=True)
     st.subheader("1. 数据上传与汇总")
     
@@ -985,6 +986,19 @@ if current_page == "LT模型构建":
                     st.error(f"处理过程中出现错误：{str(e)}")
     
     st.markdown('</div>', unsafe_allow_html=True)
+
+    # 步骤2：异常值剔除
+    st.markdown('<div class="glass-card">', unsafe_allow_html=True)
+    st.subheader("2. 异常值剔除")
+    
+    if st.session_state.merged_data is not None:
+        working_data = st.session_state.merged_data
+        data_sources = working_data['数据来源'].unique()
+        date_columns = [col for col in working_data.columns if '日期' in col or 'date' in col.lower()]
+        
+        # 异常值剔除选择
+        col1, col2 = st.columns(2)
+        with col1:
 
     # 步骤2：异常值剔除
     st.markdown('<div class="glass-card">', unsafe_allow_html=True)
