@@ -2233,7 +2233,7 @@ elif current_page == "ARPU计算":
 
                     if len(filtered_arpu_df) == 0:
                         st.error("筛选后无数据，请检查月份筛选条件")
-                        return
+                        continue
 
                     # 确保pid为字符串格式
                     filtered_arpu_df['pid'] = filtered_arpu_df['pid'].astype(str).str.replace('.0', '', regex=False)
@@ -2252,7 +2252,7 @@ elif current_page == "ARPU计算":
                     
                     if len(filtered_arpu_df) == 0:
                         st.error("数据清理后无有效记录")
-                        return
+                        continue
                     
                     # 创建反向渠道映射
                     reverse_mapping = create_reverse_mapping(st.session_state.channel_mapping)
