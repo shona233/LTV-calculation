@@ -680,6 +680,7 @@ def get_file_channel_suggestions(uploaded_files, channel_mapping):
             }
     
     return suggestions
+
 @st.cache_data
 def parse_channel_mapping_from_excel(channel_file_content):
     """从上传的Excel文件解析渠道映射"""
@@ -883,8 +884,8 @@ def merge_ocpx_data(retention_data, new_users_data, target_month):
 
 # ==================== 文件整合核心函数 - 支持OCPX新格式 - 优化版本 ====================
 @st.cache_data
-def integrate_excel_files_cached(file_names, file_contents, target_month, channel_mapping):
-    """缓存版本的文件整合函数 - 支持OCPX新格式 - 优化版本"""
+def integrate_excel_files_cached_with_mapping(file_names, file_contents, target_month, channel_mapping, confirmed_mappings):
+    """缓存版本的文件整合函数 - 支持OCPX新格式和智能映射 - 优化版本"""
     all_data = pd.DataFrame()
     processed_count = 0
     mapping_warnings = []
@@ -893,27 +894,22 @@ def integrate_excel_files_cached(file_names, file_contents, target_month, channe
         # 从文件名中提取渠道名称（去除扩展名和多余空格）
         source_name = os.path.splitext(file_name)[0].strip()
         
-@st.cache_data
-def integrate_excel_files_cached_with_mapping(file_names, file_contents, target_month, channel_mapping, confirmed_mappings):
-    """缓存版本的文件整合函数 - 支持OCPX新格式和智能映射 - 优化版本"""
-    all_data = pd.DataFrame()
-    processed_count = 0
-    mapping_warnings = []
-
-    for i, (file_name, file_content) in enumerate(zip(file_names, file_contents)):
-        source_name = os.path.splitext(file_name)[0].strip()
-        mapped_source = source_name
+        # 渠道映射处理 - 支持用户确认的智能匹配
+        mapped_source = source_name  # 默认使用文件名
         
-        # 渠道映射处理
+        # 第一优先级：检查是否有用户确认的智能匹配
         if source_name in confirmed_mappings:
             mapped_source = confirmed_mappings[source_name]
+        # 第二优先级：直接检查文件名是否在渠道映射的键中
         elif source_name in channel_mapping:
             mapped_source = source_name
         else:
+            # 第三优先级：检查文件名是否是某个渠道的渠道号
             reverse_mapping = create_reverse_mapping(channel_mapping)
             if source_name in reverse_mapping:
                 mapped_source = reverse_mapping[source_name]
             else:
+                # 第四优先级：模糊匹配 - 检查文件名是否包含渠道名称
                 found_match = False
                 for channel_name in channel_mapping.keys():
                     if channel_name in source_name or source_name in channel_name:
@@ -922,152 +918,13 @@ def integrate_excel_files_cached_with_mapping(file_names, file_contents, target_
                         break
                 
                 if not found_match:
+                    # 如果都不匹配，保持原文件名并记录警告
                     mapping_warnings.append(f"文件 '{source_name}' 未在渠道映射表中找到对应项")
 
         try:
+            # 从内存中读取Excel文件 - 优化读取方式
             file_data = None
             
-            with io.BytesIO(file_content) as buffer:
-                xls = pd.ExcelFile(buffer, engine='openpyxl')
-                sheet_names = xls.sheet_names
-
-                retention_sheet = None
-                new_users_sheet = None
-                
-                for sheet in sheet_names:
-                    if sheet.strip() == "ocpx监测留存数":
-                        retention_sheet = sheet
-                        break
-                
-                for sheet in sheet_names:
-                    if sheet.strip() == "监测渠道回传量":
-                        new_users_sheet = sheet
-                        break
-                
-                if retention_sheet and new_users_sheet:
-                    try:
-                        retention_data = pd.read_excel(buffer, sheet_name=retention_sheet, engine='openpyxl')
-                        new_users_data = pd.read_excel(buffer, sheet_name=new_users_sheet, engine='openpyxl')
-                        
-                        file_data = merge_ocpx_data(retention_data, new_users_data, target_month)
-                        if file_data is not None and not file_data.empty:
-                            file_data.insert(0, '数据来源', mapped_source)
-                            all_data = pd.concat([all_data, file_data], ignore_index=True)
-                            processed_count += 1
-                        continue
-                    except Exception as e:
-                        st.warning(f"OCPX格式处理失败，将尝试传统格式：{str(e)}")
-                
-                if retention_sheet:
-                    try:
-                        file_data = pd.read_excel(buffer, sheet_name=retention_sheet, engine='openpyxl')
-                    except:
-                        file_data = pd.read_excel(buffer, sheet_name=0, engine='openpyxl')
-                else:
-                    file_data = pd.read_excel(buffer, sheet_name=0, engine='openpyxl')
-            
-            if file_data is not None and not file_data.empty:
-                file_data_copy = file_data.copy()
-                
-                has_stat_date = 'stat_date' in file_data_copy.columns
-                retain_columns = [f'new_retain_{i}' for i in range(1, 31)]
-                has_retain_columns = any(col in file_data_copy.columns for col in retain_columns)
-
-                if has_stat_date and has_retain_columns:
-                    standardized_data = file_data_copy.copy()
-                    
-                    new_col_found = False
-                    for col in ['new', '新增', '新增用户', 'users']:
-                        if col in standardized_data.columns:
-                            standardized_data['回传新增数'] = standardized_data[col].apply(safe_convert_to_numeric)
-                            new_col_found = True
-                            break
-                    
-                    if not new_col_found:
-                        if len(standardized_data.columns) > 1:
-                            standardized_data['回传新增数'] = standardized_data.iloc[:, 1].apply(safe_convert_to_numeric)
-                        else:
-                            continue
-
-                    for i in range(1, 31):
-                        retain_col = f'new_retain_{i}'
-                        if retain_col in standardized_data.columns:
-                            standardized_data[str(i)] = standardized_data[retain_col].apply(safe_convert_to_numeric)
-
-                    date_col = 'stat_date'
-                    try:
-                        standardized_data[date_col] = pd.to_datetime(standardized_data[date_col], errors='coerce')
-                        standardized_data[date_col] = standardized_data[date_col].dt.strftime('%Y-%m-%d')
-                        standardized_data['日期'] = standardized_data[date_col]
-                        standardized_data['month'] = standardized_data[date_col].str[:7]
-                    except:
-                        continue
-
-                    filtered_data = standardized_data[standardized_data['month'] == target_month].copy()
-
-                    if not filtered_data.empty:
-                        filtered_data.insert(0, '数据来源', mapped_source)
-                        if 'stat_date' in filtered_data.columns:
-                            filtered_data['date'] = filtered_data['stat_date']
-                        all_data = pd.concat([all_data, filtered_data], ignore_index=True)
-                        processed_count += 1
-                else:
-                    report_users_col = None
-                    users_keywords = ['回传新增数', 'new', '新增', '用户数', '新增用户']
-                    for col in file_data_copy.columns:
-                        col_str = str(col).lower()
-                        if any(keyword.lower() in col_str for keyword in users_keywords):
-                            report_users_col = col
-                            break
-
-                    if report_users_col:
-                        file_data_copy['回传新增数'] = file_data_copy[report_users_col].apply(safe_convert_to_numeric)
-                    else:
-                        if len(file_data_copy.columns) > 1:
-                            file_data_copy['回传新增数'] = file_data_copy.iloc[:, 1].apply(safe_convert_to_numeric)
-
-                    for i in range(1, 31):
-                        col_name = str(i)
-                        if col_name in file_data_copy.columns:
-                            file_data_copy[col_name] = file_data_copy[col_name].apply(safe_convert_to_numeric)
-
-                    date_col = None
-                    date_keywords = ['日期', 'date', '时间', '统计日期', 'stat_date']
-                    for col in file_data_copy.columns:
-                        col_str = str(col).lower()
-                        if any(keyword.lower() in col_str for keyword in date_keywords):
-                            date_col = col
-                            break
-
-                    if date_col:
-                        try:
-                            file_data_copy[date_col] = pd.to_datetime(file_data_copy[date_col], errors='coerce')
-                            file_data_copy['month'] = file_data_copy[date_col].dt.strftime('%Y-%m')
-                            filtered_data = file_data_copy[file_data_copy['month'] == target_month].copy()
-                        except:
-                            file_data_copy['month'] = file_data_copy[date_col].apply(
-                                lambda x: str(x)[:7] if isinstance(x, str) and len(str(x)) >= 7 else None
-                            )
-                            filtered_data = file_data_copy[file_data_copy['month'] == target_month].copy()
-                    else:
-                        filtered_data = file_data_copy.copy()
-
-                    if not filtered_data.empty:
-                        filtered_data.insert(0, '数据来源', mapped_source)
-                        if date_col and date_col != 'date':
-                            filtered_data['date'] = filtered_data[date_col]
-                        all_data = pd.concat([all_data, filtered_data], ignore_index=True)
-                        processed_count += 1
-
-        except Exception as e:
-            st.error(f"处理文件 {file_name} 时出错: {str(e)}")
-        finally:
-            gc.collect()
-
-    return all_data, processed_count, mapping_warnings
-
-        try:
-            # 从内存中读取Excel文件 - 优化读取方式
             with io.BytesIO(file_content) as buffer:
                 xls = pd.ExcelFile(buffer, engine='openpyxl')
                 sheet_names = xls.sheet_names
@@ -1227,7 +1084,6 @@ def integrate_excel_files_cached_with_mapping(file_names, file_contents, target_
             st.error(f"处理文件 {file_name} 时出错: {str(e)}")
         finally:
             # 清理内存
-            del file_content
             gc.collect()
 
     return all_data, processed_count, mapping_warnings
