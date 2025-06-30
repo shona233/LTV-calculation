@@ -680,7 +680,7 @@ def merge_ocpx_data(retention_data, new_users_data, target_month):
                 new_users_col = col
         
         if date_col is None:
-            st.warning("监测渠道回传量表未找到"日期"列，尝试模糊匹配")
+            st.warning('监测渠道回传量表未找到"日期"列，尝试模糊匹配')
             # 模糊匹配日期列
             for col in new_users_clean.columns:
                 if '日期' in str(col) or 'date' in str(col).lower():
@@ -688,7 +688,7 @@ def merge_ocpx_data(retention_data, new_users_data, target_month):
                     break
                     
         if new_users_col is None:
-            st.warning("监测渠道回传量表未找到"回传新增数"列，尝试模糊匹配")
+            st.warning('监测渠道回传量表未找到"回传新增数"列，尝试模糊匹配')
             # 模糊匹配新增数列
             for col in new_users_clean.columns:
                 if '回传新增数' in str(col) or '新增' in str(col):
@@ -696,7 +696,7 @@ def merge_ocpx_data(retention_data, new_users_data, target_month):
                     break
         
         if date_col is None or new_users_col is None:
-            st.error("监测渠道回传量表格式不正确，请检查是否包含"日期"和"回传新增数"列")
+            st.error('监测渠道回传量表格式不正确，请检查是否包含"日期"和"回传新增数"列')
             return None
         
         # 清理新增数据
@@ -744,7 +744,7 @@ def merge_ocpx_data(retention_data, new_users_data, target_month):
                 break
         
         if retention_date_col is None:
-            st.warning("ocpx监测留存数表未找到"留存天数"列，尝试模糊匹配")
+            st.warning('ocpx监测留存数表未找到"留存天数"列，尝试模糊匹配')
             # 模糊匹配日期列
             for col in retention_clean.columns:
                 col_str = str(col).lower()
@@ -753,7 +753,7 @@ def merge_ocpx_data(retention_data, new_users_data, target_month):
                     break
         
         if retention_date_col is None:
-            st.error("ocpx监测留存数表格式不正确，请检查是否包含"留存天数"列")
+            st.error('ocpx监测留存数表格式不正确，请检查是否包含"留存天数"列')
             return None
         
         # 合并数据
