@@ -245,35 +245,6 @@ st.markdown("""
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
     header {visibility: hidden;}
-
-    /* 减少页面跳动的CSS */
-    .stSelectbox > div > div {
-        min-height: 38px;
-    }
-    
-    .stMultiSelect > div > div {
-        min-height: 38px;
-    }
-    
-    /* 固定容器高度 */
-    .exclusion-container {
-        min-height: 200px;
-        padding: 1rem;
-        background: white;
-        border-radius: 8px;
-        border: 1px solid #e5e7eb;
-    }
-    
-    /* 数据预览容器固定高度 */
-    .data-preview-container {
-        min-height: 150px;
-    }
-    
-    /* 防止表格高度变化导致的跳动 */
-    .stDataFrame {
-        min-height: 100px;
-    }
-
 </style>
 """, unsafe_allow_html=True)
 
