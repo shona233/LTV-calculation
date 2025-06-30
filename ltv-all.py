@@ -69,7 +69,7 @@ st.markdown("""
         padding: 1.5rem;
         border-radius: 12px;
         box-shadow: 0 4px 20px rgba(30, 64, 175, 0.3);
-        margin-bottom: 1.5rem;
+        margin-bottom: 1rem;
         text-align: center;
         color: white;
     }
@@ -88,25 +88,24 @@ st.markdown("""
         font-weight: 400;
     }
 
-    /* 卡片样式 */
+    /* 卡片样式 - 减少间距 */
     .glass-card {
         background: rgba(255, 255, 255, 0.95);
         border-radius: 12px;
         padding: 1.5rem;
         box-shadow: 0 8px 32px rgba(30, 64, 175, 0.1);
         border: 1px solid rgba(59, 130, 246, 0.2);
-        margin-bottom: 1.5rem;
+        margin-bottom: 0.8rem;
         backdrop-filter: blur(10px);
     }
 
-    /* 导航步骤样式 */
-    .nav-container {
-        background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
-        border-radius: 12px;
-        padding: 1.5rem;
-        margin-bottom: 1rem;
-        color: white;
-        box-shadow: 0 4px 20px rgba(30, 64, 175, 0.3);
+    /* 导航步骤样式 - 简化 */
+    .nav-title {
+        text-align: center; 
+        margin-bottom: 1rem; 
+        color: #1e40af;
+        font-size: 1.1rem;
+        font-weight: 600;
     }
 
     /* 按钮样式 - 修复所有状态的颜色 */
@@ -168,12 +167,16 @@ st.markdown("""
         outline: none !important;
     }
 
-    /* 子步骤样式 */
+    /* 子步骤样式 - 改进样式 */
     .sub-steps {
-        font-size: 0.8rem;
-        color: rgba(255,255,255,0.7);
-        margin-top: 0.3rem;
-        line-height: 1.2;
+        font-size: 0.85rem;
+        color: #6b7280;
+        margin-top: 0.5rem;
+        padding: 0.5rem;
+        background: rgba(59, 130, 246, 0.05);
+        border-radius: 6px;
+        border-left: 3px solid #3b82f6;
+        line-height: 1.4;
     }
 
     /* 警告文字颜色 */
@@ -245,7 +248,8 @@ st.markdown("""
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
     header {visibility: hidden;}
-    /* 减少页面跳动的CSS */
+    
+    /* 减少页面跳动的CSS - 设置固定容器高度 */
     .stSelectbox > div > div {
         min-height: 38px;
     }
@@ -254,9 +258,9 @@ st.markdown("""
         min-height: 38px;
     }
     
-    /* 固定容器高度 */
+    /* 固定容器高度 - 防止页面跳动 */
     .exclusion-container {
-        min-height: 200px;
+        min-height: 300px;
         padding: 1rem;
         background: white;
         border-radius: 8px;
@@ -1666,9 +1670,7 @@ ANALYSIS_STEPS = [
 
 # ==================== 侧边栏导航 ====================
 with st.sidebar:
-    st.markdown('<div class="nav-container">', unsafe_allow_html=True)
-    st.markdown('<h4 style="text-align: center; margin-bottom: 1rem; color: #1e40af;">分析流程</h4>',
-                unsafe_allow_html=True)
+    st.markdown('<h4 class="nav-title">分析流程</h4>', unsafe_allow_html=True)
 
     for i, step in enumerate(ANALYSIS_STEPS):
         button_text = f"{i + 1}. {step['name']}"
@@ -1680,14 +1682,8 @@ with st.sidebar:
         # 只在LT模型构建时显示子步骤
         if "sub_steps" in step and i == st.session_state.current_step and step['name'] == "LT模型构建":
             sub_steps = step["sub_steps"]
-            sub_steps_html = ""
-            for j in range(0, len(sub_steps), 2):
-                line_steps = sub_steps[j:j+2]
-                sub_steps_html += " • ".join(line_steps) + "<br>"
-            st.markdown(f'<div class="sub-steps" style="color: #1e40af; text-align: center; line-height: 1.6; font-family: \'Microsoft YaHei\', sans-serif;">{sub_steps_html}</div>', unsafe_allow_html=True)
-          
-          
-    st.markdown('</div>', unsafe_allow_html=True)
+            sub_steps_text = " • ".join(sub_steps[:2]) + "\n" + " • ".join(sub_steps[2:])
+            st.markdown(f'<div class="sub-steps">{sub_steps_text}</div>', unsafe_allow_html=True)
 
 # ==================== 页面路由 ====================
 current_page = ANALYSIS_STEPS[st.session_state.current_step]["name"]
@@ -1964,6 +1960,9 @@ if current_page == "LT模型构建":
     if st.session_state.merged_data is not None:
         merged_data = st.session_state.merged_data
         
+        # 使用固定高度容器防止页面跳动
+        st.markdown('<div class="exclusion-container">', unsafe_allow_html=True)
+        
         col1, col2 = st.columns(2)
         with col1:
             st.markdown("### 按数据来源剔除")
@@ -2047,6 +2046,8 @@ if current_page == "LT模型构建":
             # 如果没有要剔除的数据，自动设置清理后数据
             if not excluded_sources and not excluded_dates:
                 st.session_state.cleaned_data = merged_data.copy()
+        
+        st.markdown('</div>', unsafe_allow_html=True)
     else:
         st.info("请先完成数据上传与汇总")
 
@@ -2404,7 +2405,7 @@ elif current_page == "ARPU计算":
         # 显示默认数据信息
         builtin_df = get_builtin_arpu_data()
         
-        admin_data = load_admin_data_from_file()
+admin_data = load_admin_data_from_file()
         if admin_data is not None:
             st.info(f"使用管理员设置的默认数据：{len(builtin_df):,} 条记录，覆盖 {builtin_df['月份'].nunique()} 个月份")
         else:
@@ -2846,14 +2847,14 @@ LTV用户生命周期价值分析报告
 
 核心指标汇总
 -----------
-• 参与分析的渠道数量: {len(results_df)}
-• 5年平均LTV: {results_df['5年LTV'].mean():.2f}
-• 5年最高LTV: {results_df['5年LTV'].max():.2f}
-• 5年最低LTV: {results_df['5年LTV'].min():.2f}
-• 2年平均LTV: {results_df['2年LTV'].mean():.2f}
-• 平均5年LT值: {results_df['5年LT'].mean():.2f} 天
-• 平均2年LT值: {results_df['2年LT'].mean():.2f} 天
-• 平均ARPU: {results_df['5年ARPU'].mean():.4f}
+- 参与分析的渠道数量: {len(results_df)}
+- 5年平均LTV: {results_df['5年LTV'].mean():.2f}
+- 5年最高LTV: {results_df['5年LTV'].max():.2f}
+- 5年最低LTV: {results_df['5年LTV'].min():.2f}
+- 2年平均LTV: {results_df['2年LTV'].mean():.2f}
+- 平均5年LT值: {results_df['5年LT'].mean():.2f} 天
+- 平均2年LT值: {results_df['2年LT'].mean():.2f} 天
+- 平均ARPU: {results_df['5年ARPU'].mean():.4f}
 
 详细结果
 -----------
@@ -2865,10 +2866,10 @@ LTV用户生命周期价值分析报告
 
 计算方法
 -----------
-• LT拟合: 三阶段分层建模（1-30天幂函数 + 31-X天幂函数延续 + Y天后指数函数）
-• LTV公式: LTV = LT × ARPU
-• 渠道规则: 按华为、小米、OPPO、vivo、iPhone分类设定不同拟合参数
-• 留存率计算: OCPX格式表各天留存列（1、2、3...）平均值÷回传新增数平均值
+- LT拟合: 三阶段分层建模（1-30天幂函数 + 31-X天幂函数延续 + Y天后指数函数）
+- LTV公式: LTV = LT × ARPU
+- 渠道规则: 按华为、小米、OPPO、vivo、iPhone分类设定不同拟合参数
+- 留存率计算: OCPX格式表各天留存列（1、2、3...）平均值÷回传新增数平均值
 
 报告生成: LTV智能分析平台 v3.5
 """
@@ -2897,16 +2898,21 @@ LTV用户生命周期价值分析报告
 with st.sidebar:
     st.markdown("---")
     st.markdown("""
-    <div class="nav-container">
-        <h4 style="text-align: center; color: white;">LTV = LT × ARPU</h4>
-        <p style="font-size: 0.9rem; color: rgba(255,255,255,0.9); text-align: center;">
-        （1）请注意文件规范命名
+    <div style="background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%); 
+                border-radius: 8px; 
+                padding: 1rem; 
+                text-align: center; 
+                color: white;
+                margin-top: 1rem;">
+        <h4 style="color: white; margin-bottom: 0.5rem;">LTV = LT × ARPU</h4>
+        <p style="font-size: 0.85rem; color: rgba(255,255,255,0.9); margin: 0.3rem 0;">
+        请注意文件规范命名
         </p>
-        <p style="font-size: 0.8rem; color: rgba(255,255,255,0.9); text-align: center;">
-        （2）请注意更新当月渠道号
+        <p style="font-size: 0.8rem; color: rgba(255,255,255,0.9); margin: 0.3rem 0;">
+        请注意更新当月渠道号
         </p>
-        <p style="font-size: 0.8rem; color: rgba(255,255,255,0.9); text-align: center;">
-        （3）Ocpx文件较大，上传速度较慢
+        <p style="font-size: 0.8rem; color: rgba(255,255,255,0.9); margin: 0;">
+        Ocpx文件较大，上传速度较慢
         </p>
     </div>
     """, unsafe_allow_html=True)
