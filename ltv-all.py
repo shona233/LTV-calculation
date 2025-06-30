@@ -1679,9 +1679,14 @@ with st.sidebar:
   
         # 只在LT模型构建时显示子步骤
         if "sub_steps" in step and i == st.session_state.current_step and step['name'] == "LT模型构建":
-            sub_steps_text = " • ".join(step["sub_steps"])
-            st.markdown(f'<div class="sub-steps" style="color: #1e40af;">{sub_steps_text}</div>', unsafe_allow_html=True)
+            sub_steps = step["sub_steps"]
+            sub_steps_html = ""
+            for j in range(0, len(sub_steps), 2):
+                line_steps = sub_steps[j:j+2]
+                sub_steps_html += " • ".join(line_steps) + "<br>"
+            st.markdown(f'<div class="sub-steps" style="color: #1e40af;">{sub_steps_html}</div>', unsafe_allow_html=True)
 
+  
     st.markdown('</div>', unsafe_allow_html=True)
 
 # ==================== 页面路由 ====================
