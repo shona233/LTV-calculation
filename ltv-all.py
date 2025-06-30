@@ -1818,7 +1818,7 @@ if current_page == "LT模型构建":
             
             if not all_confirmed:
                 st.info("请确认所有文件的渠道名称后再继续处理数据")
-                return
+                st.stop()
             
             # 所有文件都已确认，可以处理数据
             st.success("✅ 所有文件渠道名称已确认，可以开始处理数据")
