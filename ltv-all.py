@@ -935,6 +935,7 @@ def integrate_excel_files_cached_with_mapping(file_names, file_contents, target_
         try:
             # 从内存中读取Excel文件 - 优化读取方式
             file_data = None  # 初始化file_data变量
+            
             with io.BytesIO(file_content) as buffer:
                 xls = pd.ExcelFile(buffer, engine='openpyxl')
                 sheet_names = xls.sheet_names
@@ -1094,8 +1095,6 @@ def integrate_excel_files_cached_with_mapping(file_names, file_contents, target_
             st.error(f"处理文件 {file_name} 时出错: {str(e)}")
         finally:
             # 清理内存
-            if 'file_content' in locals():
-                del file_content
             gc.collect()
 
     return all_data, processed_count, mapping_warnings
