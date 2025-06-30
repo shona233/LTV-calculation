@@ -2405,7 +2405,7 @@ elif current_page == "ARPU计算":
         # 显示默认数据信息
         builtin_df = get_builtin_arpu_data()
         
-admin_data = load_admin_data_from_file()
+        admin_data = load_admin_data_from_file()
         if admin_data is not None:
             st.info(f"使用管理员设置的默认数据：{len(builtin_df):,} 条记录，覆盖 {builtin_df['月份'].nunique()} 个月份")
         else:
