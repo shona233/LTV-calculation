@@ -1094,7 +1094,8 @@ def integrate_excel_files_cached_with_mapping(file_names, file_contents, target_
             st.error(f"处理文件 {file_name} 时出错: {str(e)}")
         finally:
             # 清理内存
-            del file_content
+            if 'file_content' in locals():
+                del file_content
             gc.collect()
 
     return all_data, processed_count, mapping_warnings
