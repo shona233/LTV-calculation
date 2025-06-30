@@ -2893,7 +2893,7 @@ with st.sidebar:
     st.markdown("---")
     st.markdown("""
     <div class="nav-container">
-        <h4 style="text-align: center; color: #1e40af;">LTV = LT × ARPU</h4>
+        <h4 style="text-align: center; color: white;">LTV = LT × ARPU</h4>
         <p style="font-size: 0.9rem; color: rgba(255,255,255,0.9); text-align: center;">
         （1）请注意文件规范命名
         </p>
