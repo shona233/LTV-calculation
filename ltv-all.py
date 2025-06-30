@@ -1713,7 +1713,6 @@ if current_page == "LT模型构建":
     with st.expander("默认渠道映射（请按渠道名称命名文件）", expanded=True):
         st.markdown("""
         <div class="step-tip">
-            <div class="step-tip-title">重要提示</div>
             <div class="step-tip-content">
             <strong>文件命名规则：</strong>请将Excel文件按照下表中的<strong>渠道名称</strong>进行命名（例如：鼎乐-盛世7.xlsx 华为.xlsx）<br>
             <strong>用途：</strong>正确命名可自动匹配ARPU数据和渠道分析
