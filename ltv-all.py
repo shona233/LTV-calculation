@@ -987,18 +987,6 @@ if current_page == "LT模型构建":
     
     st.markdown('</div>', unsafe_allow_html=True)
 
-    # 步骤2：异常值剔除
-    st.markdown('<div class="glass-card">', unsafe_allow_html=True)
-    st.subheader("2. 异常值剔除")
-    
-    if st.session_state.merged_data is not None:
-        working_data = st.session_state.merged_data
-        data_sources = working_data['数据来源'].unique()
-        date_columns = [col for col in working_data.columns if '日期' in col or 'date' in col.lower()]
-        
-        # 异常值剔除选择
-        col1, col2 = st.columns(2)
-        with col1:
 
     # 步骤2：异常值剔除
     st.markdown('<div class="glass-card">', unsafe_allow_html=True)
