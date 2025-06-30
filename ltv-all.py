@@ -260,7 +260,7 @@ st.markdown("""
     
     /* 固定容器高度 - 防止页面跳动 */
     .exclusion-container {
-        min-height: 300px;
+        min-height: 400px;
         padding: 1rem;
         background: white;
         border-radius: 8px;
@@ -290,6 +290,21 @@ st.markdown("""
     /* 防止内容区域高度变化 - 减小最小高度 */
     .glass-card {
         min-height: 20px;
+    }
+    
+    /* 稳定化多选框容器 */
+    .stMultiSelect > div {
+        min-height: 38px;
+    }
+    
+    /* 稳定化数据框架显示区域 */
+    .element-container {
+        min-height: fit-content;
+    }
+    
+    /* 固定列布局高度 */
+    .element-container .row-widget {
+        min-height: 300px;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -934,6 +949,8 @@ def integrate_excel_files_cached_with_mapping(file_names, file_contents, target_
     """缓存版本的文件整合函数 - 支持OCPX新格式和智能映射 - 优化版本"""
     all_data = pd.DataFrame()
     processed_count = 0
+    ocpx_success_count = 0
+    hue_success_count = 0
     mapping_warnings = []
 
     for i, (file_name, file_content) in enumerate(zip(file_names, file_contents)):
@@ -1004,9 +1021,10 @@ def integrate_excel_files_cached_with_mapping(file_names, file_contents, target_
                             file_data.insert(0, '数据来源', mapped_source)
                             all_data = pd.concat([all_data, file_data], ignore_index=True)
                             processed_count += 1
+                            ocpx_success_count += 1
                         continue
                     except Exception as e:
-                        st.warning(f"OCPX格式处理失败，将尝试传统格式：{str(e)}")
+                        st.warning(f"OCPX格式处理失败，将尝试hue格式：{str(e)}")
                 
                 # 如果只找到留存数据表，按原有方式处理
                 if retention_sheet:
@@ -1019,7 +1037,7 @@ def integrate_excel_files_cached_with_mapping(file_names, file_contents, target_
                     file_data = pd.read_excel(buffer, sheet_name=0, engine='openpyxl')
             
             if file_data is not None and not file_data.empty:
-                # 传统格式数据处理逻辑 - 增强兼容性
+                # hue格式数据处理逻辑 - 增强兼容性
                 file_data_copy = file_data.copy()
                 
                 # 检测并处理数据格式
@@ -1028,7 +1046,7 @@ def integrate_excel_files_cached_with_mapping(file_names, file_contents, target_
                 has_retain_columns = any(col in file_data_copy.columns for col in retain_columns)
 
                 if has_stat_date and has_retain_columns:
-                    # 传统格式表处理（stat_date + new + new_retain_X格式）
+                    # hue格式表处理（stat_date + new + new_retain_X格式）
                     standardized_data = file_data_copy.copy()
                     
                     # 处理新增数据列 - 增强匹配
@@ -1070,6 +1088,7 @@ def integrate_excel_files_cached_with_mapping(file_names, file_contents, target_
                             filtered_data['date'] = filtered_data['stat_date']
                         all_data = pd.concat([all_data, filtered_data], ignore_index=True)
                         processed_count += 1
+                        hue_success_count += 1
                 else:
                     # 其他格式表处理（兼容老版本） - 增强处理
                     
@@ -1125,6 +1144,7 @@ def integrate_excel_files_cached_with_mapping(file_names, file_contents, target_
                             filtered_data['date'] = filtered_data[date_col]
                         all_data = pd.concat([all_data, filtered_data], ignore_index=True)
                         processed_count += 1
+                        hue_success_count += 1
 
         except Exception as e:
             st.error(f"处理文件 {file_name} 时出错: {str(e)}")
@@ -1132,7 +1152,7 @@ def integrate_excel_files_cached_with_mapping(file_names, file_contents, target_
             # 清理内存
             gc.collect()
 
-    return all_data, processed_count, mapping_warnings
+    return all_data, processed_count, mapping_warnings, ocpx_success_count, hue_success_count
 
 def integrate_excel_files_streamlit(uploaded_files, target_month=None, channel_mapping=None, confirmed_mappings=None):
     """优化性能的文件整合函数，支持用户确认的智能映射"""
@@ -1155,7 +1175,12 @@ def integrate_excel_files_streamlit(uploaded_files, target_month=None, channel_m
     for f in uploaded_files:
         file_contents.append(f.read())
     
-    return integrate_excel_files_cached_with_mapping(file_names, file_contents, target_month, channel_mapping, confirmed_mappings)
+    result = integrate_excel_files_cached_with_mapping(file_names, file_contents, target_month, channel_mapping, confirmed_mappings)
+    if len(result) == 5:
+        return result
+    else:
+        # 兼容旧版本返回值
+        return result[0], result[1], result[2], 0, 0
 
 # ==================== 留存率计算函数 - 确保使用数字列名 ====================
 def calculate_retention_rates_new_method(df):
@@ -1670,6 +1695,7 @@ ANALYSIS_STEPS = [
 
 # ==================== 侧边栏导航 ====================
 with st.sidebar:
+    st.markdown('<div style="margin-top: 2rem;"></div>')  # 添加空白
     st.markdown('<h4 class="nav-title">分析流程</h4>', unsafe_allow_html=True)
 
     for i, step in enumerate(ANALYSIS_STEPS):
@@ -1678,12 +1704,6 @@ with st.sidebar:
                      type="primary" if i == st.session_state.current_step else "secondary"):
             st.session_state.current_step = i
             st.rerun()
-
-        # 只在LT模型构建时显示子步骤
-        if "sub_steps" in step and i == st.session_state.current_step and step['name'] == "LT模型构建":
-            sub_steps = step["sub_steps"]
-            sub_steps_text = " • ".join(sub_steps[:2]) + "\n" + " • ".join(sub_steps[2:])
-            st.markdown(f'<div class="sub-steps">{sub_steps_text}</div>', unsafe_allow_html=True)
 
 # ==================== 页面路由 ====================
 current_page = ANALYSIS_STEPS[st.session_state.current_step]["name"]
@@ -1697,7 +1717,7 @@ if current_page == "LT模型构建":
         <div class="principle-title">LT模型构建原理</div>
         <div class="principle-content">
         LT模型构建包含四个核心步骤：<br>
-        <strong>1. 数据上传汇总：</strong>整合多个Excel文件，支持新格式表和传统格式表<br>
+        <strong>1. 数据上传汇总：</strong>整合多个Excel文件，支持新格式表和hue格式表<br>
         <strong>2. 异常剔除：</strong>按需清理异常数据，提高模型准确性<br>
         <strong>3. 留存率计算：</strong>OCPX格式表按渠道计算，各天留存列（1、2、3...）平均值÷回传新增数平均值<br>
         <strong>4. LT拟合分析：</strong>采用三阶段分层建模，预测用户生命周期长度
@@ -1780,7 +1800,7 @@ if current_page == "LT模型构建":
     uploaded_files = st.file_uploader("请上传留存数据(ocpx/hue)",
         type=['xlsx', 'xls'],
         accept_multiple_files=True,
-        help="支持OCPX分离式格式（监测渠道回传量+ocpx监测留存数）和传统格式"
+        help="支持OCPX分离式格式（监测渠道回传量+ocpx监测留存数）和hue格式"
     )
     
     # 添加格式说明
@@ -1791,7 +1811,7 @@ if current_page == "LT模型构建":
         <strong>OCPX分离式格式（推荐）：</strong><br>
         • Sheet1: "监测渠道回传量" - 包含"日期"和"回传新增数"列<br>
         • Sheet2: "ocpx监测留存数" - 包含"留存天数"列和留存数据（列名：1、2、3...）<br><br>
-        <strong>传统格式：</strong><br>
+        <strong>hue格式：</strong><br>
         • 列名格式：<strong>stat_date</strong>（日期）、<strong>new</strong>（新增数）、<strong>new_retain_1、new_retain_2...</strong>（留存数）<br>
         • 系统自动将new_retain_X转换为标准列名1、2、3...<br><br>
         <strong>兼容格式：</strong><br>
@@ -1863,20 +1883,20 @@ if current_page == "LT模型构建":
             # 所有文件都已确认，可以处理数据
             st.success("✅ 所有文件渠道名称已确认，可以开始处理数据")
             process_button_key = "process_data_with_confirmations"
-            if not all_confirmed:
-                st.info("请确认所有文件的渠道名称后再继续处理数据")
-                st.stop()
-            
-            # 所有文件都已确认，可以处理数据
-            st.success("✅ 所有文件渠道名称已确认，可以开始处理数据")
-            process_button_key = "process_data_with_confirmations"
 
         if st.button("开始处理数据", type="primary", use_container_width=True, key=process_button_key):
             with st.spinner("正在处理数据文件..."):
                 try:
-                    merged_data, processed_count, mapping_warnings = integrate_excel_files_streamlit(
+                    result = integrate_excel_files_streamlit(
                         uploaded_files, target_month, st.session_state.channel_mapping, confirmed_mappings
                     )
+                    
+                    if len(result) == 5:
+                        merged_data, processed_count, mapping_warnings, ocpx_success_count, hue_success_count = result
+                    else:
+                        # 兼容旧版本
+                        merged_data, processed_count, mapping_warnings = result
+                        ocpx_success_count = hue_success_count = 0
 
                     if merged_data is not None and not merged_data.empty:
                         st.session_state.merged_data = merged_data
@@ -1884,7 +1904,16 @@ if current_page == "LT模型构建":
                         if 'file_channel_confirmations' in st.session_state:
                             del st.session_state.file_channel_confirmations
                         
-                        st.success(f"数据处理完成！成功处理 {processed_count} 个文件")
+                        # 显示处理结果
+                        success_msg = f"数据处理完成！"
+                        if ocpx_success_count > 0 and hue_success_count > 0:
+                            success_msg += f" OCPX格式: {ocpx_success_count}个文件，hue格式: {hue_success_count}个文件"
+                        elif ocpx_success_count > 0:
+                            success_msg += f" OCPX格式: {ocpx_success_count}个文件"
+                        elif hue_success_count > 0:
+                            success_msg += f" hue格式: {hue_success_count}个文件"
+                        
+                        st.success(success_msg)
 
                         col1, col2, col3 = st.columns(3)
                         with col1:
@@ -2066,7 +2095,7 @@ if current_page == "LT模型构建":
         • <strong>"监测渠道回传量"</strong> sheet：包含"日期"和"回传新增数"列<br>
         • <strong>"ocpx监测留存数"</strong> sheet：包含"留存天数"列和各天留存数（列名为1、2、3...30）<br>
         • 系统自动合并两个表的数据进行计算<br><br>
-        <strong>方式2：传统格式表格</strong><br>
+        <strong>方式2：hue格式表格</strong><br>
         • 列名格式：<strong>stat_date</strong>（日期）、<strong>new</strong>（新增数）、<strong>new_retain_1、new_retain_2...</strong>（留存数）<br>
         • 系统自动将new_retain_X转换为标准列名1、2、3...<br><br>
         <strong>计算公式：</strong>留存率 = 各天留存数平均值 ÷ 回传新增数平均值
@@ -2740,6 +2769,10 @@ elif current_page == "LTV结果报告":
         # 根据数据行数设置表格高度（行数+2）
         table_height = (len(results_df) + 2) * 35  # 每行约35px高度
         st.dataframe(results_df, use_container_width=True, height=table_height)
+        
+        # 在LTV2年5年的值后面加一个空行
+        st.markdown("<br>", unsafe_allow_html=True)
+        
         st.markdown('</div>', unsafe_allow_html=True)
 
         # 显示所有拟合曲线 - 一行三个
