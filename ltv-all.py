@@ -260,7 +260,7 @@ st.markdown("""
     
     /* 固定容器高度 - 防止页面跳动 */
     .exclusion-container {
-        min-height: 400px;
+        min-height: 0px;
         padding: 1rem;
         background: white;
         border-radius: 8px;
