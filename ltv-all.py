@@ -1778,7 +1778,6 @@ if current_page == "LT模型构建":
     
     # 数据文件上传
     uploaded_files = st.file_uploader(
-        "选择Excel数据文件",
         type=['xlsx', 'xls'],
         accept_multiple_files=True,
         help="支持OCPX分离式格式（监测渠道回传量+ocpx监测留存数）和传统格式"
