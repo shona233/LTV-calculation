@@ -2895,13 +2895,13 @@ with st.sidebar:
     <div class="nav-container">
         <h4 style="text-align: center; color: white;">LTV = LT × ARPU</h4>
         <p style="font-size: 0.9rem; color: rgba(255,255,255,0.9); text-align: center;">
-        留存数据三阶段拟合预测计算LT
+        （1）请注意文件规范命名
         </p>
         <p style="font-size: 0.8rem; color: rgba(255,255,255,0.7); text-align: center;">
-        ARPU计算每用户平均收入
+        （2）请注意更新当月渠道号
         </p>
         <p style="font-size: 0.8rem; color: rgba(255,255,255,0.7); text-align: center;">
-        整合生成LTV分析报告
+        （3）Ocpx文件较大，上传速度较慢
         </p>
     </div>
     """, unsafe_allow_html=True)
