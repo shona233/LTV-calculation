@@ -14,6 +14,7 @@ import re
 from matplotlib.font_manager import FontProperties
 import seaborn as sns
 from scipy.optimize import curve_fit
+import gc  # 垃圾回收
 
 # ==================== 基础配置 ====================
 # 忽略警告
@@ -248,7 +249,9 @@ st.markdown("""
 
 # ==================== 默认配置数据 ====================
 DEFAULT_CHANNEL_MAPPING = {
-    '总体': ['9000'],
+    '总体': [],  # 总体没有渠道号，是所有值的总和
+    '安卓': [],  # 安卓没有渠道号，是总体减去iPhone
+    'iPhone': ['9000'],  # iPhone渠道号9000
     '新媒体': ['500345', '500346', '500447', '500449', '500450', '500531', '500542'],
     '应用宝': ['5007XS', '500349', '500350'],
     '鼎乐-盛世6': ['500285'],
@@ -284,6 +287,9 @@ DEFAULT_CHANNEL_MAPPING = {
 def create_reverse_mapping(channel_mapping):
     reverse_mapping = {}
     for channel_name, pids in channel_mapping.items():
+        # 跳过没有渠道号的特殊渠道（总体、安卓）
+        if not pids:
+            continue
         for pid in pids:
             reverse_mapping[str(pid)] = channel_name
     return reverse_mapping
@@ -291,6 +297,7 @@ def create_reverse_mapping(channel_mapping):
 # ==================== 永久数据存储管理 ====================
 ADMIN_DATA_FILE = "admin_default_arpu_data.csv"
 
+@st.cache_data
 def load_admin_data_from_file():
     """从本地文件加载管理员上传的ARPU数据"""
     try:
@@ -310,21 +317,18 @@ def save_admin_data_to_file(df):
         st.error(f"保存管理员数据文件失败：{str(e)}")
         return False
 
+@st.cache_data
 def get_builtin_arpu_data():
     """获取内置的ARPU基础数据 - 优先使用管理员上传的数据"""
-    # 首次加载时，尝试从文件读取管理员数据
-    if 'admin_default_arpu_data' not in st.session_state or st.session_state.admin_default_arpu_data is None:
-        admin_data = load_admin_data_from_file()
-        if admin_data is not None:
-            st.session_state.admin_default_arpu_data = admin_data
-    
-    # 检查是否有管理员上传的默认数据
-    if 'admin_default_arpu_data' in st.session_state and st.session_state.admin_default_arpu_data is not None:
-        return st.session_state.admin_default_arpu_data.copy()
+    # 尝试从文件读取管理员数据
+    admin_data = load_admin_data_from_file()
+    if admin_data is not None:
+        return admin_data.copy()
     
     # 如果没有管理员数据，返回示例数据
     return get_sample_arpu_data()
 
+@st.cache_data
 def get_sample_arpu_data():
     """生成示例ARPU数据（当没有管理员上传数据时使用）"""
     # 生成2024年1月到2025年4月的所有月份
@@ -337,19 +341,19 @@ def get_sample_arpu_data():
     
     builtin_data = []
     
-    # 为主要渠道生成示例数据
+    # 为主要渠道生成示例数据，包含iPhone渠道号9000
     sample_channels = ['9000', '5057', '5599', '5237', '5115', '500285', '500286']
     
     for pid in sample_channels:
         for month in months:
             # 生成示例数据
             base_users = {
-                '9000': 50000, '5057': 8000, '5599': 6000, 
+                '9000': 12000, '5057': 8000, '5599': 6000, 
                 '5237': 5500, '5115': 5000, '500285': 2000, '500286': 2200
             }.get(pid, 1000)
             
             base_revenue = {
-                '9000': 2000000, '5057': 320000, '5599': 240000,
+                '9000': 600000, '5057': 320000, '5599': 240000,
                 '5237': 220000, '5115': 200000, '500285': 80000, '500286': 88000
             }.get(pid, 40000)
             
@@ -392,8 +396,8 @@ def load_admin_default_arpu_data():
     """, unsafe_allow_html=True)
     
     # 显示当前默认数据状态
-    if 'admin_default_arpu_data' in st.session_state and st.session_state.admin_default_arpu_data is not None:
-        current_data = st.session_state.admin_default_arpu_data
+    current_data = load_admin_data_from_file()
+    if current_data is not None:
         st.success("已加载管理员上传的默认数据")
         
         col1, col2, col3, col4 = st.columns(4)
@@ -417,11 +421,12 @@ def load_admin_default_arpu_data():
             
         # 提供清除选项
         if st.button("清除管理员数据（恢复示例数据）", help="清除后将使用系统示例数据"):
-            st.session_state.admin_default_arpu_data = None
             # 删除本地文件
             try:
                 if os.path.exists(ADMIN_DATA_FILE):
                     os.remove(ADMIN_DATA_FILE)
+                # 清除缓存
+                st.cache_data.clear()
             except:
                 pass
             st.success("已清除管理员数据，恢复为系统示例数据")
@@ -445,8 +450,8 @@ def load_admin_default_arpu_data():
     if uploaded_default_file:
         try:
             with st.spinner("正在读取和验证Excel文件..."):
-                # 读取Excel文件
-                uploaded_df = pd.read_excel(uploaded_default_file)
+                # 优化的Excel读取
+                uploaded_df = pd.read_excel(uploaded_default_file, engine='openpyxl')
                 
                 # 验证必需列
                 required_cols = ['月份', 'pid', 'stat_date', 'instl_user_cnt', 'ad_all_rven_1d_m']
@@ -527,15 +532,14 @@ def load_admin_default_arpu_data():
                 
                 with col1:
                     if st.button("确认设置为默认数据", type="primary", use_container_width=True):
-                        # 保存到session state
-                        st.session_state.admin_default_arpu_data = uploaded_df.copy()
-                        
                         # 永久保存到本地文件
                         if save_admin_data_to_file(uploaded_df):
+                            # 清除缓存
+                            st.cache_data.clear()
                             st.success("默认ARPU数据已永久保存！")
                             st.info("该数据现在将作为系统默认数据使用，所有用户都可以访问，且服务重启后仍然有效")
                         else:
-                            st.warning("数据已保存到内存，但文件保存失败")
+                            st.warning("文件保存失败")
                         st.rerun()
                 
                 with col2:
@@ -621,11 +625,66 @@ def optimize_dataframe_for_preview(df, max_rows=2):
     
     return preview_df[sorted_columns]
 
-# ==================== 渠道映射处理函数 ====================
-def parse_channel_mapping_from_excel(channel_file):
+# ==================== 智能匹配函数 ====================
+def calculate_similarity(str1, str2):
+    """计算两个字符串的相似度（0-1之间，1表示完全相同）"""
+    import difflib
+    return difflib.SequenceMatcher(None, str1.lower(), str2.lower()).ratio()
+
+def find_best_match(file_name, channel_mapping, threshold=0.6):
+    """找到文件名的最佳匹配渠道名称"""
+    best_match = None
+    best_score = 0
+    
+    for channel_name in channel_mapping.keys():
+        score = calculate_similarity(file_name, channel_name)
+        if score > best_score and score >= threshold:
+            best_score = score
+            best_match = channel_name
+    
+    return best_match, best_score
+
+def get_file_channel_suggestions(uploaded_files, channel_mapping):
+    """获取文件的渠道名称建议"""
+    suggestions = {}
+    
+    for uploaded_file in uploaded_files:
+        file_name = os.path.splitext(uploaded_file.name)[0].strip()
+        
+        # 直接检查是否完全匹配
+        if file_name in channel_mapping:
+            continue
+            
+        # 检查是否是渠道号
+        reverse_mapping = create_reverse_mapping(channel_mapping)
+        if file_name in reverse_mapping:
+            continue
+            
+        # 检查包含关系
+        found_exact = False
+        for channel_name in channel_mapping.keys():
+            if channel_name in file_name or file_name in channel_name:
+                found_exact = True
+                break
+                
+        if found_exact:
+            continue
+            
+        # 相似度匹配
+        best_match, score = find_best_match(file_name, channel_mapping)
+        if best_match:
+            suggestions[file_name] = {
+                'suggested_channel': best_match,
+                'similarity_score': score,
+                'file_object': uploaded_file
+            }
+    
+    return suggestions
+@st.cache_data
+def parse_channel_mapping_from_excel(channel_file_content):
     """从上传的Excel文件解析渠道映射"""
     try:
-        df = pd.read_excel(channel_file)
+        df = pd.read_excel(io.BytesIO(channel_file_content))
         channel_mapping = {}
         
         for _, row in df.iterrows():
@@ -680,7 +739,6 @@ def merge_ocpx_data(retention_data, new_users_data, target_month):
                 new_users_col = col
         
         if date_col is None:
-            st.warning('监测渠道回传量表未找到"日期"列，尝试模糊匹配')
             # 模糊匹配日期列
             for col in new_users_clean.columns:
                 if '日期' in str(col) or 'date' in str(col).lower():
@@ -688,7 +746,6 @@ def merge_ocpx_data(retention_data, new_users_data, target_month):
                     break
                     
         if new_users_col is None:
-            st.warning('监测渠道回传量表未找到"回传新增数"列，尝试模糊匹配')
             # 模糊匹配新增数列
             for col in new_users_clean.columns:
                 if '回传新增数' in str(col) or '新增' in str(col):
@@ -744,7 +801,6 @@ def merge_ocpx_data(retention_data, new_users_data, target_month):
                 break
         
         if retention_date_col is None:
-            st.warning('ocpx监测留存数表未找到"留存天数"列，尝试模糊匹配')
             # 模糊匹配日期列
             for col in retention_clean.columns:
                 col_str = str(col).lower()
@@ -825,10 +881,10 @@ def merge_ocpx_data(retention_data, new_users_data, target_month):
         st.error(f"处理OCPX数据时出错：{str(e)}")
         return None
 
-# ==================== 文件整合核心函数 - 支持OCPX新格式 ====================
+# ==================== 文件整合核心函数 - 支持OCPX新格式 - 优化版本 ====================
 @st.cache_data
 def integrate_excel_files_cached(file_names, file_contents, target_month, channel_mapping):
-    """缓存版本的文件整合函数 - 支持OCPX新格式"""
+    """缓存版本的文件整合函数 - 支持OCPX新格式 - 优化版本"""
     all_data = pd.DataFrame()
     processed_count = 0
     mapping_warnings = []
@@ -837,19 +893,33 @@ def integrate_excel_files_cached(file_names, file_contents, target_month, channe
         # 从文件名中提取渠道名称（去除扩展名和多余空格）
         source_name = os.path.splitext(file_name)[0].strip()
         
-        # 渠道映射处理 - 修复匹配逻辑
+@st.cache_data
+def integrate_excel_files_cached_with_mapping(file_names, file_contents, target_month, channel_mapping, confirmed_mappings):
+    """缓存版本的文件整合函数 - 支持OCPX新格式和智能映射 - 优化版本"""
+    all_data = pd.DataFrame()
+    processed_count = 0
+    mapping_warnings = []
+
+    for i, (file_name, file_content) in enumerate(zip(file_names, file_contents)):
+        # 从文件名中提取渠道名称（去除扩展名和多余空格）
+        source_name = os.path.splitext(file_name)[0].strip()
+        
+        # 渠道映射处理 - 支持用户确认的智能匹配
         mapped_source = source_name  # 默认使用文件名
         
-        # 直接检查文件名是否在渠道映射的键中
-        if source_name in channel_mapping:
+        # 第一优先级：检查是否有用户确认的智能匹配
+        if source_name in confirmed_mappings:
+            mapped_source = confirmed_mappings[source_name]
+        # 第二优先级：直接检查文件名是否在渠道映射的键中
+        elif source_name in channel_mapping:
             mapped_source = source_name
         else:
-            # 检查文件名是否是某个渠道的渠道号
+            # 第三优先级：检查文件名是否是某个渠道的渠道号
             reverse_mapping = create_reverse_mapping(channel_mapping)
             if source_name in reverse_mapping:
                 mapped_source = reverse_mapping[source_name]
             else:
-                # 模糊匹配 - 检查文件名是否包含渠道名称
+                # 第四优先级：模糊匹配 - 检查文件名是否包含渠道名称
                 found_match = False
                 for channel_name in channel_mapping.keys():
                     if channel_name in source_name or source_name in channel_name:
@@ -862,52 +932,53 @@ def integrate_excel_files_cached(file_names, file_contents, target_month, channe
                     mapping_warnings.append(f"文件 '{source_name}' 未在渠道映射表中找到对应项")
 
         try:
-            # 从内存中读取Excel文件
-            xls = pd.ExcelFile(io.BytesIO(file_content))
-            sheet_names = xls.sheet_names
+            # 从内存中读取Excel文件 - 优化读取方式
+            with io.BytesIO(file_content) as buffer:
+                xls = pd.ExcelFile(buffer, engine='openpyxl')
+                sheet_names = xls.sheet_names
 
-            # 查找OCPX格式的工作表 - 精确匹配
-            retention_sheet = None
-            new_users_sheet = None
-            
-            # 查找留存数据表 - 精确匹配"ocpx监测留存数"
-            for sheet in sheet_names:
-                if sheet.strip() == "ocpx监测留存数":
-                    retention_sheet = sheet
-                    break
-            
-            # 查找新增数据表 - 精确匹配"监测渠道回传量"
-            for sheet in sheet_names:
-                if sheet.strip() == "监测渠道回传量":
-                    new_users_sheet = sheet
-                    break
-            
-            # 如果找到OCPX格式的表，使用新的处理方法
-            if retention_sheet and new_users_sheet:
-                try:
-                    # 处理OCPX格式数据
-                    retention_data = pd.read_excel(io.BytesIO(file_content), sheet_name=retention_sheet)
-                    new_users_data = pd.read_excel(io.BytesIO(file_content), sheet_name=new_users_sheet)
-                    
-                    # 合并OCPX数据
-                    file_data = merge_ocpx_data(retention_data, new_users_data, target_month)
-                    if file_data is not None and not file_data.empty:
-                        file_data.insert(0, '数据来源', mapped_source)
-                        all_data = pd.concat([all_data, file_data], ignore_index=True)
-                        processed_count += 1
-                    continue
-                except Exception as e:
-                    st.warning(f"OCPX格式处理失败，将尝试传统格式：{str(e)}")
-            
-            # 如果只找到留存数据表，按原有方式处理
-            if retention_sheet:
-                try:
-                    file_data = pd.read_excel(io.BytesIO(file_content), sheet_name=retention_sheet)
-                except:
-                    file_data = pd.read_excel(io.BytesIO(file_content), sheet_name=0)
-            else:
-                # 使用第一个工作表
-                file_data = pd.read_excel(io.BytesIO(file_content), sheet_name=0)
+                # 查找OCPX格式的工作表 - 精确匹配
+                retention_sheet = None
+                new_users_sheet = None
+                
+                # 查找留存数据表 - 精确匹配"ocpx监测留存数"
+                for sheet in sheet_names:
+                    if sheet.strip() == "ocpx监测留存数":
+                        retention_sheet = sheet
+                        break
+                
+                # 查找新增数据表 - 精确匹配"监测渠道回传量"
+                for sheet in sheet_names:
+                    if sheet.strip() == "监测渠道回传量":
+                        new_users_sheet = sheet
+                        break
+                
+                # 如果找到OCPX格式的表，使用新的处理方法
+                if retention_sheet and new_users_sheet:
+                    try:
+                        # 处理OCPX格式数据
+                        retention_data = pd.read_excel(buffer, sheet_name=retention_sheet, engine='openpyxl')
+                        new_users_data = pd.read_excel(buffer, sheet_name=new_users_sheet, engine='openpyxl')
+                        
+                        # 合并OCPX数据
+                        file_data = merge_ocpx_data(retention_data, new_users_data, target_month)
+                        if file_data is not None and not file_data.empty:
+                            file_data.insert(0, '数据来源', mapped_source)
+                            all_data = pd.concat([all_data, file_data], ignore_index=True)
+                            processed_count += 1
+                        continue
+                    except Exception as e:
+                        st.warning(f"OCPX格式处理失败，将尝试传统格式：{str(e)}")
+                
+                # 如果只找到留存数据表，按原有方式处理
+                if retention_sheet:
+                    try:
+                        file_data = pd.read_excel(buffer, sheet_name=retention_sheet, engine='openpyxl')
+                    except:
+                        file_data = pd.read_excel(buffer, sheet_name=0, engine='openpyxl')
+                else:
+                    # 使用第一个工作表
+                    file_data = pd.read_excel(buffer, sheet_name=0, engine='openpyxl')
             
             if file_data is not None and not file_data.empty:
                 # 传统格式数据处理逻辑 - 增强兼容性
@@ -931,7 +1002,6 @@ def integrate_excel_files_cached(file_names, file_contents, target_month, channe
                             break
                     
                     if not new_col_found:
-                        st.warning(f"文件 {file_name} 中未找到新增数据列，尝试使用第二列")
                         if len(standardized_data.columns) > 1:
                             standardized_data['回传新增数'] = standardized_data.iloc[:, 1].apply(safe_convert_to_numeric)
                         else:
@@ -951,7 +1021,6 @@ def integrate_excel_files_cached(file_names, file_contents, target_month, channe
                         standardized_data['日期'] = standardized_data[date_col]
                         standardized_data['month'] = standardized_data[date_col].str[:7]
                     except:
-                        st.warning(f"文件 {file_name} 日期格式处理失败")
                         continue
 
                     # 按目标月份筛选数据
@@ -965,7 +1034,6 @@ def integrate_excel_files_cached(file_names, file_contents, target_month, channe
                         processed_count += 1
                 else:
                     # 其他格式表处理（兼容老版本） - 增强处理
-                    st.info(f"文件 {file_name} 使用兼容模式处理...")
                     
                     # 查找关键列 - 增强匹配
                     report_users_col = None
@@ -1022,23 +1090,201 @@ def integrate_excel_files_cached(file_names, file_contents, target_month, channe
 
         except Exception as e:
             st.error(f"处理文件 {file_name} 时出错: {str(e)}")
+        finally:
+            # 清理内存
+            del file_content
+            gc.collect()
 
     return all_data, processed_count, mapping_warnings
 
-def integrate_excel_files_streamlit(uploaded_files, target_month=None, channel_mapping=None):
-    """优化性能的文件整合函数"""
+        try:
+            # 从内存中读取Excel文件 - 优化读取方式
+            with io.BytesIO(file_content) as buffer:
+                xls = pd.ExcelFile(buffer, engine='openpyxl')
+                sheet_names = xls.sheet_names
+
+                # 查找OCPX格式的工作表 - 精确匹配
+                retention_sheet = None
+                new_users_sheet = None
+                
+                # 查找留存数据表 - 精确匹配"ocpx监测留存数"
+                for sheet in sheet_names:
+                    if sheet.strip() == "ocpx监测留存数":
+                        retention_sheet = sheet
+                        break
+                
+                # 查找新增数据表 - 精确匹配"监测渠道回传量"
+                for sheet in sheet_names:
+                    if sheet.strip() == "监测渠道回传量":
+                        new_users_sheet = sheet
+                        break
+                
+                # 如果找到OCPX格式的表，使用新的处理方法
+                if retention_sheet and new_users_sheet:
+                    try:
+                        # 处理OCPX格式数据
+                        retention_data = pd.read_excel(buffer, sheet_name=retention_sheet, engine='openpyxl')
+                        new_users_data = pd.read_excel(buffer, sheet_name=new_users_sheet, engine='openpyxl')
+                        
+                        # 合并OCPX数据
+                        file_data = merge_ocpx_data(retention_data, new_users_data, target_month)
+                        if file_data is not None and not file_data.empty:
+                            file_data.insert(0, '数据来源', mapped_source)
+                            all_data = pd.concat([all_data, file_data], ignore_index=True)
+                            processed_count += 1
+                        continue
+                    except Exception as e:
+                        st.warning(f"OCPX格式处理失败，将尝试传统格式：{str(e)}")
+                
+                # 如果只找到留存数据表，按原有方式处理
+                if retention_sheet:
+                    try:
+                        file_data = pd.read_excel(buffer, sheet_name=retention_sheet, engine='openpyxl')
+                    except:
+                        file_data = pd.read_excel(buffer, sheet_name=0, engine='openpyxl')
+                else:
+                    # 使用第一个工作表
+                    file_data = pd.read_excel(buffer, sheet_name=0, engine='openpyxl')
+            
+            if file_data is not None and not file_data.empty:
+                # 传统格式数据处理逻辑 - 增强兼容性
+                file_data_copy = file_data.copy()
+                
+                # 检测并处理数据格式
+                has_stat_date = 'stat_date' in file_data_copy.columns
+                retain_columns = [f'new_retain_{i}' for i in range(1, 31)]
+                has_retain_columns = any(col in file_data_copy.columns for col in retain_columns)
+
+                if has_stat_date and has_retain_columns:
+                    # 传统格式表处理（stat_date + new + new_retain_X格式）
+                    standardized_data = file_data_copy.copy()
+                    
+                    # 处理新增数据列 - 增强匹配
+                    new_col_found = False
+                    for col in ['new', '新增', '新增用户', 'users']:
+                        if col in standardized_data.columns:
+                            standardized_data['回传新增数'] = standardized_data[col].apply(safe_convert_to_numeric)
+                            new_col_found = True
+                            break
+                    
+                    if not new_col_found:
+                        if len(standardized_data.columns) > 1:
+                            standardized_data['回传新增数'] = standardized_data.iloc[:, 1].apply(safe_convert_to_numeric)
+                        else:
+                            continue
+
+                    # 处理留存数据列：new_retain_1 -> 1, new_retain_2 -> 2, ...
+                    for i in range(1, 31):
+                        retain_col = f'new_retain_{i}'
+                        if retain_col in standardized_data.columns:
+                            standardized_data[str(i)] = standardized_data[retain_col].apply(safe_convert_to_numeric)
+
+                    # 处理日期列 - 增强日期处理
+                    date_col = 'stat_date'
+                    try:
+                        standardized_data[date_col] = pd.to_datetime(standardized_data[date_col], errors='coerce')
+                        standardized_data[date_col] = standardized_data[date_col].dt.strftime('%Y-%m-%d')
+                        standardized_data['日期'] = standardized_data[date_col]
+                        standardized_data['month'] = standardized_data[date_col].str[:7]
+                    except:
+                        continue
+
+                    # 按目标月份筛选数据
+                    filtered_data = standardized_data[standardized_data['month'] == target_month].copy()
+
+                    if not filtered_data.empty:
+                        filtered_data.insert(0, '数据来源', mapped_source)
+                        if 'stat_date' in filtered_data.columns:
+                            filtered_data['date'] = filtered_data['stat_date']
+                        all_data = pd.concat([all_data, filtered_data], ignore_index=True)
+                        processed_count += 1
+                else:
+                    # 其他格式表处理（兼容老版本） - 增强处理
+                    
+                    # 查找关键列 - 增强匹配
+                    report_users_col = None
+                    users_keywords = ['回传新增数', 'new', '新增', '用户数', '新增用户']
+                    for col in file_data_copy.columns:
+                        col_str = str(col).lower()
+                        if any(keyword.lower() in col_str for keyword in users_keywords):
+                            report_users_col = col
+                            break
+
+                    if report_users_col:
+                        file_data_copy['回传新增数'] = file_data_copy[report_users_col].apply(safe_convert_to_numeric)
+                    else:
+                        # 使用第二列作为新增数
+                        if len(file_data_copy.columns) > 1:
+                            file_data_copy['回传新增数'] = file_data_copy.iloc[:, 1].apply(safe_convert_to_numeric)
+
+                    # 确保数字列名（1、2、3...）被正确处理
+                    for i in range(1, 31):
+                        col_name = str(i)
+                        if col_name in file_data_copy.columns:
+                            file_data_copy[col_name] = file_data_copy[col_name].apply(safe_convert_to_numeric)
+
+                    # 处理日期列 - 增强匹配
+                    date_col = None
+                    date_keywords = ['日期', 'date', '时间', '统计日期', 'stat_date']
+                    for col in file_data_copy.columns:
+                        col_str = str(col).lower()
+                        if any(keyword.lower() in col_str for keyword in date_keywords):
+                            date_col = col
+                            break
+
+                    if date_col:
+                        try:
+                            file_data_copy[date_col] = pd.to_datetime(file_data_copy[date_col], errors='coerce')
+                            file_data_copy['month'] = file_data_copy[date_col].dt.strftime('%Y-%m')
+                            filtered_data = file_data_copy[file_data_copy['month'] == target_month].copy()
+                        except:
+                            # 如果日期处理失败，尝试字符串截取
+                            file_data_copy['month'] = file_data_copy[date_col].apply(
+                                lambda x: str(x)[:7] if isinstance(x, str) and len(str(x)) >= 7 else None
+                            )
+                            filtered_data = file_data_copy[file_data_copy['month'] == target_month].copy()
+                    else:
+                        # 如果没找到日期列，使用所有数据
+                        filtered_data = file_data_copy.copy()
+
+                    if not filtered_data.empty:
+                        filtered_data.insert(0, '数据来源', mapped_source)
+                        if date_col and date_col != 'date':
+                            filtered_data['date'] = filtered_data[date_col]
+                        all_data = pd.concat([all_data, filtered_data], ignore_index=True)
+                        processed_count += 1
+
+        except Exception as e:
+            st.error(f"处理文件 {file_name} 时出错: {str(e)}")
+        finally:
+            # 清理内存
+            del file_content
+            gc.collect()
+
+    return all_data, processed_count, mapping_warnings
+
+def integrate_excel_files_streamlit(uploaded_files, target_month=None, channel_mapping=None, confirmed_mappings=None):
+    """优化性能的文件整合函数，支持用户确认的智能映射"""
     if target_month is None:
         target_month = get_default_target_month()
 
     # 使用传入的渠道映射，如果没有则使用默认映射
     if channel_mapping is None:
         channel_mapping = DEFAULT_CHANNEL_MAPPING
-
-    # 准备缓存数据
-    file_names = [f.name for f in uploaded_files]
-    file_contents = [f.read() for f in uploaded_files]
     
-    return integrate_excel_files_cached(file_names, file_contents, target_month, channel_mapping)
+    # 如果没有确认映射，初始化为空字典
+    if confirmed_mappings is None:
+        confirmed_mappings = {}
+
+    # 准备缓存数据 - 优化内存使用
+    file_names = [f.name for f in uploaded_files]
+    file_contents = []
+    
+    # 分批读取文件内容，避免内存过载
+    for f in uploaded_files:
+        file_contents.append(f.read())
+    
+    return integrate_excel_files_cached_with_mapping(file_names, file_contents, target_month, channel_mapping, confirmed_mappings)
 
 # ==================== 留存率计算函数 - 确保使用数字列名 ====================
 def calculate_retention_rates_new_method(df):
@@ -1243,8 +1489,8 @@ def calculate_lt_advanced(retention_result, channel_name, lt_years=5, return_cur
     return total_lt
 
 # ==================== 单渠道图表生成函数 - 避免中文标题 ====================
-def create_individual_channel_chart(channel_name, curve_data, original_data, max_days=100):
-    """创建单个渠道的100天LT拟合图表 - 避免中文标题显示问题"""
+def create_individual_channel_chart(channel_name, curve_data, original_data, max_days=100, lt_2y=None, lt_5y=None):
+    """创建单个渠道的100天LT拟合图表 - 避免中文标题显示问题，添加2年5年LT显示"""
     
     # 使用英文字体设置
     plt.rcParams['font.family'] = ['Arial', 'DejaVu Sans']
@@ -1305,11 +1551,12 @@ def create_individual_channel_chart(channel_name, curve_data, original_data, max
     return fig
 
 # ==================== 【修复】加载5月后ARPU数据函数 ====================
-def load_user_arpu_data_after_april(uploaded_file, builtin_df):
+@st.cache_data
+def load_user_arpu_data_after_april(uploaded_file_content, builtin_df):
     """【修复版】加载用户上传的5月及之后的ARPU数据，并与内置数据合并"""
     try:
         # 读取用户上传的Excel文件
-        user_df = pd.read_excel(uploaded_file)
+        user_df = pd.read_excel(io.BytesIO(uploaded_file_content), engine='openpyxl')
         
         # 检查必需列
         required_cols = ['pid', 'instl_user_cnt', 'ad_all_rven_1d_m']
@@ -1401,6 +1648,111 @@ def load_user_arpu_data_after_april(uploaded_file, builtin_df):
     except Exception as e:
         return None, f"处理文件时出错：{str(e)}"
 
+# ==================== ARPU计算函数优化版本 ====================
+def calculate_arpu_optimized(filtered_arpu_df, channel_mapping, batch_size=1000):
+    """优化的ARPU计算函数，分批处理大数据，支持特殊渠道计算"""
+    try:
+        # 确保pid为字符串格式
+        filtered_arpu_df['pid'] = filtered_arpu_df['pid'].astype(str).str.replace('.0', '', regex=False)
+        
+        # 数据清理 - 确保数值列为数值类型
+        numeric_cols = ['instl_user_cnt', 'ad_all_rven_1d_m']
+        for col in numeric_cols:
+            filtered_arpu_df[col] = pd.to_numeric(filtered_arpu_df[col], errors='coerce')
+        
+        # 移除无效数据
+        filtered_arpu_df = filtered_arpu_df.dropna(subset=numeric_cols)
+        filtered_arpu_df = filtered_arpu_df[
+            (filtered_arpu_df['instl_user_cnt'] > 0) & 
+            (filtered_arpu_df['ad_all_rven_1d_m'] >= 0)
+        ]
+        
+        if len(filtered_arpu_df) == 0:
+            return None, "数据清理后无有效记录"
+        
+        # 创建反向渠道映射
+        reverse_mapping = create_reverse_mapping(channel_mapping)
+        
+        # 分批处理数据以避免内存问题
+        arpu_results = []
+        
+        # 先计算所有有渠道号的渠道
+        for pid, group in filtered_arpu_df.groupby('pid'):
+            if pid in reverse_mapping:
+                channel_name = reverse_mapping[pid]
+                
+                # 分批处理大组
+                for i in range(0, len(group), batch_size):
+                    batch = group.iloc[i:i+batch_size]
+                    
+                    total_users = batch['instl_user_cnt'].sum()
+                    total_revenue = batch['ad_all_rven_1d_m'].sum()
+                    
+                    if total_users > 0:
+                        arpu_results.append({
+                            'data_source': channel_name,
+                            'total_users': total_users,
+                            'total_revenue': total_revenue,
+                            'record_count': len(batch)
+                        })
+        
+        if arpu_results:
+            # 按渠道合并相同渠道的数据
+            final_arpu = {}
+            for result in arpu_results:
+                channel = result['data_source']
+                if channel in final_arpu:
+                    final_arpu[channel]['total_users'] += result['total_users']
+                    final_arpu[channel]['total_revenue'] += result['total_revenue']
+                    final_arpu[channel]['record_count'] += result['record_count']
+                else:
+                    final_arpu[channel] = result.copy()
+            
+            # 计算总体数据（所有渠道的总和）
+            total_users_sum = sum(data['total_users'] for data in final_arpu.values())
+            total_revenue_sum = sum(data['total_revenue'] for data in final_arpu.values())
+            total_record_count = sum(data['record_count'] for data in final_arpu.values())
+            
+            if total_users_sum > 0:
+                final_arpu['总体'] = {
+                    'total_users': total_users_sum,
+                    'total_revenue': total_revenue_sum,
+                    'record_count': total_record_count
+                }
+            
+            # 计算安卓数据（总体减去iPhone）
+            iphone_data = final_arpu.get('iPhone', {'total_users': 0, 'total_revenue': 0, 'record_count': 0})
+            android_users = total_users_sum - iphone_data['total_users']
+            android_revenue = total_revenue_sum - iphone_data['total_revenue']
+            android_records = total_record_count - iphone_data['record_count']
+            
+            if android_users > 0:
+                final_arpu['安卓'] = {
+                    'total_users': android_users,
+                    'total_revenue': android_revenue,
+                    'record_count': android_records
+                }
+            
+            # 重新计算ARPU
+            arpu_summary = []
+            for channel, data in final_arpu.items():
+                arpu_value = data['total_revenue'] / data['total_users'] if data['total_users'] > 0 else 0
+                arpu_summary.append({
+                    'data_source': channel,
+                    'arpu_value': arpu_value,
+                    'record_count': data['record_count'],
+                    'total_users': data['total_users'],
+                    'total_revenue': data['total_revenue']
+                })
+            
+            arpu_summary_df = pd.DataFrame(arpu_summary)
+            return arpu_summary_df, "ARPU计算完成"
+        else:
+            return None, "未找到匹配的渠道数据，请检查渠道映射配置"
+            
+    except Exception as e:
+        return None, f"ARPU计算失败：{str(e)}"
+
 # ==================== 主应用程序 ====================
 
 # 主标题
@@ -1416,8 +1768,7 @@ session_keys = [
     'channel_mapping', 'merged_data', 'cleaned_data', 'retention_data',
     'lt_results_2y', 'lt_results_5y', 'arpu_data', 'ltv_results', 'current_step',
     'excluded_data', 'excluded_dates_info', 'show_exclusion', 'show_manual_arpu',
-    'visualization_data_5y', 'original_data', 'show_custom_mapping',
-    'admin_default_arpu_data'
+    'visualization_data_5y', 'original_data', 'show_custom_mapping'
 ]
 for key in session_keys:
     if key not in st.session_state:
@@ -1497,7 +1848,7 @@ if current_page == "LT模型构建":
             <div class="step-tip-title">重要提示</div>
             <div class="step-tip-content">
             <strong>文件命名规则：</strong>请将Excel文件按照下表中的<strong>渠道名称</strong>进行命名<br>
-            例如：<code>鼎乐-盛世7.xlsx</code>、<code>华为.xlsx</code>、<code>小米.xlsx</code> 等<br>
+            例如：<code>鼎乐-盛世7.xlsx</code> <code>华为.xlsx</code><br>
             <strong>用途：</strong>正确命名可自动匹配ARPU数据和渠道分析
             </div>
         </div>
@@ -1527,7 +1878,8 @@ if current_page == "LT模型构建":
         
         if channel_mapping_file:
             try:
-                custom_mapping = parse_channel_mapping_from_excel(channel_mapping_file)
+                file_content = channel_mapping_file.read()
+                custom_mapping = parse_channel_mapping_from_excel(file_content)
                 if custom_mapping and isinstance(custom_mapping, dict) and len(custom_mapping) > 0:
                     st.session_state.channel_mapping = custom_mapping
                     st.success(f"自定义渠道映射加载成功！共包含 {len(custom_mapping)} 个渠道")
@@ -1587,16 +1939,88 @@ if current_page == "LT模型构建":
 
     if uploaded_files:
         st.info(f"已选择 {len(uploaded_files)} 个文件")
+        
+        # 检查是否需要渠道名称确认
+        suggestions = get_file_channel_suggestions(uploaded_files, st.session_state.channel_mapping)
+        
+        if suggestions:
+            st.markdown("### 📋 渠道名称确认")
+            st.markdown("""
+            <div class="step-tip">
+                <div class="step-tip-title">智能匹配结果</div>
+                <div class="step-tip-content">
+                系统检测到以下文件名未完全匹配渠道名称，为您推荐了最相似的渠道。请确认是否正确：
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            # 初始化确认状态
+            if 'file_channel_confirmations' not in st.session_state:
+                st.session_state.file_channel_confirmations = {}
+            
+            confirmed_mappings = {}
+            all_confirmed = True
+            
+            for file_name, suggestion in suggestions.items():
+                col1, col2, col3 = st.columns([2, 2, 1])
+                
+                with col1:
+                    st.markdown(f"**文件：** `{file_name}.xlsx`")
+                
+                with col2:
+                    suggested_channel = suggestion['suggested_channel']
+                    similarity_score = suggestion['similarity_score']
+                    st.markdown(f"**建议渠道：** {suggested_channel}")
+                    st.caption(f"相似度: {similarity_score:.2%}")
+                
+                with col3:
+                    confirm_key = f"confirm_{file_name}"
+                    if confirm_key not in st.session_state.file_channel_confirmations:
+                        if st.button("✅ 确认", key=f"btn_confirm_{file_name}", use_container_width=True):
+                            st.session_state.file_channel_confirmations[confirm_key] = suggested_channel
+                            st.rerun()
+                        all_confirmed = False
+                    else:
+                        confirmed_channel = st.session_state.file_channel_confirmations[confirm_key]
+                        st.success(f"✅ 已确认为: {confirmed_channel}")
+                        confirmed_mappings[file_name] = confirmed_channel
+                
+                st.markdown("---")
+            
+            if not all_confirmed:
+                st.info("请确认所有文件的渠道名称后再继续处理数据")
+                return
+            
+            # 所有文件都已确认，可以处理数据
+            st.success("✅ 所有文件渠道名称已确认，可以开始处理数据")
+            
+            # 将确认的映射添加到临时渠道映射中
+            temp_channel_mapping = st.session_state.channel_mapping.copy()
+            for file_name, confirmed_channel in confirmed_mappings.items():
+                # 将文件名作为该渠道的别名
+                if confirmed_channel in temp_channel_mapping:
+                    # 这里我们不修改原始映射，而是在处理时使用确认的映射
+                    pass
+            
+            process_button_key = "process_data_with_confirmations"
+        else:
+            # 没有需要确认的文件
+            process_button_key = "process_data_direct"
+            confirmed_mappings = {}
 
-        if st.button("开始处理数据", type="primary", use_container_width=True):
+        if st.button("开始处理数据", type="primary", use_container_width=True, key=process_button_key):
             with st.spinner("正在处理数据文件..."):
                 try:
                     merged_data, processed_count, mapping_warnings = integrate_excel_files_streamlit(
-                        uploaded_files, target_month, st.session_state.channel_mapping
+                        uploaded_files, target_month, st.session_state.channel_mapping, confirmed_mappings
                     )
 
                     if merged_data is not None and not merged_data.empty:
                         st.session_state.merged_data = merged_data
+                        # 清除确认状态，为下次使用做准备
+                        if 'file_channel_confirmations' in st.session_state:
+                            del st.session_state.file_channel_confirmations
+                        
                         st.success(f"数据处理完成！成功处理 {processed_count} 个文件")
 
                         col1, col2, col3 = st.columns(3)
@@ -1614,11 +2038,17 @@ if current_page == "LT模型构建":
                         unique_sources = merged_data['数据来源'].unique()
                         match_info = []
                         for source in unique_sources:
-                            # 检查是否在默认映射中
-                            is_in_mapping = source in st.session_state.channel_mapping
+                            # 检查是否在映射中
+                            is_in_mapping = source in st.session_state.channel_mapping or source in confirmed_mappings.values()
+                            match_status = '已匹配'
+                            if source in confirmed_mappings.values():
+                                match_status = '智能匹配'
+                            elif not is_in_mapping:
+                                match_status = '未匹配'
+                                
                             match_info.append({
                                 '文件/渠道名称': source,
-                                '匹配状态': '已匹配' if is_in_mapping else '未匹配',
+                                '匹配状态': match_status,
                                 '记录数': len(merged_data[merged_data['数据来源'] == source])
                             })
                         
@@ -1629,7 +2059,6 @@ if current_page == "LT模型构建":
                             st.warning("以下文件未在渠道映射中找到对应关系：")
                             for warning in mapping_warnings:
                                 st.text(f"• {warning}")
-                            st.info("提示：请确保文件名与渠道映射表中的渠道名称完全一致")
 
                         # 优化的数据预览 - 每个文件显示两行
                         st.subheader("数据预览")
@@ -1671,14 +2100,24 @@ if current_page == "LT模型构建":
         col1, col2 = st.columns(2)
         with col1:
             st.markdown("### 按数据来源剔除")
-            all_sources = merged_data['数据来源'].unique().tolist()
-            excluded_sources = st.multiselect("选择要剔除的数据来源", options=all_sources, key="exclude_sources")
+            all_sources = sorted(merged_data['数据来源'].unique().tolist())
+            excluded_sources = st.multiselect(
+                "选择要剔除的数据来源", 
+                options=all_sources, 
+                key="exclude_sources_multiselect",
+                help="选择需要从分析中排除的数据来源"
+            )
 
         with col2:
             st.markdown("### 按日期剔除")
             if 'date' in merged_data.columns:
                 all_dates = sorted(merged_data['date'].unique().tolist())
-                excluded_dates = st.multiselect("选择要剔除的日期", options=all_dates, key="exclude_dates")
+                excluded_dates = st.multiselect(
+                    "选择要剔除的日期", 
+                    options=all_dates, 
+                    key="exclude_dates_multiselect",
+                    help="选择需要从分析中排除的日期"
+                )
             else:
                 st.info("数据中无日期字段")
                 excluded_dates = []
@@ -1722,7 +2161,7 @@ if current_page == "LT模型构建":
                 st.dataframe(preview_keep, use_container_width=True)
 
         if len(to_exclude) > 0:
-            if st.button("确认剔除异常数据", type="primary", use_container_width=True, key="confirm_exclude"):
+            if st.button("确认剔除异常数据", type="primary", use_container_width=True, key="confirm_exclude_btn"):
                 try:
                     excluded_dates_info = []
                     for _, row in to_exclude.iterrows():
@@ -1943,11 +2382,11 @@ if current_page == "LT模型构建":
                         ])
                         st.dataframe(results_5y_df, use_container_width=True)
 
-                # 显示单渠道图表 - 100天版本
+                # 显示单渠道图表 - 100天版本，同时显示2年5年LT
                 if visualization_data_5y and original_data:
                     st.subheader("各渠道100天LT拟合图表")
                     
-                    # 按LT值排序
+                    # 按5年LT值排序
                     sorted_channels = sorted(visualization_data_5y.items(), key=lambda x: x[1]['lt'])
                     
                     # 每行显示2个图表
@@ -1955,7 +2394,15 @@ if current_page == "LT模型构建":
                         cols = st.columns(2)
                         for j, col in enumerate(cols):
                             if i + j < len(sorted_channels):
-                                channel_name, curve_data = sorted_channels[i + j]
+                                channel_name, curve_data_5y = sorted_channels[i + j]
+                                
+                                # 找到对应的2年LT值
+                                lt_2y_value = None
+                                for result_2y in lt_results_2y:
+                                    if result_2y['data_source'] == channel_name:
+                                        lt_2y_value = result_2y['lt_value']
+                                        break
+                                
                                 with col:
                                     # 显示渠道名称
                                     st.markdown(f"""
@@ -1969,18 +2416,32 @@ if current_page == "LT模型构建":
                                     
                                     # 显示图表
                                     fig = create_individual_channel_chart(
-                                        channel_name, curve_data, original_data, max_days=100
+                                        channel_name, curve_data_5y, original_data, max_days=100,
+                                        lt_2y=lt_2y_value, lt_5y=curve_data_5y['lt']
                                     )
                                     st.pyplot(fig, use_container_width=True)
                                     plt.close(fig)
                                     
-                                    # 显示LT值
-                                    st.markdown(f"""
-                                    <div style="text-align: center; padding: 0.3rem;
-                                               color: #6b7280; font-size: 0.9rem;">
-                                        5年LT值: {curve_data['lt']:.2f}
-                                    </div>
-                                    """, unsafe_allow_html=True)
+                                    # 显示2年和5年LT值
+                                    col_2y, col_5y = st.columns(2)
+                                    with col_2y:
+                                        st.markdown(f"""
+                                        <div style="text-align: center; padding: 0.3rem;
+                                                   background: rgba(34, 197, 94, 0.1);
+                                                   border-radius: 4px; margin: 0.2rem 0;
+                                                   color: #16a34a; font-size: 0.9rem; font-weight: 600;">
+                                            2年LT: {lt_2y_value:.2f}
+                                        </div>
+                                        """, unsafe_allow_html=True)
+                                    with col_5y:
+                                        st.markdown(f"""
+                                        <div style="text-align: center; padding: 0.3rem;
+                                                   background: rgba(239, 68, 68, 0.1);
+                                                   border-radius: 4px; margin: 0.2rem 0;
+                                                   color: #dc2626; font-size: 0.9rem; font-weight: 600;">
+                                            5年LT: {curve_data_5y['lt']:.2f}
+                                        </div>
+                                        """, unsafe_allow_html=True)
     else:
         st.info("请先完成留存率计算")
         st.markdown("""
@@ -2011,18 +2472,22 @@ elif current_page == "ARPU计算":
     st.markdown('<div class="glass-card">', unsafe_allow_html=True)
     st.subheader("ARPU数据处理")
 
-    # 添加数据源选择
-    st.markdown("### 数据源选择")
-    data_source_option = st.radio(
-        "选择ARPU数据来源：",
-        options=[
-            "管理员模式：管理默认ARPU数据",
-            "使用默认数据 + 上传新数据(2025.5+)", 
-            "完全上传自定义数据"
-        ],
-        index=1,
-        help="选择不同的数据处理模式"
-    )
+    # 添加数据源选择 - 优化版本，默认折叠
+    with st.expander("选择ARPU数据来源", expanded=False):
+        data_source_option = st.radio(
+            "选择ARPU数据来源：",
+            options=[
+                "使用默认数据 + 上传新数据(2025.5+)",
+                "管理员模式：管理默认ARPU数据", 
+                "完全上传自定义数据"
+            ],
+            index=0,  # 默认选择第一个选项
+            help="选择不同的数据处理模式"
+        )
+    
+    # 默认显示："使用默认数据 + 上传新数据(2025.5+)"
+    if 'data_source_option' not in locals():
+        data_source_option = "使用默认数据 + 上传新数据(2025.5+)"
 
     if data_source_option == "管理员模式：管理默认ARPU数据":
         # 管理员模式：管理默认ARPU数据
@@ -2044,8 +2509,9 @@ elif current_page == "ARPU计算":
         uploaded_admin_data = load_admin_default_arpu_data()
         
         # 管理员模式下的ARPU计算
-        if 'admin_default_arpu_data' in st.session_state and st.session_state.admin_default_arpu_data is not None:
-            arpu_df = st.session_state.admin_default_arpu_data
+        admin_data = load_admin_data_from_file()
+        if admin_data is not None:
+            arpu_df = admin_data
             process_arpu_calculation = True
             st.info("将使用管理员上传的默认ARPU数据进行计算")
         else:
@@ -2071,7 +2537,8 @@ elif current_page == "ARPU计算":
         # 显示默认数据信息
         builtin_df = get_builtin_arpu_data()
         
-        if 'admin_default_arpu_data' in st.session_state and st.session_state.admin_default_arpu_data is not None:
+        admin_data = load_admin_data_from_file()
+        if admin_data is not None:
             st.info(f"使用管理员设置的默认数据：{len(builtin_df):,} 条记录，覆盖 {builtin_df['月份'].nunique()} 个月份")
         else:
             st.info(f"使用系统示例数据：{len(builtin_df):,} 条记录，覆盖 {builtin_df['月份'].nunique()} 个月份")
@@ -2090,7 +2557,8 @@ elif current_page == "ARPU计算":
         
         if new_arpu_file:
             try:
-                combined_df, message = load_user_arpu_data_after_april(new_arpu_file, builtin_df)
+                file_content = new_arpu_file.read()
+                combined_df, message = load_user_arpu_data_after_april(file_content, builtin_df)
                 if combined_df is not None:
                     st.success(message)
                     st.info(f"合并后数据包含 {len(combined_df):,} 条记录")
@@ -2140,7 +2608,8 @@ elif current_page == "ARPU计算":
                     if arpu_file.name.endswith('.csv'):
                         arpu_df = pd.read_csv(arpu_file)
                     else:
-                        arpu_df = pd.read_excel(arpu_file)
+                        file_content = arpu_file.read()
+                        arpu_df = pd.read_excel(io.BytesIO(file_content), engine='openpyxl')
                 st.success("ARPU文件上传成功！")
                 
                 # 检查必需列
@@ -2164,7 +2633,7 @@ elif current_page == "ARPU计算":
             st.info("请上传ARPU数据文件")
             process_arpu_calculation = False
 
-    # 统一的ARPU计算处理
+    # 统一的ARPU计算处理 - 优化版本
     if process_arpu_calculation and 'arpu_df' in locals():
         # 月份筛选 - 优先使用月份列，其次使用stat_date列
         st.subheader("月份筛选")
@@ -2221,7 +2690,7 @@ elif current_page == "ARPU计算":
                     if start_month and end_month:
                         if '月份' in arpu_df.columns:
                             # 确保月份格式一致
-                            arpu_df['月份_std'] = arpu_df['月份'].astype(str).apply(lambda x: x[:7] if len(x) >= 7 else x)
+                            arpu_df['月份_std'] = arpu_df['月份'].astype(str).apply(lambda x: x[:7] if len(str(x)) >= 7 else str(x))
                             mask = (arpu_df['月份_std'] >= start_month) & (arpu_df['月份_std'] <= end_month)
                         else:
                             mask = (arpu_df['month'].astype(str) >= start_month) & (arpu_df['month'].astype(str) <= end_month)
@@ -2234,103 +2703,45 @@ elif current_page == "ARPU计算":
                     if len(filtered_arpu_df) == 0:
                         st.error("筛选后无数据，请检查月份筛选条件")
                     else:
-                        # 确保pid为字符串格式
-                        filtered_arpu_df['pid'] = filtered_arpu_df['pid'].astype(str).str.replace('.0', '', regex=False)
+                        # 使用优化的ARPU计算函数
+                        result_df, message = calculate_arpu_optimized(
+                            filtered_arpu_df, 
+                            st.session_state.channel_mapping, 
+                            batch_size=1000
+                        )
                         
-                        # 数据清理 - 确保数值列为数值类型
-                        numeric_cols = ['instl_user_cnt', 'ad_all_rven_1d_m']
-                        for col in numeric_cols:
-                            filtered_arpu_df[col] = pd.to_numeric(filtered_arpu_df[col], errors='coerce')
-                        
-                        # 移除无效数据
-                        filtered_arpu_df = filtered_arpu_df.dropna(subset=numeric_cols)
-                        filtered_arpu_df = filtered_arpu_df[
-                            (filtered_arpu_df['instl_user_cnt'] > 0) & 
-                            (filtered_arpu_df['ad_all_rven_1d_m'] >= 0)
-                        ]
-                        
-                        if len(filtered_arpu_df) == 0:
-                            st.error("数据清理后无有效记录")
+                        if result_df is not None:
+                            st.session_state.arpu_data = result_df
+                            st.success(message)
+                            
+                            # 显示结果 - 增强显示信息
+                            display_arpu_df = result_df.copy()
+                            display_arpu_df['ARPU'] = display_arpu_df['arpu_value'].round(4)
+                            display_arpu_df['总用户数'] = display_arpu_df['total_users'].astype(int)
+                            display_arpu_df['总收入'] = display_arpu_df['total_revenue'].round(2)
+                            display_arpu_df = display_arpu_df[['data_source', 'ARPU', '总用户数', '总收入', 'record_count']]
+                            display_arpu_df.columns = ['渠道名称', 'ARPU值', '总用户数', '总收入', '记录数']
+                            st.dataframe(display_arpu_df, use_container_width=True)
+                            
+                            # 显示汇总信息
+                            col1, col2, col3 = st.columns(3)
+                            with col1:
+                                st.metric("匹配渠道数", len(result_df))
+                            with col2:
+                                total_users = result_df['total_users'].sum()
+                                st.metric("总用户数", f"{total_users:,}")
+                            with col3:
+                                avg_arpu = result_df['arpu_value'].mean() if len(result_df) > 0 else 0
+                                st.metric("平均ARPU", f"{avg_arpu:.4f}")
                         else:
-                            # 创建反向渠道映射
-                            reverse_mapping = create_reverse_mapping(st.session_state.channel_mapping)
+                            st.error(message)
                             
-                            # 按渠道匹配和汇总
-                            arpu_results = []
-                            
-                            for pid, group in filtered_arpu_df.groupby('pid'):
-                                if pid in reverse_mapping:
-                                    channel_name = reverse_mapping[pid]
-                                    total_users = group['instl_user_cnt'].sum()
-                                    total_revenue = group['ad_all_rven_1d_m'].sum()
-                                    
-                                    if total_users > 0:
-                                        arpu_value = total_revenue / total_users
-                                        arpu_results.append({
-                                            'data_source': channel_name,
-                                            'total_users': total_users,
-                                            'total_revenue': total_revenue,
-                                            'arpu_value': arpu_value,
-                                            'record_count': len(group)
-                                        })
-
-                            if arpu_results:
-                                # 按渠道合并相同渠道的数据
-                                final_arpu = {}
-                                for result in arpu_results:
-                                    channel = result['data_source']
-                                    if channel in final_arpu:
-                                        final_arpu[channel]['total_users'] += result['total_users']
-                                        final_arpu[channel]['total_revenue'] += result['total_revenue']
-                                        final_arpu[channel]['record_count'] += result['record_count']
-                                    else:
-                                        final_arpu[channel] = result.copy()
-                                
-                                # 重新计算ARPU
-                                arpu_summary = []
-                                for channel, data in final_arpu.items():
-                                    arpu_value = data['total_revenue'] / data['total_users'] if data['total_users'] > 0 else 0
-                                    arpu_summary.append({
-                                        'data_source': channel,
-                                        'arpu_value': arpu_value,
-                                        'record_count': data['record_count'],
-                                        'total_users': data['total_users'],
-                                        'total_revenue': data['total_revenue']
-                                    })
-                                
-                                arpu_summary_df = pd.DataFrame(arpu_summary)
-                                st.session_state.arpu_data = arpu_summary_df
-                                st.success("ARPU计算完成！")
-                                
-                                # 显示结果 - 增强显示信息
-                                display_arpu_df = arpu_summary_df.copy()
-                                display_arpu_df['ARPU'] = display_arpu_df['arpu_value'].round(4)
-                                display_arpu_df['总用户数'] = display_arpu_df['total_users'].astype(int)
-                                display_arpu_df['总收入'] = display_arpu_df['total_revenue'].round(2)
-                                display_arpu_df = display_arpu_df[['data_source', 'ARPU', '总用户数', '总收入', 'record_count']]
-                                display_arpu_df.columns = ['渠道名称', 'ARPU值', '总用户数', '总收入', '记录数']
-                                st.dataframe(display_arpu_df, use_container_width=True)
-                                
-                                # 显示汇总信息
-                                col1, col2, col3 = st.columns(3)
-                                with col1:
-                                    st.metric("匹配渠道数", len(arpu_summary))
-                                with col2:
-                                    total_users = sum(data['total_users'] for data in final_arpu.values())
-                                    st.metric("总用户数", f"{total_users:,}")
-                                with col3:
-                                    avg_arpu = sum(data['arpu_value'] for data in arpu_summary) / len(arpu_summary) if arpu_summary else 0
-                                    st.metric("平均ARPU", f"{avg_arpu:.4f}")
-                            else:
-                                st.error("未找到匹配的渠道数据，请检查渠道映射配置")
-                                
-                                # 显示未匹配的pid
-                                unmatched_pids = sorted(filtered_arpu_df['pid'].unique())
-                                st.info(f"数据中的渠道号：{', '.join(unmatched_pids[:10])}{'...' if len(unmatched_pids) > 10 else ''}")
+                            # 显示未匹配的pid
+                            unmatched_pids = sorted(filtered_arpu_df['pid'].unique())
+                            st.info(f"数据中的渠道号：{', '.join(unmatched_pids[:10])}{'...' if len(unmatched_pids) > 10 else ''}")
 
                 except Exception as e:
                     st.error(f"ARPU计算失败：{str(e)}")
-                    st.exception(e)  # 显示详细错误信息
 
     # 手动设置ARPU（按需显示）
     if st.session_state.lt_results_5y:
@@ -2458,10 +2869,12 @@ elif current_page == "LTV结果报告":
         column_order = ['渠道名称', '5年LT', '5年ARPU', '5年LTV', '2年LT', '2年ARPU', '2年LTV', '备注']
         results_df = results_df[column_order]
         
-        st.dataframe(results_df, use_container_width=True, height=600)
+        # 根据数据行数设置表格高度（行数+2）
+        table_height = (len(results_df) + 2) * 35  # 每行约35px高度
+        st.dataframe(results_df, use_container_width=True, height=table_height)
         st.markdown('</div>', unsafe_allow_html=True)
 
-        # 显示所有拟合曲线 - 一行四个
+        # 显示所有拟合曲线 - 一行三个
         if st.session_state.visualization_data_5y and st.session_state.original_data:
             st.markdown('<div class="glass-card">', unsafe_allow_html=True)
             st.subheader("所有渠道拟合曲线（100天）")
@@ -2469,15 +2882,23 @@ elif current_page == "LTV结果报告":
             visualization_data_5y = st.session_state.visualization_data_5y
             original_data = st.session_state.original_data
             
-            # 按LT值排序
+            # 按5年LT值排序
             sorted_channels = sorted(visualization_data_5y.items(), key=lambda x: x[1]['lt'])
             
-            # 每行显示4个图表
-            for i in range(0, len(sorted_channels), 4):
-                cols = st.columns(4)
+            # 每行显示3个图表
+            for i in range(0, len(sorted_channels), 3):
+                cols = st.columns(3)
                 for j, col in enumerate(cols):
                     if i + j < len(sorted_channels):
-                        channel_name, curve_data = sorted_channels[i + j]
+                        channel_name, curve_data_5y = sorted_channels[i + j]
+                        
+                        # 找到对应的2年LT值
+                        lt_2y_value = None
+                        for result_2y in lt_results_2y:
+                            if result_2y['data_source'] == channel_name:
+                                lt_2y_value = result_2y['lt_value']
+                                break
+                        
                         with col:
                             # 显示渠道名称
                             st.markdown(f"""
@@ -2491,18 +2912,31 @@ elif current_page == "LTV结果报告":
                             
                             # 显示图表
                             fig = create_individual_channel_chart(
-                                channel_name, curve_data, original_data, max_days=100
+                                channel_name, curve_data_5y, original_data, max_days=100
                             )
                             st.pyplot(fig, use_container_width=True)
                             plt.close(fig)
                             
-                            # 显示LT值
-                            st.markdown(f"""
-                            <div style="text-align: center; padding: 0.2rem;
-                                       color: #6b7280; font-size: 0.8rem;">
-                                LT: {curve_data['lt']:.2f}
-                            </div>
-                            """, unsafe_allow_html=True)
+                            # 显示2年和5年LT值
+                            col_2y, col_5y = st.columns(2)
+                            with col_2y:
+                                st.markdown(f"""
+                                <div style="text-align: center; padding: 0.2rem;
+                                           background: rgba(34, 197, 94, 0.1);
+                                           border-radius: 3px; margin: 0.1rem 0;
+                                           color: #16a34a; font-size: 0.8rem; font-weight: 600;">
+                                    2年: {lt_2y_value:.2f}
+                                </div>
+                                """, unsafe_allow_html=True)
+                            with col_5y:
+                                st.markdown(f"""
+                                <div style="text-align: center; padding: 0.2rem;
+                                           background: rgba(239, 68, 68, 0.1);
+                                           border-radius: 3px; margin: 0.1rem 0;
+                                           color: #dc2626; font-size: 0.8rem; font-weight: 600;">
+                                    5年: {curve_data_5y['lt']:.2f}
+                                </div>
+                                """, unsafe_allow_html=True)
             
             st.markdown('</div>', unsafe_allow_html=True)
 
