@@ -1242,9 +1242,9 @@ def calculate_lt_advanced(retention_result, channel_name, lt_years=5, return_cur
 
     return total_lt
 
-# ==================== 单渠道图表生成函数 - 使用英文标签 ====================
+# ==================== 单渠道图表生成函数 - 避免中文标题 ====================
 def create_individual_channel_chart(channel_name, curve_data, original_data, max_days=100):
-    """创建单个渠道的100天LT拟合图表 - 使用英文标签避免中文显示问题"""
+    """创建单个渠道的100天LT拟合图表 - 避免中文标题显示问题"""
     
     # 使用英文字体设置
     plt.rcParams['font.family'] = ['Arial', 'DejaVu Sans']
@@ -1283,13 +1283,14 @@ def create_individual_channel_chart(channel_name, curve_data, original_data, max
         zorder=2
     )
     
-    # 设置图表样式 - 使用英文标签
+    # 设置图表样式 - 使用英文标题避免中文显示问题
     ax.set_xlim(0, max_days)
     ax.set_ylim(0, 0.6)
     
     ax.set_xlabel('Retention Days', fontsize=12)
     ax.set_ylabel('Retention Rate', fontsize=12)
-    ax.set_title(f'{channel_name} ({max_days}d LT Fitting)', fontsize=14, fontweight='bold')
+    # 使用简洁的英文标题，避免中文显示问题
+    ax.set_title(f'{max_days}-Day LT Fitting Analysis', fontsize=14, fontweight='bold')
     
     ax.grid(True, linestyle='--', alpha=0.4)
     ax.legend(fontsize=10)
@@ -1660,95 +1661,92 @@ if current_page == "LT模型构建":
 
     st.markdown('</div>', unsafe_allow_html=True)
 
-    # 步骤2：异常数据剔除 - 始终显示
+    # 步骤2：异常数据剔除 - 默认展开
     st.markdown('<div class="glass-card">', unsafe_allow_html=True)
     st.subheader("2. 异常数据剔除")
     
     if st.session_state.merged_data is not None:
-        if not st.session_state.show_exclusion:
-            if st.button("需要异常数据剔除", use_container_width=True):
-                st.session_state.show_exclusion = True
-                st.rerun()
-            st.info("如无需剔除异常数据，可直接进行下一步")
-        else:
-            merged_data = st.session_state.merged_data
-            
-            col1, col2 = st.columns(2)
-            with col1:
-                st.markdown("### 按数据来源剔除")
-                all_sources = merged_data['数据来源'].unique().tolist()
-                excluded_sources = st.multiselect("选择要剔除的数据来源", options=all_sources)
+        merged_data = st.session_state.merged_data
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            st.markdown("### 按数据来源剔除")
+            all_sources = merged_data['数据来源'].unique().tolist()
+            excluded_sources = st.multiselect("选择要剔除的数据来源", options=all_sources, key="exclude_sources")
 
-            with col2:
-                st.markdown("### 按日期剔除")
-                if 'date' in merged_data.columns:
-                    all_dates = sorted(merged_data['date'].unique().tolist())
-                    excluded_dates = st.multiselect("选择要剔除的日期", options=all_dates)
-                else:
-                    st.info("数据中无日期字段")
-                    excluded_dates = []
+        with col2:
+            st.markdown("### 按日期剔除")
+            if 'date' in merged_data.columns:
+                all_dates = sorted(merged_data['date'].unique().tolist())
+                excluded_dates = st.multiselect("选择要剔除的日期", options=all_dates, key="exclude_dates")
+            else:
+                st.info("数据中无日期字段")
+                excluded_dates = []
 
-            # 计算剔除结果
-            try:
-                exclusion_mask = pd.Series([True] * len(merged_data), index=merged_data.index)
+        # 计算剔除结果
+        try:
+            exclusion_mask = pd.Series([True] * len(merged_data), index=merged_data.index)
 
-                if excluded_sources:
-                    source_mask = merged_data['数据来源'].isin(excluded_sources)
-                    exclusion_mask &= source_mask
+            if excluded_sources:
+                source_mask = merged_data['数据来源'].isin(excluded_sources)
+                exclusion_mask &= source_mask
 
-                if 'date' in merged_data.columns and excluded_dates:
-                    date_mask = merged_data['date'].isin(excluded_dates)
-                    exclusion_mask &= date_mask
+            if 'date' in merged_data.columns and excluded_dates:
+                date_mask = merged_data['date'].isin(excluded_dates)
+                exclusion_mask &= date_mask
 
-                if not excluded_sources and not excluded_dates:
-                    exclusion_mask = pd.Series([False] * len(merged_data), index=merged_data.index)
+            if not excluded_sources and not excluded_dates:
+                exclusion_mask = pd.Series([False] * len(merged_data), index=merged_data.index)
 
-                to_exclude = merged_data[exclusion_mask]
-                to_keep = merged_data[~exclusion_mask]
+            to_exclude = merged_data[exclusion_mask]
+            to_keep = merged_data[~exclusion_mask]
 
-            except Exception as e:
-                st.error(f"计算剔除条件时出错: {str(e)}")
-                to_exclude = pd.DataFrame()
-                to_keep = merged_data.copy()
+        except Exception as e:
+            st.error(f"计算剔除条件时出错: {str(e)}")
+            to_exclude = pd.DataFrame()
+            to_keep = merged_data.copy()
 
-            col1, col2 = st.columns(2)
-            with col1:
-                st.markdown(f"### 将被剔除的数据 ({len(to_exclude)} 条)")
-                if len(to_exclude) > 0:
-                    preview_exclude = optimize_dataframe_for_preview(to_exclude, max_rows=5)
-                    st.dataframe(preview_exclude, use_container_width=True)
+        col1, col2 = st.columns(2)
+        with col1:
+            st.markdown(f"### 将被剔除的数据 ({len(to_exclude)} 条)")
+            if len(to_exclude) > 0:
+                preview_exclude = optimize_dataframe_for_preview(to_exclude, max_rows=5)
+                st.dataframe(preview_exclude, use_container_width=True)
+            else:
+                st.info("无数据将被剔除")
 
-            with col2:
-                st.markdown(f"### 保留的数据 ({len(to_keep)} 条)")
-                if len(to_keep) > 0:
-                    preview_keep = optimize_dataframe_for_preview(to_keep, max_rows=5)
-                    st.dataframe(preview_keep, use_container_width=True)
+        with col2:
+            st.markdown(f"### 保留的数据 ({len(to_keep)} 条)")
+            if len(to_keep) > 0:
+                preview_keep = optimize_dataframe_for_preview(to_keep, max_rows=5)
+                st.dataframe(preview_keep, use_container_width=True)
 
-            if st.button("确认剔除异常数据", type="primary", use_container_width=True):
+        if len(to_exclude) > 0:
+            if st.button("确认剔除异常数据", type="primary", use_container_width=True, key="confirm_exclude"):
                 try:
-                    if len(to_exclude) > 0:
-                        excluded_dates_info = []
-                        for _, row in to_exclude.iterrows():
-                            source = row.get('数据来源', 'Unknown')
-                            date = row.get('date', 'Unknown')
-                            excluded_dates_info.append(f"{source}-{date}")
-                        
-                        st.session_state.excluded_data = excluded_dates_info
-                        st.session_state.excluded_dates_info = excluded_dates
-                        st.session_state.cleaned_data = to_keep.copy()
-                        st.success(f"成功剔除 {len(to_exclude)} 条异常数据")
-                    else:
-                        st.session_state.cleaned_data = merged_data.copy()
-                        st.session_state.excluded_dates_info = []
-                        st.info("未发现需要剔除的异常数据")
+                    excluded_dates_info = []
+                    for _, row in to_exclude.iterrows():
+                        source = row.get('数据来源', 'Unknown')
+                        date = row.get('date', 'Unknown')
+                        excluded_dates_info.append(f"{source}-{date}")
+                    
+                    st.session_state.excluded_data = excluded_dates_info
+                    st.session_state.excluded_dates_info = excluded_dates
+                    st.session_state.cleaned_data = to_keep.copy()
+                    st.success(f"成功剔除 {len(to_exclude)} 条异常数据")
                 except Exception as e:
                     st.error(f"剔除数据时出错: {str(e)}")
+        else:
+            st.info("当前筛选条件下无需剔除数据")
+            # 如果没有要剔除的数据，自动设置清理后数据
+            if not excluded_sources and not excluded_dates:
+                st.session_state.cleaned_data = merged_data.copy()
     else:
         st.info("请先完成数据上传与汇总")
 
     st.markdown('</div>', unsafe_allow_html=True)
 
-    # 步骤3：留存率计算 - 始终显示
+    # 步骤3：留存率计算 - 默认展开
     st.markdown('<div class="glass-card">', unsafe_allow_html=True)
     st.subheader("3. 留存率计算")
     
@@ -1779,9 +1777,9 @@ if current_page == "LT模型构建":
             st.info("使用原始数据进行计算")
 
         data_sources = working_data['数据来源'].unique()
-        selected_sources = st.multiselect("选择要分析的数据来源", options=data_sources, default=data_sources)
+        selected_sources = st.multiselect("选择要分析的数据来源", options=data_sources, default=data_sources, key="retention_sources")
 
-        if st.button("计算留存率", type="primary", use_container_width=True):
+        if st.button("计算留存率", type="primary", use_container_width=True, key="calc_retention"):
             if selected_sources:
                 with st.spinner("正在计算留存率..."):
                     filtered_data = working_data[working_data['数据来源'].isin(selected_sources)]
@@ -1831,27 +1829,27 @@ if current_page == "LT模型构建":
 
     st.markdown('</div>', unsafe_allow_html=True)
 
-    # 步骤4：LT拟合分析 - 始终显示
+    # 步骤4：LT拟合分析 - 默认展开
     st.markdown('<div class="glass-card">', unsafe_allow_html=True)
     st.subheader("4. LT拟合分析")
+    
+    # 渠道规则说明
+    st.markdown("""
+    <div class="step-tip">
+        <div class="step-tip-title">三阶段拟合规则</div>
+        <div class="step-tip-content">
+        <strong>第一阶段：</strong>1-30天，幂函数拟合实际数据<br>
+        <strong>第二阶段：</strong>31-X天，延续幂函数模型<br>
+        <strong>第三阶段：</strong>Y天后，指数函数建模长期衰减<br>
+        不同渠道采用不同的阶段划分点
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
     
     if st.session_state.retention_data is not None:
         retention_data = st.session_state.retention_data
 
-        # 渠道规则说明
-        st.markdown("""
-        <div class="step-tip">
-            <div class="step-tip-title">三阶段拟合规则</div>
-            <div class="step-tip-content">
-            <strong>第一阶段：</strong>1-30天，幂函数拟合实际数据<br>
-            <strong>第二阶段：</strong>31-X天，延续幂函数模型<br>
-            <strong>第三阶段：</strong>Y天后，指数函数建模长期衰减<br>
-            不同渠道采用不同的阶段划分点
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
-
-        if st.button("开始LT拟合分析", type="primary", use_container_width=True):
+        if st.button("开始LT拟合分析", type="primary", use_container_width=True, key="start_lt_fitting"):
             with st.spinner("正在进行拟合计算..."):
                 lt_results_2y = []
                 lt_results_5y = []
@@ -1959,13 +1957,42 @@ if current_page == "LT模型构建":
                             if i + j < len(sorted_channels):
                                 channel_name, curve_data = sorted_channels[i + j]
                                 with col:
+                                    # 显示渠道名称
+                                    st.markdown(f"""
+                                    <div style="text-align: center; padding: 0.5rem; 
+                                               background: rgba(59, 130, 246, 0.1); 
+                                               border-radius: 6px; margin-bottom: 0.5rem;
+                                               color: #1e40af; font-weight: 600;">
+                                        {channel_name}
+                                    </div>
+                                    """, unsafe_allow_html=True)
+                                    
+                                    # 显示图表
                                     fig = create_individual_channel_chart(
                                         channel_name, curve_data, original_data, max_days=100
                                     )
                                     st.pyplot(fig, use_container_width=True)
                                     plt.close(fig)
+                                    
+                                    # 显示LT值
+                                    st.markdown(f"""
+                                    <div style="text-align: center; padding: 0.3rem;
+                                               color: #6b7280; font-size: 0.9rem;">
+                                        5年LT值: {curve_data['lt']:.2f}
+                                    </div>
+                                    """, unsafe_allow_html=True)
     else:
         st.info("请先完成留存率计算")
+        st.markdown("""
+        <div style="padding: 1rem; background: #f3f4f6; border-radius: 8px; margin: 1rem 0;">
+            <h4 style="color: #374151; margin-bottom: 0.5rem;">LT拟合分析说明</h4>
+            <p style="color: #6b7280; margin: 0; line-height: 1.5;">
+                LT拟合分析需要先完成留存率计算。完成留存率计算后，
+                系统将使用三阶段数学建模方法对每个渠道进行LT值预测，
+                包括2年和5年的预测结果以及拟合曲线可视化。
+            </p>
+        </div>
+        """, unsafe_allow_html=True)
 
     st.markdown('</div>', unsafe_allow_html=True)
 
@@ -2454,11 +2481,30 @@ elif current_page == "LTV结果报告":
                     if i + j < len(sorted_channels):
                         channel_name, curve_data = sorted_channels[i + j]
                         with col:
+                            # 显示渠道名称
+                            st.markdown(f"""
+                            <div style="text-align: center; padding: 0.3rem; 
+                                       background: rgba(59, 130, 246, 0.1); 
+                                       border-radius: 4px; margin-bottom: 0.3rem;
+                                       color: #1e40af; font-weight: 600; font-size: 0.85rem;">
+                                {channel_name}
+                            </div>
+                            """, unsafe_allow_html=True)
+                            
+                            # 显示图表
                             fig = create_individual_channel_chart(
                                 channel_name, curve_data, original_data, max_days=100
                             )
                             st.pyplot(fig, use_container_width=True)
                             plt.close(fig)
+                            
+                            # 显示LT值
+                            st.markdown(f"""
+                            <div style="text-align: center; padding: 0.2rem;
+                                       color: #6b7280; font-size: 0.8rem;">
+                                LT: {curve_data['lt']:.2f}
+                            </div>
+                            """, unsafe_allow_html=True)
             
             st.markdown('</div>', unsafe_allow_html=True)
 
