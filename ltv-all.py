@@ -15,6 +15,7 @@ from matplotlib.font_manager import FontProperties
 import seaborn as sns
 from scipy.optimize import curve_fit
 import gc  # 垃圾回收
+import difflib  # 添加difflib导入
 
 # ==================== 基础配置 ====================
 # 忽略警告
@@ -626,8 +627,6 @@ def optimize_dataframe_for_preview(df, max_rows=2):
     return preview_df[sorted_columns]
 
 # ==================== 智能匹配函数 ====================
-import difflib
-
 def calculate_similarity(str1, str2):
     """计算两个字符串的相似度（0-1之间，1表示完全相同）"""
     return difflib.SequenceMatcher(None, str1.lower(), str2.lower()).ratio()
@@ -934,7 +933,7 @@ def integrate_excel_files_cached_with_mapping(file_names, file_contents, target_
 
         try:
             # 从内存中读取Excel文件 - 优化读取方式
-            file_data = None  # 初始化file_data变量
+            file_data = None
             
             with io.BytesIO(file_content) as buffer:
                 xls = pd.ExcelFile(buffer, engine='openpyxl')
@@ -1770,7 +1769,8 @@ session_keys = [
     'channel_mapping', 'merged_data', 'cleaned_data', 'retention_data',
     'lt_results_2y', 'lt_results_5y', 'arpu_data', 'ltv_results', 'current_step',
     'excluded_data', 'excluded_dates_info', 'show_exclusion', 'show_manual_arpu',
-    'visualization_data_5y', 'original_data', 'show_custom_mapping'
+    'visualization_data_5y', 'original_data', 'show_custom_mapping',
+    'file_channel_confirmations'
 ]
 for key in session_keys:
     if key not in st.session_state:
