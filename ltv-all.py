@@ -1823,6 +1823,13 @@ if current_page == "LT模型构建":
             # 所有文件都已确认，可以处理数据
             st.success("✅ 所有文件渠道名称已确认，可以开始处理数据")
             process_button_key = "process_data_with_confirmations"
+            if not all_confirmed:
+                st.info("请确认所有文件的渠道名称后再继续处理数据")
+                return
+            
+            # 所有文件都已确认，可以处理数据
+            st.success("✅ 所有文件渠道名称已确认，可以开始处理数据")
+            process_button_key = "process_data_with_confirmations"
 
         if st.button("开始处理数据", type="primary", use_container_width=True, key=process_button_key):
             with st.spinner("正在处理数据文件..."):
