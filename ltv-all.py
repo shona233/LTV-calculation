@@ -54,7 +54,7 @@ st.markdown("""
     /* 全局样式 */
     .main {
         background: #f8fafc;
-        min-height: 100vh;
+        min-height: 150vh;
     }
 
     .block-container {
@@ -260,7 +260,7 @@ st.markdown("""
     
     /* 固定容器高度 - 防止页面跳动 */
     .exclusion-container {
-        min-height: 0px;
+        min-height: 38px;
         padding: 1rem;
         background: white;
         border-radius: 8px;
