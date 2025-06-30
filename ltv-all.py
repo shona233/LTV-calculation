@@ -1777,7 +1777,7 @@ if current_page == "LT模型构建":
     st.markdown("### 数据文件上传")
     
     # 数据文件上传
-    uploaded_files = st.file_uploader("",
+    uploaded_files = st.file_uploader("请上传留存数据ocpx/hue",
         type=['xlsx', 'xls'],
         accept_multiple_files=True,
         help="支持OCPX分离式格式（监测渠道回传量+ocpx监测留存数）和传统格式"
