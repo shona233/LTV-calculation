@@ -248,6 +248,72 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
+# 在CSS样式中添加以下内容来减少页面跳动
+
+st.markdown("""
+<style>
+    /* 减少页面跳动的CSS */
+    .stSelectbox > div > div {
+        min-height: 38px;
+    }
+    
+    .stMultiSelect > div > div {
+        min-height: 38px;
+    }
+    
+    /* 固定容器高度 */
+    .exclusion-container {
+        min-height: 200px;
+        padding: 1rem;
+        background: white;
+        border-radius: 8px;
+        border: 1px solid #e5e7eb;
+    }
+    
+    /* 数据预览容器固定高度 */
+    .data-preview-container {
+        min-height: 150px;
+    }
+    
+    /* 防止表格高度变化导致的跳动 */
+    .stDataFrame {
+        min-height: 100px;
+    }
+</style>
+""", unsafe_allow_html=True)
+
+# 在异常剔除部分使用稳定的布局
+with st.container():
+    st.markdown('<div class="exclusion-container">', unsafe_allow_html=True)
+    
+    # 使用固定的列布局
+    col1, col2 = st.columns([1, 1])
+    
+    with col1:
+        st.markdown("### 按数据来源剔除")
+        # 使用key确保组件稳定性
+        excluded_sources = st.multiselect(
+            "选择要剔除的数据来源", 
+            options=all_sources, 
+            key="exclude_sources_stable",  # 稳定的key
+            help="选择需要从分析中排除的数据来源"
+        )
+
+    with col2:
+        st.markdown("### 按日期剔除")
+        if 'date' in merged_data.columns:
+            excluded_dates = st.multiselect(
+                "选择要剔除的日期", 
+                options=all_dates, 
+                key="exclude_dates_stable",  # 稳定的key
+                help="选择需要从分析中排除的日期"
+            )
+        else:
+            st.info("数据中无日期字段")
+            excluded_dates = []
+    
+    st.markdown('</div>', unsafe_allow_html=True)
+  
 # ==================== 默认配置数据 ====================
 DEFAULT_CHANNEL_MAPPING = {
     '总体': [],  # 总体没有渠道号，是所有值的总和
