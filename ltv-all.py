@@ -2903,8 +2903,6 @@ LTV用户生命周期价值分析报告
 - LTV公式: LTV = LT × ARPU
 - 渠道规则: 按华为、小米、OPPO、vivo、iPhone分类设定不同拟合参数
 - 留存率计算: OCPX格式表各天留存列（1、2、3...）平均值÷回传新增数平均值
-
-报告生成: LTV智能分析平台 v3.5
 """
 
             st.download_button(
