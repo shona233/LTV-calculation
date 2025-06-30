@@ -1667,7 +1667,7 @@ ANALYSIS_STEPS = [
 # ==================== 侧边栏导航 ====================
 with st.sidebar:
     st.markdown('<div class="nav-container">', unsafe_allow_html=True)
-    st.markdown('<h4 style="text-align: center; margin-bottom: 1rem; color: white;">分析流程</h4>',
+    st.markdown('<h4 style="text-align: center; margin-bottom: 1rem; color: blue;">分析流程</h4>',
                 unsafe_allow_html=True)
 
     for i, step in enumerate(ANALYSIS_STEPS):
