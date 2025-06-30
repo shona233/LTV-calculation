@@ -2897,10 +2897,10 @@ with st.sidebar:
         <p style="font-size: 0.9rem; color: rgba(255,255,255,0.9); text-align: center;">
         （1）请注意文件规范命名
         </p>
-        <p style="font-size: 0.8rem; color: rgba(255,255,255,0.7); text-align: center;">
+        <p style="font-size: 0.8rem; color: rgba(255,255,255,0.9); text-align: center;">
         （2）请注意更新当月渠道号
         </p>
-        <p style="font-size: 0.8rem; color: rgba(255,255,255,0.7); text-align: center;">
+        <p style="font-size: 0.8rem; color: rgba(255,255,255,0.9); text-align: center;">
         （3）Ocpx文件较大，上传速度较慢
         </p>
     </div>
