@@ -1654,7 +1654,7 @@ def calculate_arpu_optimized(filtered_arpu_df, channel_mapping, batch_size=1000)
 # 主标题
 st.markdown("""
 <div class="main-header">
-    <div class="main-title">用户生命周期价值分析系统</div>
+    <div class="main-title">离线用户自定义LTV模拟器</div>
     <div class="main-subtitle">基于分阶段数学建模的LTV预测</div>
 </div>
 """, unsafe_allow_html=True)
