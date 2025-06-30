@@ -2233,102 +2233,100 @@ elif current_page == "ARPU计算":
 
                     if len(filtered_arpu_df) == 0:
                         st.error("筛选后无数据，请检查月份筛选条件")
-                        continue
-
-                    # 确保pid为字符串格式
-                    filtered_arpu_df['pid'] = filtered_arpu_df['pid'].astype(str).str.replace('.0', '', regex=False)
-                    
-                    # 数据清理 - 确保数值列为数值类型
-                    numeric_cols = ['instl_user_cnt', 'ad_all_rven_1d_m']
-                    for col in numeric_cols:
-                        filtered_arpu_df[col] = pd.to_numeric(filtered_arpu_df[col], errors='coerce')
-                    
-                    # 移除无效数据
-                    filtered_arpu_df = filtered_arpu_df.dropna(subset=numeric_cols)
-                    filtered_arpu_df = filtered_arpu_df[
-                        (filtered_arpu_df['instl_user_cnt'] > 0) & 
-                        (filtered_arpu_df['ad_all_rven_1d_m'] >= 0)
-                    ]
-                    
-                    if len(filtered_arpu_df) == 0:
-                        st.error("数据清理后无有效记录")
-                        continue
-                    
-                    # 创建反向渠道映射
-                    reverse_mapping = create_reverse_mapping(st.session_state.channel_mapping)
-                    
-                    # 按渠道匹配和汇总
-                    arpu_results = []
-                    
-                    for pid, group in filtered_arpu_df.groupby('pid'):
-                        if pid in reverse_mapping:
-                            channel_name = reverse_mapping[pid]
-                            total_users = group['instl_user_cnt'].sum()
-                            total_revenue = group['ad_all_rven_1d_m'].sum()
-                            
-                            if total_users > 0:
-                                arpu_value = total_revenue / total_users
-                                arpu_results.append({
-                                    'data_source': channel_name,
-                                    'total_users': total_users,
-                                    'total_revenue': total_revenue,
-                                    'arpu_value': arpu_value,
-                                    'record_count': len(group)
-                                })
-
-                    if arpu_results:
-                        # 按渠道合并相同渠道的数据
-                        final_arpu = {}
-                        for result in arpu_results:
-                            channel = result['data_source']
-                            if channel in final_arpu:
-                                final_arpu[channel]['total_users'] += result['total_users']
-                                final_arpu[channel]['total_revenue'] += result['total_revenue']
-                                final_arpu[channel]['record_count'] += result['record_count']
-                            else:
-                                final_arpu[channel] = result.copy()
-                        
-                        # 重新计算ARPU
-                        arpu_summary = []
-                        for channel, data in final_arpu.items():
-                            arpu_value = data['total_revenue'] / data['total_users'] if data['total_users'] > 0 else 0
-                            arpu_summary.append({
-                                'data_source': channel,
-                                'arpu_value': arpu_value,
-                                'record_count': data['record_count'],
-                                'total_users': data['total_users'],
-                                'total_revenue': data['total_revenue']
-                            })
-                        
-                        arpu_summary_df = pd.DataFrame(arpu_summary)
-                        st.session_state.arpu_data = arpu_summary_df
-                        st.success("ARPU计算完成！")
-                        
-                        # 显示结果 - 增强显示信息
-                        display_arpu_df = arpu_summary_df.copy()
-                        display_arpu_df['ARPU'] = display_arpu_df['arpu_value'].round(4)
-                        display_arpu_df['总用户数'] = display_arpu_df['total_users'].astype(int)
-                        display_arpu_df['总收入'] = display_arpu_df['total_revenue'].round(2)
-                        display_arpu_df = display_arpu_df[['data_source', 'ARPU', '总用户数', '总收入', 'record_count']]
-                        display_arpu_df.columns = ['渠道名称', 'ARPU值', '总用户数', '总收入', '记录数']
-                        st.dataframe(display_arpu_df, use_container_width=True)
-                        
-                        # 显示汇总信息
-                        col1, col2, col3 = st.columns(3)
-                        with col1:
-                            st.metric("匹配渠道数", len(arpu_summary))
-                        with col2:
-                            total_users = sum(data['total_users'] for data in final_arpu.values())
-                            st.metric("总用户数", f"{total_users:,}")
-                        with col3:
-                            avg_arpu = sum(data['arpu_value'] for data in arpu_summary) / len(arpu_summary) if arpu_summary else 0
-                            st.metric("平均ARPU", f"{avg_arpu:.4f}")
                     else:
-                        st.error("未找到匹配的渠道数据，请检查渠道映射配置")
+                        # 确保pid为字符串格式
+                        filtered_arpu_df['pid'] = filtered_arpu_df['pid'].astype(str).str.replace('.0', '', regex=False)
                         
-                        # 显示未匹配的pid
-                        unmatched_pids = sorted(filtered_arpu_df['pid'].unique())
-                        st.info(f"数据中的渠道号：{', '.join(unmatched_pids[:10])}{'...' if len(unmatched_pids) > 10 else ''}")
+                        # 数据清理 - 确保数值列为数值类型
+                        numeric_cols = ['instl_user_cnt', 'ad_all_rven_1d_m']
+                        for col in numeric_cols:
+                            filtered_arpu_df[col] = pd.to_numeric(filtered_arpu_df[col], errors='coerce')
+                        
+                        # 移除无效数据
+                        filtered_arpu_df = filtered_arpu_df.dropna(subset=numeric_cols)
+                        filtered_arpu_df = filtered_arpu_df[
+                            (filtered_arpu_df['instl_user_cnt'] > 0) & 
+                            (filtered_arpu_df['ad_all_rven_1d_m'] >= 0)
+                        ]
+                        
+                        if len(filtered_arpu_df) == 0:
+                            st.error("数据清理后无有效记录")
+                        else:
+                            # 创建反向渠道映射
+                            reverse_mapping = create_reverse_mapping(st.session_state.channel_mapping)
+                            
+                            # 按渠道匹配和汇总
+                            arpu_results = []
+                            
+                            for pid, group in filtered_arpu_df.groupby('pid'):
+                                if pid in reverse_mapping:
+                                    channel_name = reverse_mapping[pid]
+                                    total_users = group['instl_user_cnt'].sum()
+                                    total_revenue = group['ad_all_rven_1d_m'].sum()
+                                    
+                                    if total_users > 0:
+                                        arpu_value = total_revenue / total_users
+                                        arpu_results.append({
+                                            'data_source': channel_name,
+                                            'total_users': total_users,
+                                            'total_revenue': total_revenue,
+                                            'arpu_value': arpu_value,
+                                            'record_count': len(group)
+                                        })
+
+                            if arpu_results:
+                                # 按渠道合并相同渠道的数据
+                                final_arpu = {}
+                                for result in arpu_results:
+                                    channel = result['data_source']
+                                    if channel in final_arpu:
+                                        final_arpu[channel]['total_users'] += result['total_users']
+                                        final_arpu[channel]['total_revenue'] += result['total_revenue']
+                                        final_arpu[channel]['record_count'] += result['record_count']
+                                    else:
+                                        final_arpu[channel] = result.copy()
+                                
+                                # 重新计算ARPU
+                                arpu_summary = []
+                                for channel, data in final_arpu.items():
+                                    arpu_value = data['total_revenue'] / data['total_users'] if data['total_users'] > 0 else 0
+                                    arpu_summary.append({
+                                        'data_source': channel,
+                                        'arpu_value': arpu_value,
+                                        'record_count': data['record_count'],
+                                        'total_users': data['total_users'],
+                                        'total_revenue': data['total_revenue']
+                                    })
+                                
+                                arpu_summary_df = pd.DataFrame(arpu_summary)
+                                st.session_state.arpu_data = arpu_summary_df
+                                st.success("ARPU计算完成！")
+                                
+                                # 显示结果 - 增强显示信息
+                                display_arpu_df = arpu_summary_df.copy()
+                                display_arpu_df['ARPU'] = display_arpu_df['arpu_value'].round(4)
+                                display_arpu_df['总用户数'] = display_arpu_df['total_users'].astype(int)
+                                display_arpu_df['总收入'] = display_arpu_df['total_revenue'].round(2)
+                                display_arpu_df = display_arpu_df[['data_source', 'ARPU', '总用户数', '总收入', 'record_count']]
+                                display_arpu_df.columns = ['渠道名称', 'ARPU值', '总用户数', '总收入', '记录数']
+                                st.dataframe(display_arpu_df, use_container_width=True)
+                                
+                                # 显示汇总信息
+                                col1, col2, col3 = st.columns(3)
+                                with col1:
+                                    st.metric("匹配渠道数", len(arpu_summary))
+                                with col2:
+                                    total_users = sum(data['total_users'] for data in final_arpu.values())
+                                    st.metric("总用户数", f"{total_users:,}")
+                                with col3:
+                                    avg_arpu = sum(data['arpu_value'] for data in arpu_summary) / len(arpu_summary) if arpu_summary else 0
+                                    st.metric("平均ARPU", f"{avg_arpu:.4f}")
+                            else:
+                                st.error("未找到匹配的渠道数据，请检查渠道映射配置")
+                                
+                                # 显示未匹配的pid
+                                unmatched_pids = sorted(filtered_arpu_df['pid'].unique())
+                                st.info(f"数据中的渠道号：{', '.join(unmatched_pids[:10])}{'...' if len(unmatched_pids) > 10 else ''}")
 
                 except Exception as e:
                     st.error(f"ARPU计算失败：{str(e)}")
@@ -2337,7 +2335,7 @@ elif current_page == "ARPU计算":
     # 手动设置ARPU（按需显示）
     if st.session_state.lt_results_5y:
         if not st.session_state.show_manual_arpu:
-            if st.button("需要手动设置ARPU值"):
+            if st.button("需要手动设置ARPU值", key="show_manual_arpu_btn"):
                 st.session_state.show_manual_arpu = True
                 st.rerun()
             st.info("如无需手动设置ARPU，可直接进行下一步")
@@ -2357,14 +2355,14 @@ elif current_page == "ARPU计算":
                     )
                     arpu_inputs[source] = arpu_value
 
-            if st.button("保存手动ARPU设置", type="primary", use_container_width=True):
-                arpu_df = pd.DataFrame([
+            if st.button("保存手动ARPU设置", type="primary", use_container_width=True, key="save_manual_arpu"):
+                arpu_df_manual = pd.DataFrame([
                     {'data_source': source, 'arpu_value': value, 'record_count': 1}
                     for source, value in arpu_inputs.items()
                 ])
-                st.session_state.arpu_data = arpu_df
+                st.session_state.arpu_data = arpu_df_manual
                 st.success("ARPU设置已保存！")
-                st.dataframe(arpu_df[['data_source', 'arpu_value']], use_container_width=True)
+                st.dataframe(arpu_df_manual[['data_source', 'arpu_value']], use_container_width=True)
             
             st.markdown('</div>', unsafe_allow_html=True)
 
