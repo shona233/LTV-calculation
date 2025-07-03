@@ -1,3 +1,4 @@
+import difflib 
 import streamlit as st
 import os
 import pandas as pd
@@ -14,7 +15,7 @@ import re
 from matplotlib.font_manager import FontProperties
 import seaborn as sns
 from scipy.optimize import curve_fit
-import difflib 
+
 
 # ==================== 基础配置 ====================
 # 忽略警告
