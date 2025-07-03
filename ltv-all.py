@@ -22,71 +22,7 @@ from scipy.optimize import curve_fit
 warnings.filterwarnings('ignore', category=UserWarning, module='openpyxl.styles.stylesheet')
 warnings.filterwarnings('ignore', category=UserWarning,
                         message="Could not infer format, so each element will be parsed individually")
-def calculate_similarity(str1, str2):
-    """
-    Calculate similarity between two strings using SequenceMatcher.
-    Handles None values gracefully.
-    """
-    # Handle None values
-    if str1 is None or str2 is None:
-        return 0.0
-    
-    # Convert to strings and handle empty strings
-    str1 = str(str1).lower().strip()
-    str2 = str(str2).lower().strip()
-    
-    # If either string is empty after processing, return 0
-    if not str1 or not str2:
-        return 0.0
-    
-    return difflib.SequenceMatcher(None, str1, str2).ratio()
 
-def find_best_match(file_name, channel_mapping):
-    """
-    Find the best matching channel for a given file name.
-    """
-    if not file_name or not channel_mapping:
-        return None, 0.0
-    
-    best_match = None
-    best_score = 0.0
-    
-    for channel_name in channel_mapping:
-        if channel_name is None:
-            continue
-            
-        score = calculate_similarity(file_name, channel_name)
-        if score > best_score:
-            best_score = score
-            best_match = channel_name
-    
-    return best_match, best_score
-
-def get_file_channel_suggestions(uploaded_files, channel_mapping):
-    """
-    Get channel suggestions for uploaded files.
-    """
-    suggestions = {}
-    
-    if not uploaded_files or not channel_mapping:
-        return suggestions
-    
-    for file in uploaded_files:
-        if file is None:
-            continue
-            
-        # Get file name - handle different file object types
-        file_name = getattr(file, 'name', str(file)) if hasattr(file, 'name') else str(file)
-        
-        if file_name:
-            best_match, score = find_best_match(file_name, channel_mapping)
-            if best_match and score > 0:
-                suggestions[file_name] = {
-                    'suggested_channel': best_match,
-                    'confidence': score
-                }
-    
-    return suggestions
 # 解决中文显示问题 - 改为英文标签
 def setup_chart_font():
     """设置图表字体 - 使用英文避免中文显示问题"""
