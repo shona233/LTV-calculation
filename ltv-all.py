@@ -1847,7 +1847,7 @@ if current_page == "LT模型构建":
             """, unsafe_allow_html=True)
             
             # 初始化确认状态
-            if 'file_channel_confirmations' not in st.session_state:
+            if 'file_channel_confirmations' not in st.session_state or st.session_state.file_channel_confirmations is None:
                 st.session_state.file_channel_confirmations = {}
             
             all_confirmed = True
