@@ -14,20 +14,7 @@ import re
 from matplotlib.font_manager import FontProperties
 import seaborn as sns
 from scipy.optimize import curve_fit
-import gc  # 垃圾回收
-import difflib  # 添加difflib导入
-import requests
-import schedule
-import time
 
-def ping():
-    requests.get("https://your-app.streamlit.app")  # 公开URL
-    print("唤醒成功:", time.ctime())
-
-schedule.every(10).minutes.do(ping)  # 每10分钟唤醒一次
-while True:
-    schedule.run_pending()
-    time.sleep(1)
 # ==================== 基础配置 ====================
 # 忽略警告
 warnings.filterwarnings('ignore', category=UserWarning, module='openpyxl.styles.stylesheet')
