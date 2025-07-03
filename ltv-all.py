@@ -1,4 +1,5 @@
 import difflib 
+import gc
 import streamlit as st
 import os
 import pandas as pd
