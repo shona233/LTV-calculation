@@ -1,3 +1,4 @@
+import gc
 import difflib 
 import streamlit as st
 import os
@@ -12,7 +13,7 @@ import io
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 import re
-import gc
+
 from matplotlib.font_manager import FontProperties
 import seaborn as sns
 from scipy.optimize import curve_fit
