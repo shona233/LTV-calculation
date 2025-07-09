@@ -1245,6 +1245,7 @@ def calculate_retention_rates_new_method(df):
     return retention_results
 
 # ==================== 数学建模函数 ====================
+# 定义幂函数与指数函数
 def power_function(x, a, b):
     """幂函数：y = a * x^b"""
     return a * np.power(x, b)
@@ -1253,18 +1254,36 @@ def exponential_function(x, c, d):
     """指数函数：y = c * exp(d * x)"""
     return c * np.exp(d * x)
 
+# 读取 Excel 数据
+def read_excel(file_path, sheet_name=None):
+    """读取 Excel 数据"""
+    data = pd.read_excel(file_path, sheet_name=sheet_name)
+    if "留存天数" not in data.columns or "留存率" not in data.columns:
+        raise ValueError(f"{sheet_name} 缺少必要列！")
+    data["留存率"] = data["留存率"] / 100  # 转换为小数
+    return data
+
+# 计算指定天数的累积LT值
 def calculate_cumulative_lt(days_array, rates_array, target_days):
     """计算指定天数的累积LT值"""
     result = {}
     for day in target_days:
         idx = np.searchsorted(days_array, day, side='right')
         if idx > 0:
-            cumulative_lt = 1.0 + np.sum(rates_array[1:idx])
+            # 计算到指定天数的累积LT值（包括第0天的1.0）
+            cumulative_lt = 1.0 + np.sum(rates_array[:idx])
             result[day] = cumulative_lt
     return result
 
-def calculate_lt_advanced(retention_result, channel_name, lt_years=5, return_curve_data=False, key_days=None):
-    """按渠道规则计算 LT"""
+# 计算 LT 的核心逻辑
+def calculate_lt(data, channel_name, lt_years=5, return_curve_data=False, key_days=None):
+    """
+    按渠道规则计算 LT，允许 1-30 天数据不连续。
+    参数:
+        lt_years: 计算几年的LT，默认5年
+        return_curve_data: 是否返回曲线数据用于可视化
+        key_days: 关键时间点列表，用于计算这些时间点的累积LT值
+    """
     # 渠道规则
     CHANNEL_RULES = {
         "华为": {"stage_2": [30, 120], "stage_3_base": [120, 220]},
@@ -1275,57 +1294,66 @@ def calculate_lt_advanced(retention_result, channel_name, lt_years=5, return_cur
         "其他": {"stage_2": [30, 100], "stage_3_base": [100, 200]}
     }
 
-    # 渠道规则匹配
-    if re.search(r'华为', channel_name):
+    if re.search(r'\d+月华为$', channel_name):
         rules = CHANNEL_RULES["华为"]
-    elif re.search(r'小米', channel_name):
+    elif re.search(r'\d+月小米$', channel_name):
         rules = CHANNEL_RULES["小米"]
-    elif re.search(r'[oO][pP][pP][oO]', channel_name):
+    elif re.search(r'\d+月oppo$', channel_name) or re.search(r'\d+月OPPO$', channel_name):
         rules = CHANNEL_RULES["oppo"]
-    elif re.search(r'vivo', channel_name):
+    elif re.search(r'\d+月vivo$', channel_name):
         rules = CHANNEL_RULES["vivo"]
-    elif re.search(r'[iI][pP]hone', channel_name):
+    elif re.search(r'\d+月[iI][pP]hone$', channel_name):
         rules = CHANNEL_RULES["iphone"]
     else:
         rules = CHANNEL_RULES["其他"]
-        
     stage_2_start, stage_2_end = rules["stage_2"]
     stage_3_base_start, stage_3_base_end = rules["stage_3_base"]
 
+    # 计算最大天数（根据指定年数）
     max_days = lt_years * 365
 
-    days = retention_result["days"]
-    rates = retention_result["rates"]
+    days = data["留存天数"].values
+    rates = data["留存率"].values
 
+    # 存储拟合参数，用于后续分析
     fit_params = {}
 
-    # 第一阶段 - 幂函数拟合
+    # ----- 第一阶段 -----
     try:
+        # 用已有数据对 1-30 天的留存率进行拟合
+        print(f"[DEBUG] {channel_name} 第一阶段：拟合真实留存率（非连续天数支持）...")
         popt_power, _ = curve_fit(power_function, days, rates)
         a, b = popt_power
         fit_params["power"] = {"a": a, "b": b}
+        print(f"[DEBUG] {channel_name} 第一阶段幂函数拟合参数：a = {a:.6e}, b = {b:.6f}")
 
-        days_full = np.arange(1, 31)
+        # 用拟合函数生成完整的 1-30 天留存率
+        days_full = np.arange(1, 31)  # 连续的 1-30 天
         rates_full = power_function(days_full, a, b)
-        lt1_to_30 = np.sum(rates_full)
-    except Exception as e:
-        lt1_to_30 = 0.0
-        a, b = 1.0, -1.0
 
-    # 第二阶段
+        # 第一阶段的 LT 累加值
+        lt1_to_30 = np.sum(rates_full)
+        print(f"[DEBUG] {channel_name} 第一阶段（1-30 天实际 + 填充数据）：LT = {lt1_to_30:.4f}")
+    except Exception as e:
+        print(f"[ERROR] {channel_name} 第一阶段拟合失败：{e}")
+        lt1_to_30 = 0.0
+
+    # ----- 第二阶段 -----
     try:
         days_stage_2 = np.arange(stage_2_start, stage_2_end + 1)
         rates_stage_2 = power_function(days_stage_2, a, b)
         lt_stage_2 = np.sum(rates_stage_2)
+        print(f"[DEBUG] {channel_name} 第二阶段（{stage_2_start}-{stage_2_end} 天）：LT = {lt_stage_2:.4f}")
     except Exception as e:
+        print(f"[ERROR] {channel_name} 第二阶段预测失败：{e}")
         lt_stage_2 = 0.0
-        rates_stage_2 = np.array([])
 
-    # 第三阶段 - 指数拟合
+    # ----- 第三阶段 -----
     try:
         days_stage_3_base = np.arange(stage_3_base_start, stage_3_base_end + 1)
         rates_stage_3_base = power_function(days_stage_3_base, a, b)
 
+        # 指数拟合
         initial_c = rates_stage_3_base[0]
         initial_d = -0.001
         popt_exp, _ = curve_fit(
@@ -1333,56 +1361,56 @@ def calculate_lt_advanced(retention_result, channel_name, lt_years=5, return_cur
             days_stage_3_base,
             rates_stage_3_base,
             p0=[initial_c, initial_d],
-            bounds=([0, -np.inf], [np.inf, 0])
+            bounds=([0, -np.inf], [np.inf, 0])  # 限制 d < 0
         )
         c, d = popt_exp
         fit_params["exponential"] = {"c": c, "d": d}
-        days_stage_3 = np.arange(stage_3_base_start, max_days + 1)
+        days_stage_3 = np.arange(stage_3_base_start, max_days + 1)  # 使用可变的最大天数
         rates_stage_3 = exponential_function(days_stage_3, c, d)
         lt_stage_3 = np.sum(rates_stage_3)
+        print(f"[DEBUG] {channel_name} 第三阶段指数拟合：c = {c:.6e}, d = {d:.6f}")
+        print(f"[DEBUG] {channel_name} 第三阶段 LT = {lt_stage_3:.4f}")
     except Exception as e:
-        days_stage_3 = np.arange(stage_3_base_start, max_days + 1)
-        rates_stage_3 = power_function(days_stage_3, a, b) if 'a' in locals() else np.zeros(len(days_stage_3))
+        print(f"[ERROR] {channel_name} 第三阶段预测失败：{e}. 使用幂函数预测。")
+        days_stage_3 = np.arange(stage_3_base_start, max_days + 1)  # 使用可变的最大天数
+        rates_stage_3 = power_function(days_stage_3, a, b)
         lt_stage_3 = np.sum(rates_stage_3)
 
+    # ----- 总 LT 计算 -----
     total_lt = 1.0 + lt1_to_30 + lt_stage_2 + lt_stage_3
-
-    try:
-        predicted_rates = power_function(days, a, b)
-        r2_score = 1 - np.sum((rates - predicted_rates) ** 2) / np.sum((rates - np.mean(rates)) ** 2)
-    except:
-        r2_score = 0.0
+    print(f"[RESULT] {channel_name} {lt_years}年总 LT = {total_lt:.4f}")
 
     if return_curve_data:
-        all_days = np.concatenate([days_full, days_stage_2, days_stage_3])
-        
-        if 'rates_stage_2' not in locals():
-            rates_stage_2 = power_function(days_stage_2, a, b)
-        
-        all_rates = np.concatenate([rates_full, rates_stage_2, rates_stage_3])
+        # 返回不包含第0天的曲线数据用于可视化 (修改点1)
+        all_days = np.concatenate([
+            # 不再包含 np.array([0]) - 第0天
+            days_full,      # 第1-30天
+            days_stage_2,   # 第二阶段
+            days_stage_3    # 第三阶段
+        ])
+        all_rates = np.concatenate([
+            # 不再包含 np.array([1.0]) - 第0天
+            rates_full,                # 第1-30天
+            rates_stage_2,             # 第二阶段
+            rates_stage_3              # 第三阶段
+        ])
 
+        # 按天数排序
         sort_idx = np.argsort(all_days)
         all_days = all_days[sort_idx]
         all_rates = all_rates[sort_idx]
 
+        # 只返回到指定年数的数据
         max_idx = np.searchsorted(all_days, lt_years * 365, side='right')
         all_days = all_days[:max_idx]
         all_rates = all_rates[:max_idx]
 
+        # 计算关键时间点的累积LT值
         key_days_lt = {}
         if key_days:
             key_days_lt = calculate_cumulative_lt(all_days, all_rates, key_days)
 
-        return {
-            'lt_value': total_lt,
-            'fit_params': fit_params,
-            'power_r2': max(0, min(1, r2_score)),
-            'success': True,
-            'model_used': 'power+exponential',
-            'curve_days': all_days,
-            'curve_rates': all_rates,
-            'key_days_lt': key_days_lt
-        }
+        return total_lt, all_days, all_rates, key_days_lt, fit_params
 
     return total_lt
 
