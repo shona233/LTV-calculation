@@ -2229,11 +2229,11 @@ if current_page == "LT模型构建":
                     channel_name = retention_result['data_source']
                     
                     # 计算2年LT
-                    lt_result_2y = calculate_lt_advanced(retention_result, channel_name, 2, 
+                    lt_result_2y = calculate_lt(retention_result, channel_name, 2, 
                                                        return_curve_data=True, key_days=key_days)
                     
                     # 计算5年LT
-                    lt_result_5y = calculate_lt_advanced(retention_result, channel_name, 5, 
+                    lt_result_5y = calculate_lt(retention_result, channel_name, 5, 
                                                        return_curve_data=True, key_days=key_days)
 
                     lt_results_2y.append({
