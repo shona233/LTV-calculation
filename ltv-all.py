@@ -1264,7 +1264,7 @@ def calculate_cumulative_lt(days_array, rates_array, target_days):
         idx = np.searchsorted(days_array, day, side='right')
         if idx > 0:
             # 计算到指定天数的累积LT值（包括第0天的1.0）
-            cumulative_lt = 1.0 + np.sum(rates_array[:idx])
+            cumulative_lt = 1.0 + np.sum(rates_array[1:idx])
             result[day] = cumulative_lt
     return result
 
